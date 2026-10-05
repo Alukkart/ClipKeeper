@@ -1,0 +1,35 @@
+# personal settings: the encrypted OBS password, address, folders
+settings.json
+devices.json
+favorites.json
+
+# logs and caches the app creates itself
+*.log
+clipcache.json
+clipstats.json
+covers/
+backups/
+previews/
+
+# build output: build.cmd makes the exe, GitHub Actions makes releases
+/ClipKeeper.exe
+*.test.exe
+build-test.cmd
+/dist/
+notes.md
+
+# ffmpeg is added by hand or comes in the release zip (BtbN build, with its license); nothing of it goes into git
+ffmpeg/
+
+# IDE and editor files
+.idea/
+.vs/
+.vscode/
+*.user
+
+# test and preview output
+selftest.txt
+probe.txt
+shot.txt
+/preview/
+/app.ico

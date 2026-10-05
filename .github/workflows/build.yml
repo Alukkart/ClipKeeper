@@ -1,0 +1,86 @@
+# Build and self-test on every push to main and every pull request.
+# The built ClipKeeper.exe is in the run artifacts (Actions tab); it does not go into a release.
+name: Build
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      screenshots:
+        description: Commit the settings screenshots (docs/screenshots/<lang>/settings.png) to this branch
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build
+        shell: cmd
+        run: build.cmd
+
+      - name: Self-test
+        shell: pwsh
+        run: |
+          $p = Start-Process .\ClipKeeper.exe -ArgumentList '--selftest' -PassThru -Wait
+          Get-Content selftest.txt -Encoding UTF8
+          if ($p.ExitCode -ne 0) { throw "self-test failed (exit code $($p.ExitCode))" }
+
+      # the settings and Recording screens in both languages, for the README (docs/screenshots)
+      - name: Screens
+        shell: pwsh
+        run: |
+          foreach ($l in 'en', 'ru') {
+            $p = Start-Process .\ClipKeeper.exe -ArgumentList '--preview-settings', "screens\$l", '--lang', $l -PassThru -Wait
+            if ($p.ExitCode -ne 0) { throw "screens ($l) failed (exit code $($p.ExitCode))" }
+          }
+          Get-ChildItem screens -Recurse -File | ForEach-Object { $_.FullName }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ClipKeeper-${{ github.sha }}
+          path: ClipKeeper.exe
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screens-${{ github.sha }}
+          path: screens
+          retention-days: 14
+
+  # by hand (Run workflow → screenshots): the settings in both languages go into docs/screenshots and are committed to the branch
+  screenshots:
+    if: github.event_name == 'workflow_dispatch' && inputs.screenshots
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build
+        shell: cmd
+        run: build.cmd
+
+      - name: Render and commit
+        shell: pwsh
+        run: |
+          foreach ($l in 'en', 'ru') {
+            $p = Start-Process .\ClipKeeper.exe -ArgumentList '--preview-settings', "screens\$l", '--lang', $l -PassThru -Wait
+            if ($p.ExitCode -ne 0) { throw "screens ($l) failed (exit code $($p.ExitCode))" }
+            Copy-Item "screens\$l\settings-general.png" "docs\screenshots\$l\settings.png"
+          }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { "the screenshots did not change"; exit 0 }
+          git commit -m "Screenshots: settings (rendered by the Build workflow)"
+          git push

@@ -1,0 +1,11 @@
+name: "Idea · Идея"
+description: "Something ClipKeeper could do · Что ClipKeeper мог бы делать"
+labels: ["idea"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: "What would help · Что помогло бы"
+      description: "What you do now, and what ClipKeeper could do instead · Что ты делаешь сейчас и что мог бы делать ClipKeeper"
+    validations:
+      required: true

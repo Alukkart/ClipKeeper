@@ -1,0 +1,8 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+# .cmd must keep CRLF, otherwise cmd.exe gets confused by labels and line continuations
+*.cmd text eol=crlf
+*.ico binary
+*.exe binary
+*.png binary
+*.jpg binary

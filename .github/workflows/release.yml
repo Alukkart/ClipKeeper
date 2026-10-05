@@ -1,0 +1,119 @@
+# Release: git tag v1.2.3 && git push origin v1.2.3
+# Builds ClipKeeper.exe with the version from the tag, signs it if a certificate is set up (see "Sign"),
+# runs the self-test and publishes a release:
+#   ClipKeeper-<version>.zip — for a first install: the app + ffmpeg/ffprobe (BtbN build, GPL) + README with pictures;
+#   ClipKeeper.exe           — for an update: replace the file next to the old one, settings stay;
+#   SHA256SUMS.txt           — checksums.
+# A tag with a hyphen (v1.2.0-beta.1) is published as a pre-release.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+env:
+  FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      # optional code signing: repository secrets SIGN_PFX (the .pfx file in base64) and SIGN_PASSWORD.
+      # Without them the exe stays unsigned and Windows SmartScreen warns about it on the first start
+      SIGN_PFX: ${{ secrets.SIGN_PFX }}
+      SIGN_PASSWORD: ${{ secrets.SIGN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Version from tag
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          if ($tag -notmatch '^v(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.-]+)?$') { throw "tag $tag does not look like v1.2.3 or v1.2.3-beta.1" }
+          $num = "$($Matches[1]).$($Matches[2]).$($Matches[3]).0"
+          $ver = $tag.Substring(1)
+          $f = 'src\AssemblyInfo.cs'
+          $t = Get-Content $f -Raw -Encoding UTF8
+          $t = $t -replace 'AssemblyVersion\("[^"]*"\)', "AssemblyVersion(`"$num`")"
+          $t = $t -replace 'AssemblyFileVersion\("[^"]*"\)', "AssemblyFileVersion(`"$num`")"
+          $t = $t -replace 'AssemblyInformationalVersion\("[^"]*"\)', "AssemblyInformationalVersion(`"$ver`")"
+          Set-Content $f $t -Encoding UTF8 -NoNewline
+          "VERSION=$ver" >> $env:GITHUB_ENV
+          "PRERELEASE=$(if ($Matches[4]) { 'true' } else { 'false' })" >> $env:GITHUB_ENV
+
+      - name: Build
+        shell: cmd
+        run: build.cmd
+
+      - name: Sign
+        if: env.SIGN_PFX != ''
+        shell: pwsh
+        run: |
+          $pfx = Join-Path $env:RUNNER_TEMP 'sign.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:SIGN_PFX))
+          try {
+            $tool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter signtool.exe |
+              Where-Object { $_.FullName -like '*\x64\*' } | Sort-Object FullName -Descending | Select-Object -First 1
+            if (-not $tool) { throw "signtool.exe not found" }
+            & $tool.FullName sign /f $pfx /p $env:SIGN_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /d ClipKeeper ClipKeeper.exe
+            if ($LASTEXITCODE -ne 0) { throw "signing failed (exit code $LASTEXITCODE)" }
+            & $tool.FullName verify /pa ClipKeeper.exe
+            if ($LASTEXITCODE -ne 0) { throw "the signature does not verify" }
+          }
+          finally { Remove-Item $pfx -ErrorAction SilentlyContinue }
+
+      - name: Self-test
+        shell: pwsh
+        run: |
+          $p = Start-Process .\ClipKeeper.exe -ArgumentList '--selftest' -PassThru -Wait
+          Get-Content selftest.txt -Encoding UTF8
+          if ($p.ExitCode -ne 0) { throw "self-test failed (exit code $($p.ExitCode))" }
+          $got = (Get-Item .\ClipKeeper.exe).VersionInfo.ProductVersion
+          if ($got -ne $env:VERSION) { throw "the exe has version $got, but the tag is $env:VERSION" }
+
+      - name: ffmpeg
+        shell: pwsh
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP 'ffmpeg.zip'
+          $dir = Join-Path $env:RUNNER_TEMP 'ffmpeg'
+          Invoke-WebRequest $env:FFMPEG_URL -OutFile $zip
+          Expand-Archive $zip $dir
+          $root = Get-ChildItem $dir -Directory | Select-Object -First 1
+          "FFMPEG_ROOT=$($root.FullName)" >> $env:GITHUB_ENV
+          $line = (& (Join-Path $root.FullName 'bin\ffmpeg.exe') -hide_banner -version | Select-Object -First 1) -replace ' Copyright.*', ''
+          "FFMPEG_VERSION=$line" >> $env:GITHUB_ENV
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $pkg = "dist\ClipKeeper"
+          New-Item -ItemType Directory -Force "$pkg\ffmpeg" | Out-Null
+          Copy-Item ClipKeeper.exe, README.md, README.ru.md, LICENSE $pkg
+          Copy-Item docs $pkg -Recurse   # the README pictures
+          Copy-Item "$env:FFMPEG_ROOT\bin\ffmpeg.exe", "$env:FFMPEG_ROOT\bin\ffprobe.exe", "$env:FFMPEG_ROOT\LICENSE.txt" "$pkg\ffmpeg"
+          Compress-Archive "$pkg" "dist\ClipKeeper-$env:VERSION.zip"
+          Copy-Item ClipKeeper.exe dist
+          Get-ChildItem dist -File | ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" } |
+            Set-Content dist\SHA256SUMS.txt -Encoding ascii
+
+      - name: Publish
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notes = @"
+          **First install** — ClipKeeper-$env:VERSION.zip: unpack into any folder and run ClipKeeper.exe.
+          **Update** — close ClipKeeper in the tray and replace ClipKeeper.exe with the new one. Settings, the device reference and covers stay.
+
+          **Первая установка** — ClipKeeper-$env:VERSION.zip: распаковать в любую папку и запустить ClipKeeper.exe.
+          **Обновление** — закрыть ClipKeeper в трее и заменить ClipKeeper.exe новым. Настройки, эталон устройств и обложки останутся.
+
+          ffmpeg in the zip: $env:FFMPEG_VERSION ([BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds), GPL, sources there).
+          "@
+          Set-Content notes.md $notes -Encoding UTF8
+          $flags = @('--title', "ClipKeeper $env:VERSION", '--notes-file', 'notes.md', '--generate-notes')
+          if ($env:PRERELEASE -eq 'true') { $flags += '--prerelease' }
+          gh release create '${{ github.ref_name }}' (Get-ChildItem dist -File).FullName @flags

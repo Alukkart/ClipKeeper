@@ -1,0 +1,49 @@
+name: "Bug · Ошибка"
+description: "Something does not work as it should · Что-то работает не так"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Settings → General → Report a problem** in ClipKeeper fills in the versions and shows the log.
+        Кнопка **«Настройки → Общие → Сообщить о проблеме»** в ClipKeeper сама подставит версии и покажет журнал.
+  - type: input
+    id: version
+    attributes:
+      label: "ClipKeeper version · Версия ClipKeeper"
+      description: "Settings → General → About · «Настройки → Общие → О программе»"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: "Windows"
+    validations:
+      required: true
+  - type: input
+    id: obs
+    attributes:
+      label: "OBS version · Версия OBS"
+      description: "OBS → Help → About · OBS → Справка → О программе"
+  - type: textarea
+    id: what
+    attributes:
+      label: "What happened · Что случилось"
+      description: "And what you expected instead · И чего ты ждал вместо этого"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: "How to make it happen again · Как повторить"
+      placeholder: |
+        1.
+        2.
+        3.
+  - type: textarea
+    id: log
+    attributes:
+      label: "ClipKeeper.log"
+      description: |
+        Drag the file here (the Report button shows it in Explorer). Look it over first — it has folder and device names.
+        Перетащи файл сюда (кнопка «Сообщить» показывает его в Проводнике). Сначала просмотри — там есть названия папок и устройств.

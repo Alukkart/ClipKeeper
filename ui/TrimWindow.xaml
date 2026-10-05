@@ -1,0 +1,450 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="Trim clip¦Обрезка клипа" Width="1400" Height="900" MinWidth="1100" MinHeight="680"
+        WindowStyle="None" ResizeMode="CanResize" WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Bg}" BorderBrush="{StaticResource Line}" BorderThickness="1"
+        FontFamily="{StaticResource UiFont}" FontSize="13.5" Foreground="{StaticResource Text}"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="40" ResizeBorderThickness="6" GlassFrameThickness="0"
+                            CornerRadius="0" UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style x:Key="Glyph" TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+        </Style>
+        <!-- a one-click share tile: a colored icon, the service and its limit -->
+        <Style x:Key="QuickTile" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" CornerRadius="9" Background="{StaticResource Card2}" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                                Padding="8,12,8,10">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{StaticResource Hover}"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{StaticResource LineHi}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SideCaption" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid x:Name="Root">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <!-- title bar: the clip and the way to the previous / next one of the list (Ctrl+← / Ctrl+→) -->
+        <StackPanel Orientation="Horizontal" Margin="20,0,0,0" VerticalAlignment="Center">
+            <TextBlock Style="{StaticResource Glyph}" Text="&#xE8C6;" FontSize="14"/>
+            <StackPanel x:Name="ClipNav" Orientation="Horizontal" Margin="10,0,0,0" VerticalAlignment="Center"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                <Button x:Name="BtnPrevClip" Style="{StaticResource BtnLink}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                        Content="&#xE76B;" Padding="8,5"/>
+                <TextBlock x:Name="ClipPos" Foreground="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center" MinWidth="38"
+                           TextAlignment="Center"/>
+                <Button x:Name="BtnNextClip" Style="{StaticResource BtnLink}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                        Content="&#xE76C;" Padding="8,5"/>
+            </StackPanel>
+            <TextBlock x:Name="FileText" Foreground="{StaticResource Sub}" FontSize="12.5" Margin="10,0,0,0"
+                       FontFamily="{StaticResource MonoFont}" VerticalAlignment="Center"/>
+            <!-- the clip to the Recycle Bin right away, without trimming: the second press deletes -->
+            <Button x:Name="BtnDelClip" Style="{StaticResource BtnLink}" Margin="6,0,0,0" VerticalAlignment="Center"
+                    shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                    ToolTip="Move this clip to the Recycle Bin¦Переместить клип в корзину">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="DelClipIcon" FontFamily="{StaticResource IconFont}" Text="&#xE74D;" FontSize="12" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="DelClipText" Margin="6,0,0,0" FontSize="12" Foreground="{StaticResource Bad}" VerticalAlignment="Center"
+                               Visibility="Collapsed" Text="Delete the clip? Press again¦Удалить клип? Нажми ещё раз"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+            <Button x:Name="BtnKeys" Style="{StaticResource ChromeBtn}" Content="&#xE765;" ToolTip="Keys  ·  ?¦Клавиши  ·  ?"/>
+            <Button x:Name="BtnMin" Style="{StaticResource ChromeBtn}" Content="&#xE921;"/>
+            <Button x:Name="BtnMax" Style="{StaticResource ChromeBtn}" Content="&#xE922;"/>
+            <Button x:Name="BtnClose" Style="{StaticResource ChromeClose}" Content="&#xE8BB;"/>
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="372"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ── left: video, controls, timeline ── -->
+            <Grid Margin="20,4,14,20">
+                <Grid.RowDefinitions>
+                    <RowDefinition MinHeight="200"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Border Background="Black" CornerRadius="8" ClipToBounds="True">
+                    <Grid>
+                        <MediaElement x:Name="Player" LoadedBehavior="Manual" UnloadedBehavior="Manual" ScrubbingEnabled="True" Stretch="Uniform"/>
+                        <TextBlock x:Name="PlayerMsg" Text="Loading video…¦Загружаю видео…" Foreground="{StaticResource Muted}" TextWrapping="Wrap"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="40"/>
+                        <!-- watching via the light copy: the original is still what gets saved -->
+                        <Border x:Name="PreviewNote" Visibility="Collapsed" CornerRadius="5" Background="#B30B0C0E" Padding="8,3" Margin="10"
+                                HorizontalAlignment="Left" VerticalAlignment="Top"
+                                ToolTip="Heavy video (HEVC, high bitrate) is shown via a light 720p copy so it does not lag. The original is always saved at full quality.¦Тяжёлое видео (HEVC, высокий битрейт) показывается по облегчённой копии 720p, чтобы не лагало. Сохраняется всегда оригинал в полном качестве.">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE916;" FontSize="11" Foreground="{StaticResource Sub}" Margin="0,0,6,0"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock x:Name="PreviewNoteText" FontSize="11.5" Foreground="{StaticResource Sub}"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- controls: time · playback · range and audio -->
+                <Grid Grid.Row="1" Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="TimeText" FontFamily="{StaticResource MonoFont}" FontSize="16" Text="0:00.0"/>
+                        <TextBlock x:Name="TotalText" FontFamily="{StaticResource MonoFont}" FontSize="13" Foreground="{StaticResource Muted}"
+                                   Margin="8,0,0,1" VerticalAlignment="Bottom"/>
+                        <TextBlock x:Name="SpeedText" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource Warn}"
+                                   Margin="10,0,0,1" VerticalAlignment="Bottom"/>
+                        <Button x:Name="BtnMute" Style="{StaticResource BtnLink}" FontFamily="{StaticResource IconFont}" Content="&#xE767;"
+                                Margin="18,0,0,0" ToolTip="Preview audio on / off  ·  M (does not affect the file)¦Звук просмотра вкл / выкл  ·  M (на файл не влияет)"/>
+                        <Slider x:Name="Volume" Style="{StaticResource Slide}" Width="80" Minimum="0" Maximum="100" Value="85"
+                                VerticalAlignment="Center" ToolTip="Preview volume (does not affect the file)¦Громкость просмотра (на файл не влияет)"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button x:Name="BtnBack" Style="{StaticResource BtnIcon}" Content="&#xE892;" ToolTip="Back 5 s  ·  J¦Назад 5 с  ·  J"/>
+                        <Button x:Name="BtnFrameBack" Style="{StaticResource BtnIcon}" Content="&#xE76B;" Margin="6,0,0,0" ToolTip="Frame back  ·  ←¦Кадр назад  ·  ←"/>
+                        <Button x:Name="BtnPlay" Style="{StaticResource BtnPrimary}" FontFamily="{StaticResource IconFont}" FontSize="14"
+                                Content="&#xE768;" Margin="8,0" Width="52" Padding="0,8" ToolTip="Play / pause  ·  Space¦Пуск / пауза  ·  пробел"/>
+                        <Button x:Name="BtnFrameFwd" Style="{StaticResource BtnIcon}" Content="&#xE76C;" Margin="0,0,6,0" ToolTip="Frame forward  ·  →¦Кадр вперёд  ·  →"/>
+                        <Button x:Name="BtnFwd" Style="{StaticResource BtnIcon}" Content="&#xE893;" ToolTip="Forward 5 s¦Вперёд 5 с"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="BtnCut" Style="{StaticResource BtnIcon}" Content="&#xE8C6;" Margin="0,0,14,0"
+                                ToolTip="Cut a piece from the middle  ·  X — press at the piece start and again at its end¦Вырезать кусок из середины  ·  X — нажми в начале куска и ещё раз в конце"/>
+                        <Button x:Name="BtnIn" Style="{StaticResource BtnIcon}" FontFamily="{StaticResource MonoFont}" FontWeight="Bold" FontSize="14"
+                                Content="[" Width="34" ToolTip="Range start here  ·  I¦Начало отрезка здесь  ·  I"/>
+                        <TextBlock x:Name="SelText" FontFamily="{StaticResource MonoFont}" FontSize="12.5" Margin="10,0"
+                                   VerticalAlignment="Center" ToolTip="Range start → end (the result length is bottom right)¦Начало → конец отрезка (длина итога — справа, внизу)"/>
+                        <Button x:Name="BtnOut" Style="{StaticResource BtnIcon}" FontFamily="{StaticResource MonoFont}" FontWeight="Bold" FontSize="14"
+                                Content="]" Width="34" ToolTip="Range end here  ·  O¦Конец отрезка здесь  ·  O"/>
+                        <Button x:Name="BtnPlaySel" Style="{StaticResource BtnIcon}" Content="&#xE8EE;" Margin="6,0,0,0"
+                                ToolTip="Loop the range  ·  Enter¦Проиграть отрезок по кругу  ·  Enter"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- timeline: ruler, frames, waveform; zoom and overview -->
+                <StackPanel Grid.Row="2" Margin="0,14,0,0">
+                    <Grid x:Name="Timeline" Height="128" Background="Transparent" ClipToBounds="True"/>
+                    <Grid Margin="0,8,0,0">
+                        <Grid x:Name="Overview" Height="8" VerticalAlignment="Center" Margin="0,0,200,0" Background="Transparent" Cursor="Hand"
+                              ToolTip="The visible part of the timeline — drag to scroll¦Видимая часть шкалы — потяни, чтобы прокрутить">
+                            <Border CornerRadius="4" Background="#1A1B1F"/>
+                            <Border x:Name="OverviewThumb" CornerRadius="4" Background="#3A3C44" HorizontalAlignment="Left"/>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <ToggleButton x:Name="BtnLanes" Style="{StaticResource LinkToggle}" Content="&#xE8FD;" Margin="0,0,10,0"
+                                          ToolTip="Separate tracks — each gets its own lane with a waveform  ·  T¦Дорожки по отдельности — у каждой своя полоса с волной  ·  T"/>
+                            <Border Width="1" Height="16" Background="{StaticResource Line}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <Button x:Name="BtnZoomOut" Style="{StaticResource BtnLink}" FontFamily="{StaticResource IconFont}" Content="&#xE71F;"
+                                    ToolTip="Zoom out  ·  −¦Отдалить  ·  −"/>
+                            <TextBlock x:Name="ZoomText" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource Muted}"
+                                       VerticalAlignment="Center" MinWidth="34" TextAlignment="Center" Text="1×"/>
+                            <Button x:Name="BtnZoomIn" Style="{StaticResource BtnLink}" FontFamily="{StaticResource IconFont}" Content="&#xE8A3;"
+                                    ToolTip="Zoom in  ·  =   (or Ctrl + wheel over the timeline)¦Приблизить  ·  =   (или Ctrl + колесо над шкалой)"/>
+                            <Button x:Name="BtnZoomFit" Style="{StaticResource BtnLink}" FontFamily="{StaticResource IconFont}" Content="&#xE740;"
+                                    ToolTip="Whole timeline  ·  \¦Вся шкала  ·  \"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Grid>
+
+            <!-- ── right: tracks and saving / result ── -->
+            <Border Grid.Column="1" Style="{StaticResource CardBorder}" Margin="0,4,20,20" Padding="18,16">
+                <Grid>
+                    <DockPanel x:Name="ExportPanel">
+                        <!-- summary and button — always at the bottom -->
+                        <StackPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
+                            <Border Height="1" Background="{StaticResource Line}" Margin="0,0,0,14"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <StackPanel Orientation="Horizontal" ToolTip="Approximate file size¦Примерный размер файла">
+                                    <TextBlock Style="{StaticResource Glyph}" Text="&#xEDA2;" Width="22"/>
+                                    <TextBlock x:Name="EstSize"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" ToolTip="Result length¦Длина итога">
+                                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE916;" Width="22"/>
+                                    <TextBlock x:Name="EstDur" FontFamily="{StaticResource MonoFont}" FontSize="13"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,0" ToolTip="Audio tracks in the file¦Звуковых дорожек в файле">
+                                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE8D6;" Width="22"/>
+                                    <TextBlock x:Name="EstTracks"/>
+                                </StackPanel>
+                                <StackPanel x:Name="EstCutsBox" Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0" Visibility="Collapsed">
+                                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE8C6;" Width="22" Foreground="{StaticResource Bad}"/>
+                                    <TextBlock x:Name="EstCuts"/>
+                                </StackPanel>
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE8A5;" Width="22"/>
+                                <TextBlock x:Name="EstFile" Foreground="{StaticResource Muted}" MaxWidth="300" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                            <Button x:Name="BtnSave" Style="{StaticResource BtnPrimary}" HorizontalAlignment="Stretch" Padding="20,11" Margin="0,14,0,0"
+                                    ToolTip="Save and check the result  ·  Ctrl+S¦Сохранить и проверить результат  ·  Ctrl+S">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE74E;" FontSize="13" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Save¦Сохранить"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <TextBlock Text="TRACKS¦ДОРОЖКИ" Style="{StaticResource SideCaption}"/>
+                                    <TextBlock x:Name="AudioStatus" Foreground="{StaticResource Muted}" FontSize="11.5" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <StackPanel x:Name="TracksPanel"/>
+                                <StackPanel x:Name="RebuildRow" Orientation="Horizontal" Margin="0,4,0,0" Visibility="Collapsed">
+                                    <ToggleButton x:Name="RebuildMix" Style="{StaticResource IconToggle}" Content="&#xE9E9;"
+                                                  ToolTip="OBS records the mix as a finished blend — individual track volume does not affect it. Turn this on to rebuild the mix from the enabled tracks with your volume.¦OBS записывает микс как готовую смесь — громкость отдельных дорожек на него не влияет. Включи, чтобы микс собрался заново из включённых дорожек с твоей громкостью."/>
+                                    <TextBlock Text="Rebuild the mix from tracks¦Пересобрать микс из дорожек" Foreground="{StaticResource Sub}" FontSize="12.5" Margin="10,0,0,0"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <Border Height="1" Background="{StaticResource Line}" Margin="0,18,0,16"/>
+                                <TextBlock Text="SAVING¦СОХРАНЕНИЕ" Style="{StaticResource SideCaption}" Margin="0,0,0,10"/>
+                                <!-- mode: three equal buttons across the width -->
+                                <UniformGrid Rows="1" Columns="3">
+                                    <ToggleButton x:Name="ModeLossless" Style="{StaticResource Chip}" IsChecked="True" Margin="0,0,4,0"
+                                                  ToolTip="Lossless: source quality, almost instant. The start snaps to the nearest keyframe.¦Без потерь: качество исходника, почти мгновенно. Начало встаёт на ближайший ключевой кадр.">
+                                        <TextBlock Text="Lossless¦Без потерь"/>
+                                    </ToggleButton>
+                                    <ToggleButton x:Name="ModePrecise" Style="{StaticResource Chip}" Margin="2,0,2,0"
+                                                  ToolTip="Frame-exact: the video is re-encoded on the GPU at the same quality, a few seconds.¦Точно по кадру: видео пережимается на видеокарте в том же качестве, несколько секунд.">
+                                        <TextBlock Text="Frame-exact¦По кадру"/>
+                                    </ToggleButton>
+                                    <ToggleButton x:Name="ModeShare" Style="{StaticResource Chip}" Margin="4,0,0,0"
+                                                  ToolTip="For sharing: H.264 (opens everywhere), one track — exactly what you hear in the preview.¦Для отправки: H.264 (открывается везде), одна дорожка — ровно то, что слышно в предпросмотре.">
+                                        <TextBlock Text="Share¦Отправить"/>
+                                    </ToggleButton>
+                                </UniformGrid>
+                                <StackPanel x:Name="SharePanel" Visibility="Collapsed" Margin="0,8,0,0">
+                                    <UniformGrid Rows="1" Columns="4">
+                                        <ToggleButton x:Name="TgtDiscord" Style="{StaticResource Chip}" Padding="2,4" Content="Discord" IsChecked="True" Margin="0,0,4,0"
+                                                      ToolTip="Up to 10 MB: the size is fitted to the limit, long ranges become 720p¦До 10 МБ: размер подбирается под лимит, длинные отрезки станут 720p"/>
+                                        <ToggleButton x:Name="TgtNitro" Style="{StaticResource Chip}" Padding="2,4" Content="Nitro" Margin="2,0,2,0"
+                                                      ToolTip="Up to 500 MB (Discord Nitro)¦До 500 МБ (Discord Nitro)"/>
+                                        <ToggleButton x:Name="TgtTelegram" Style="{StaticResource Chip}" Padding="2,4" Content="Telegram" Margin="2,0,2,0"
+                                                      ToolTip="Good quality without a size limit¦Хорошее качество без лимита размера"/>
+                                        <ToggleButton x:Name="TgtCustom" Style="{StaticResource Chip}" Padding="2,4" Content="Custom¦Свой" Margin="4,0,0,0"
+                                                      ToolTip="Your own size limit in MB¦Свой лимит размера в МБ"/>
+                                    </UniformGrid>
+                                    <StackPanel x:Name="CustomRow" Orientation="Horizontal" Margin="2,8,0,0" Visibility="Collapsed">
+                                        <TextBlock Text="Size limit¦Лимит размера" Foreground="{StaticResource Sub}" FontSize="12.5" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="CustomMb" Style="{StaticResource Field}" Width="70" Margin="10,0,8,0" TextAlignment="Right"/>
+                                        <TextBlock Text="MB¦МБ" Foreground="{StaticResource Sub}" FontSize="12.5" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="ShareHint" Foreground="{StaticResource Muted}" FontSize="12" Margin="2,6,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+
+                                <Grid Margin="0,14,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="22"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE8AC;" VerticalAlignment="Center" ToolTip="Clip title — becomes the file name¦Название клипа — станет именем файла"/>
+                                    <TextBox x:Name="NameBox" Grid.Column="1" Style="{StaticResource Field}"
+                                             ToolTip="Clip title — becomes the file name and the title in its properties¦Название клипа — станет именем файла и заголовком в его свойствах"/>
+                                </Grid>
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="22"/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE8B7;" ToolTip="Where to save¦Куда сохранить"/>
+                                    <TextBlock x:Name="FolderText" Grid.Column="1" FontSize="12.5"
+                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{StaticResource Sub}"/>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0">
+                                        <Button x:Name="BtnFolder" Style="{StaticResource BtnIcon}" Content="&#xE838;" ToolTip="Choose a folder for trims¦Выбрать папку для обрезок"/>
+                                        <Button x:Name="BtnFolderSrc" Style="{StaticResource BtnIcon}" Content="&#xE7A7;" Margin="6,0,0,0"
+                                                ToolTip="Save next to the source¦Сохранять рядом с исходником"/>
+                                    </StackPanel>
+                                </Grid>
+                                <!-- one click: a file under the service's limit, copied — then Ctrl+V in the chat -->
+                                <Border Height="1" Background="{StaticResource Line}" Margin="0,18,0,16"/>
+                                <Grid Margin="0,0,0,10">
+                                    <TextBlock Text="SEND IN ONE CLICK¦ОТПРАВИТЬ В ОДИН КЛИК" Style="{StaticResource SideCaption}"/>
+                                    <TextBlock Text="the file is copied — Ctrl+V in the chat¦файл скопируется — Ctrl+V в чат" Foreground="{StaticResource Muted}"
+                                               FontSize="11.5" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <UniformGrid Rows="1" Columns="3">
+                                    <Button x:Name="QuickDiscord" Style="{StaticResource QuickTile}" Margin="0,0,4,0"
+                                            ToolTip="H.264 up to 10 MB, one track — the free Discord limit; long ranges become 720p¦H.264 до 10 МБ, одна дорожка — бесплатный лимит Discord; длинные отрезки станут 720p">
+                                        <Button.Tag>
+                                            <SolidColorBrush Color="#5865F2"/>
+                                        </Button.Tag>
+                                        <StackPanel>
+                                            <Border Width="34" Height="34" CornerRadius="9" Background="#5865F2" HorizontalAlignment="Center">
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE7FC;" FontSize="17" Foreground="White" HorizontalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Text="Discord" FontWeight="SemiBold" FontSize="12.5" Margin="0,8,0,0" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="10 MB¦10 МБ" Foreground="{StaticResource Muted}" FontSize="11.5" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="QuickNitro" Style="{StaticResource QuickTile}" Margin="2,0,2,0"
+                                            ToolTip="H.264 up to 500 MB, one track — Discord Nitro¦H.264 до 500 МБ, одна дорожка — Discord Nitro">
+                                        <Button.Tag>
+                                            <SolidColorBrush Color="#EB459E"/>
+                                        </Button.Tag>
+                                        <StackPanel>
+                                            <Border Width="34" Height="34" CornerRadius="9" HorizontalAlignment="Center">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                        <GradientStop Color="#8C6CFF" Offset="0"/>
+                                                        <GradientStop Color="#EB459E" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE945;" FontSize="17" Foreground="White" HorizontalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Text="Nitro" FontWeight="SemiBold" FontSize="12.5" Margin="0,8,0,0" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="500 MB¦500 МБ" Foreground="{StaticResource Muted}" FontSize="11.5" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="QuickTelegram" Style="{StaticResource QuickTile}" Margin="4,0,0,0"
+                                            ToolTip="H.264 in good quality without a size limit, one track¦H.264 в хорошем качестве без лимита размера, одна дорожка">
+                                        <Button.Tag>
+                                            <SolidColorBrush Color="#229ED9"/>
+                                        </Button.Tag>
+                                        <StackPanel>
+                                            <Border Width="34" Height="34" CornerRadius="17" Background="#229ED9" HorizontalAlignment="Center">
+                                                <!-- a paper plane -->
+                                                <Path Data="M3,11.2 L20.5,4.2 C21.3,3.9 22,4.6 21.8,5.4 L18.9,19.2 C18.7,20.1 17.7,20.4 17,19.9 L12.6,16.7 L10.4,18.8 C10.1,19.1 9.6,18.9 9.6,18.5 L9.8,15.1 L17.1,8.4 L8.2,13.9 L3.3,12.4 C2.6,12.2 2.4,11.5 3,11.2 Z"
+                                                      Fill="White" Width="17" Height="17" Stretch="Uniform" Margin="0,0,2,0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Text="Telegram" FontWeight="SemiBold" FontSize="12.5" Margin="0,8,0,0" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="no limit¦без лимита" Foreground="{StaticResource Muted}" FontSize="11.5" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </UniformGrid>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
+
+                    <!-- result: the check step by step -->
+                    <DockPanel x:Name="ResultPanel" Visibility="Collapsed">
+                        <StackPanel DockPanel.Dock="Top">
+                            <Grid Height="4" Margin="0,2,0,12">
+                                <Border CornerRadius="2" Background="#26272C"/>
+                                <Border x:Name="ProgressFill" CornerRadius="2" Background="{StaticResource Brand}" HorizontalAlignment="Left" Width="0"/>
+                            </Grid>
+                            <TextBlock x:Name="ResultTitle" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                            <!-- the next clip of the list in the same window -->
+                            <Button x:Name="BtnGoNext" Style="{StaticResource BtnPrimary}" Margin="0,0,0,10" HorizontalAlignment="Stretch"
+                                    Visibility="Collapsed">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Next clip¦Следующий клип"/>
+                                    <TextBlock x:Name="GoNextPos" Margin="6,0,0,0" Opacity="0.6"/>
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE76C;" FontSize="11" Margin="8,1,0,0"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="BtnShow" Style="{StaticResource BtnGhost}" Margin="0,0,0,6" HorizontalAlignment="Stretch">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE838;" FontSize="12" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Show in folder¦Показать в папке"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="BtnCopy" Style="{StaticResource BtnGhost}" Margin="0,0,0,6" HorizontalAlignment="Stretch"
+                                    ToolTip="Then Ctrl+V into Discord or Telegram¦Потом Ctrl+V в Discord или Telegram">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;" FontSize="12" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Copy file¦Копировать файл"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="BtnDelSrc" Style="{StaticResource BtnGhost}" Margin="0,0,0,6" HorizontalAlignment="Stretch"
+                                    ToolTip="The source goes to the Windows Recycle Bin¦Исходник уйдёт в корзину Windows">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="12" Margin="0,0,8,0" Foreground="{StaticResource Bad}"/>
+                                    <TextBlock x:Name="DelSrcText" Text="Delete the source¦Удалить исходник" Foreground="{StaticResource Bad}"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="BtnAgain" Style="{StaticResource BtnLink}" HorizontalAlignment="Center" Content="Save another version¦Сохранить ещё вариант"/>
+                        </StackPanel>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl x:Name="Steps">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="22"/>
+                                                <ColumnDefinition/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" Foreground="{Binding GlyphBrush}" FontSize="12"
+                                                       VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Text}" Foreground="#D4D4D8" FontSize="12.5" TextWrapping="Wrap"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- key cheat sheet: "?" or the title bar button -->
+        <Grid x:Name="KeysOverlay" Grid.RowSpan="2" Background="#D90B0C0E" Visibility="Collapsed">
+            <Border Style="{StaticResource CardBorder}" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28,22" Margin="30">
+                <StackPanel>
+                    <Grid Margin="0,0,0,14">
+                        <TextBlock Text="Editor keys¦Клавиши редактора" FontFamily="{StaticResource DisplayFont}" FontSize="18" FontWeight="SemiBold"/>
+                        <TextBlock Text="like in Premiere  ·  Esc or ? — close¦как в Premiere  ·  Esc или ? — закрыть" Foreground="{StaticResource Muted}" FontSize="12"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center" Margin="40,0,0,0"/>
+                    </Grid>
+                    <Grid x:Name="KeysList"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

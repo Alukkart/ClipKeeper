@@ -28,6 +28,9 @@ jobs:
       # paste into the SignPath project is .signpath/artifact-configuration.xml.
       # Without them the exe stays unsigned and Windows SmartScreen warns about it on the first start
       SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+      # optional VirusTotal scan of ClipKeeper.exe, linked in the release notes: repository secret VIRUSTOTAL_API_KEY
+      # (a free key: virustotal.com → your profile → API key). Without it the step is skipped
+      HAS_VIRUSTOTAL: ${{ secrets.VIRUSTOTAL_API_KEY != '' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -120,6 +123,35 @@ jobs:
           Get-ChildItem dist -File | ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" } |
             Set-Content dist\SHA256SUMS.txt -Encoding ascii
 
+      # the exe goes to VirusTotal; the release notes get the link and, if the scan is done in time, its result.
+      # Only the exe: the zip is the same exe plus the official ffmpeg. A VirusTotal problem never stops the release
+      - name: VirusTotal
+        if: env.HAS_VIRUSTOTAL == 'true'
+        continue-on-error: true
+        shell: pwsh
+        env:
+          VT_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
+        run: |
+          $h = @{ 'x-apikey' = $env:VT_KEY }
+          $sha = (Get-FileHash dist\ClipKeeper.exe -Algorithm SHA256).Hash.ToLower()
+          $up = Invoke-RestMethod -Method Post -Uri https://www.virustotal.com/api/v3/files -Headers $h -Form @{ file = Get-Item dist\ClipKeeper.exe }
+          $link = "https://www.virustotal.com/gui/file/$sha"
+          $note = "VirusTotal: [ClipKeeper.exe]($link)"
+          # the free API allows 4 requests a minute: ask every 30 s, up to 6 minutes
+          for ($i = 0; $i -lt 12; $i++) {
+            Start-Sleep 30
+            $a = (Invoke-RestMethod -Uri "https://www.virustotal.com/api/v3/analyses/$($up.data.id)" -Headers $h).data.attributes
+            if ($a.status -eq 'completed') {
+              $s = $a.stats
+              $flagged = $s.malicious + $s.suspicious
+              $total = $s.malicious + $s.suspicious + $s.undetected + $s.harmless
+              $note = "VirusTotal: [ClipKeeper.exe — $flagged / $total]($link)"
+              break
+            }
+          }
+          $note
+          "VT_NOTE=$note" >> $env:GITHUB_ENV
+
       - name: Publish
         shell: pwsh
         env:
@@ -133,6 +165,8 @@ jobs:
           **Обновление** — закрыть ClipKeeper в трее и заменить ClipKeeper.exe новым. Настройки, эталон устройств и обложки останутся.
 
           ffmpeg in the zip: $env:FFMPEG_VERSION ([BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds), GPL, sources there).
+
+          $env:VT_NOTE
           "@
           Set-Content notes.md $notes -Encoding UTF8
           $flags = @('--title', "ClipKeeper $env:VERSION", '--notes-file', 'notes.md', '--generate-notes')

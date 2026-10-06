@@ -1,1 +1,5 @@
 blank_issues_enabled: true
+contact_links:
+  - name: "Question or discussion · Вопрос или обсуждение"
+    url: https://github.com/Alukkart/ClipKeeper/discussions
+    about: "How to set something up, or an idea to talk over first · Как что-то настроить или идея, которую хочется обсудить"

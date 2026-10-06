@@ -37,7 +37,7 @@ namespace DeviceGuard
             F<TextBlock>("ShareHint").Text = Target == ShareTarget.Discord ? L.T("up to 10 MB — long ranges become 720p", "до 10 МБ — длинные отрезки станут 720p")
                                            : Target == ShareTarget.Nitro ? L.T("up to 500 MB", "до 500 МБ")
                                            : Target == ShareTarget.Custom ? L.T("up to the size you set — small sizes lower the resolution", "до заданного размера — при маленьком размере снизится разрешение")
-                                           : L.T("good quality, no size limit", "хорошее качество, без лимита размера");
+                                           : L.T("good quality up to 2 GB", "хорошее качество до 2 ГБ");
             F<StackPanel>("CustomRow").Visibility = Target == ShareTarget.Custom ? Visibility.Visible : Visibility.Collapsed;
             UpdateEstimate();
         }

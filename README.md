@@ -257,7 +257,7 @@ Ctrl+Z undoes the last cut, Esc drops an unfinished one. Cut parts are skipped w
 |---|---|
 | **Lossless** | Copy without re-encoding: all tracks, almost instant; the start snaps to a keyframe. |
 | **Frame-exact** | Video re-encoded on the GPU at the same quality, audio copied. |
-| **Share** | H.264, one track — exactly what you hear. Discord (10 MB), Nitro (500 MB), **your own size in MB**, or Telegram (no limit). Small sizes lower the resolution. |
+| **Share** | H.264, one track — exactly what you hear. Discord (10 MB), Nitro (500 MB), **your own size in MB**, or Telegram (2 GB). Small sizes lower the resolution. |
 
 - With cuts the remaining pieces are joined frame-exactly (video re-encoded at frame-exact quality, a 10 ms
   crossfade at audio joints); the join's length and audio are checked before the usual check.
@@ -361,24 +361,6 @@ It connects to:
 
 **Report a problem** only opens a GitHub form in your browser — you see everything before posting. The log has folder,
 game and device names: look it over before attaching it.
-
-## Code signing policy
-
-*Applied for; until it is approved, releases stay unsigned.*
-
-Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
-[SignPath Foundation](https://signpath.org/).
-
-Only `ClipKeeper.exe` from this repository is signed, built by GitHub Actions ([`release.yml`](.github/workflows/release.yml))
-from a release tag; every signing request is approved by hand.
-
-| Role | Who |
-|---|---|
-| Committers and reviewers | [Alukkart](https://github.com/Alukkart) |
-| Approvers | [Alukkart](https://github.com/Alukkart) |
-
-Privacy: ClipKeeper sends nothing about you or your computer anywhere; the only connections it makes are listed in
-[Privacy](#privacy), and each of the internet ones can be turned off.
 
 ## License
 

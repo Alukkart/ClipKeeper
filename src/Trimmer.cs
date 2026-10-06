@@ -34,10 +34,10 @@ namespace DeviceGuard
         public TrimMode Mode;
         public ShareTarget Target;
         public int CustomMb = 25;              // the "custom" target size
-        // the size limit for sharing, MB; 0 — no limit (Telegram)
+        // the size limit for sharing, MB (Telegram — 2 GB, its upload limit is 2000 MiB)
         public double LimitMb
         {
-            get { return Target == ShareTarget.Discord ? 10 : Target == ShareTarget.Nitro ? 500 : Target == ShareTarget.Custom ? Math.Max(1, CustomMb) : 0; }
+            get { return Target == ShareTarget.Discord ? 10 : Target == ShareTarget.Nitro ? 500 : Target == ShareTarget.Custom ? Math.Max(1, CustomMb) : 2000; }
         }
         public int ShareAudio;                 // for the "share" mode when Tracks are not set
         public List<TrackPlan> Tracks;         // null — all tracks as they are
@@ -264,7 +264,12 @@ namespace DeviceGuard
             switch (j.Mode)
             {
                 case TrimMode.Share:
-                    if (j.LimitMb <= 0) return "≈ " + Size((long)(bytes * 0.45));
+                    if (j.Target == ShareTarget.Telegram)
+                    {
+                        // constant quality, and only a range that won't fit is squeezed under the limit
+                        long budget = (long)(ShareBudgetMb(j) * 1048576.0), q = (long)(bytes * 0.45);
+                        return q > budget ? "≤ " + Size(budget) : "≈ " + Size(q);
+                    }
                     double capped = (ShareMaxKbps + 128) * 1000 / 8 * j.Length, target = ShareBudgetMb(j) * 1048576.0;
                     return capped >= target ? "≤ " + Size((long)target) : "≈ " + Size((long)capped);
                 default:
@@ -469,13 +474,14 @@ namespace DeviceGuard
         // for sharing: H.264 (opens everywhere), one track, size under the limit
         static Ffmpeg.Result EncodeShare(TrimJob j, string range, string rest, Action<double> prog, CancellationToken cancel)
         {
-            if (j.LimitMb <= 0)
-            {
-                return EncodeQuality(range + " -map 0:v:0", "h264", 21, " -pix_fmt yuv420p" + rest, j.Output, prog, cancel);
-            }
-
             double limitMb = ShareBudgetMb(j);
             Ffmpeg.Result r = null;
+            if (j.Target == ShareTarget.Telegram)
+            {
+                // good quality first; only a long range over 2 GB falls back to a bitrate under the limit
+                r = EncodeQuality(range + " -map 0:v:0", "h264", 21, " -pix_fmt yuv420p" + rest, j.Output, prog, cancel);
+                if (r.Code != 0 || new FileInfo(j.Output).Length <= limitMb * 1048576) return r;
+            }
             for (double k = 0.93; k > 0.5; k -= 0.12)
             {
                 double totalKbps = limitMb * 8 * 1024 * k / Math.Max(1, j.Length);
@@ -554,12 +560,12 @@ namespace DeviceGuard
                 else add(name + L.T(": AUDIO LOST — the source has it (", ": ЗВУК ПРОПАЛ — в исходнике он есть (") + Db(srcDb) + ")", 2);
             }
 
-            if (j.Mode == TrimMode.Share && j.LimitMb > 0)
+            if (j.Mode == TrimMode.Share)
             {
                 double limit = j.LimitMb;
                 double mb = size / 1048576.0;
                 string where = j.Target == ShareTarget.Discord ? "Discord" : j.Target == ShareTarget.Nitro ? "Discord Nitro"
-                             : L.T(limit + " MB", limit + " МБ");
+                             : j.Target == ShareTarget.Telegram ? "Telegram" : L.T(limit + " MB", limit + " МБ");
                 add(L.T("Size ", "Размер ") + Size(size) + (mb <= limit ? L.T(" — fits ", " — пролезет в ") : L.T(" — over the limit of ", " — больше лимита ")) +
                     where, mb <= limit ? 1 : 2);
             }

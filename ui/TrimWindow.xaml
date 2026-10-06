@@ -274,7 +274,7 @@
                                         <ToggleButton x:Name="TgtNitro" Style="{StaticResource Chip}" Padding="2,4" Content="Nitro" Margin="2,0,2,0"
                                                       ToolTip="Up to 500 MB (Discord Nitro)¦До 500 МБ (Discord Nitro)"/>
                                         <ToggleButton x:Name="TgtTelegram" Style="{StaticResource Chip}" Padding="2,4" Content="Telegram" Margin="2,0,2,0"
-                                                      ToolTip="Good quality without a size limit¦Хорошее качество без лимита размера"/>
+                                                      ToolTip="Good quality up to 2 GB (the Telegram limit)¦Хорошее качество до 2 ГБ (лимит Telegram)"/>
                                         <ToggleButton x:Name="TgtCustom" Style="{StaticResource Chip}" Padding="2,4" Content="Custom¦Свой" Margin="4,0,0,0"
                                                       ToolTip="Your own size limit in MB¦Свой лимит размера в МБ"/>
                                     </UniformGrid>
@@ -351,7 +351,7 @@
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="QuickTelegram" Style="{StaticResource QuickTile}" Margin="4,0,0,0"
-                                            ToolTip="H.264 in good quality without a size limit, one track¦H.264 в хорошем качестве без лимита размера, одна дорожка">
+                                            ToolTip="H.264 in good quality up to 2 GB, one track — the Telegram limit¦H.264 в хорошем качестве до 2 ГБ, одна дорожка — лимит Telegram">
                                         <Button.Tag>
                                             <SolidColorBrush Color="#229ED9"/>
                                         </Button.Tag>
@@ -362,7 +362,7 @@
                                                       Fill="White" Width="17" Height="17" Stretch="Uniform" Margin="0,0,2,0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Border>
                                             <TextBlock Text="Telegram" FontWeight="SemiBold" FontSize="12.5" Margin="0,8,0,0" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="no limit¦без лимита" Foreground="{StaticResource Muted}" FontSize="11.5" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="2 GB¦2 ГБ" Foreground="{StaticResource Muted}" FontSize="11.5" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
                                 </UniformGrid>

@@ -1,6 +1,6 @@
 name: "Idea · Идея"
 description: "Something ClipKeeper could do · Что ClipKeeper мог бы делать"
-labels: ["idea"]
+labels: ["enhancement"]
 body:
   - type: textarea
     id: idea

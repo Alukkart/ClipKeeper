@@ -419,7 +419,7 @@ namespace DeviceGuard
 
             // share limits: Discord / Nitro / custom / none
             check(new TrimJob { Target = ShareTarget.Discord }.LimitMb == 10 && new TrimJob { Target = ShareTarget.Nitro }.LimitMb == 500 &&
-                  new TrimJob { Target = ShareTarget.Custom, CustomMb = 25 }.LimitMb == 25 && new TrimJob { Target = ShareTarget.Telegram }.LimitMb == 0,
+                  new TrimJob { Target = ShareTarget.Custom, CustomMb = 25 }.LimitMb == 25 && new TrimJob { Target = ShareTarget.Telegram }.LimitMb == 2000,
                   "share: limits 10 / 500 / custom 25 / none");
 
             // game folders: subfolders of the OBS folder are games only when the setting says so; Ready / collection always

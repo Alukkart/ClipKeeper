@@ -4,6 +4,8 @@ using System.Reflection;
 [assembly: AssemblyTitle("ClipKeeper")]
 [assembly: AssemblyProduct("ClipKeeper")]
 [assembly: AssemblyDescription("OBS recording guard and clip library")]
+[assembly: AssemblyCompany("Alukkart")]
+[assembly: AssemblyCopyright("Copyright © 2026 Alukkart, MIT License")]
 [assembly: AssemblyVersion("0.0.0.0")]
 [assembly: AssemblyFileVersion("0.0.0.0")]
 [assembly: AssemblyInformationalVersion("0.0.0-dev")]

@@ -362,6 +362,24 @@ It connects to:
 **Report a problem** only opens a GitHub form in your browser — you see everything before posting. The log has folder,
 game and device names: look it over before attaching it.
 
+## Code signing policy
+
+*Applied for; until it is approved, releases stay unsigned.*
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
+[SignPath Foundation](https://signpath.org/).
+
+Only `ClipKeeper.exe` from this repository is signed, built by GitHub Actions ([`release.yml`](.github/workflows/release.yml))
+from a release tag; every signing request is approved by hand.
+
+| Role | Who |
+|---|---|
+| Committers and reviewers | [Alukkart](https://github.com/Alukkart) |
+| Approvers | [Alukkart](https://github.com/Alukkart) |
+
+Privacy: ClipKeeper sends nothing about you or your computer anywhere; the only connections it makes are listed in
+[Privacy](#privacy), and each of the internet ones can be turned off.
+
 ## License
 
 ClipKeeper is free and open source under the [MIT license](LICENSE): use it, change it, share it — keep the copyright
@@ -385,9 +403,11 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
   - `build.yml` — every push to `main` and every pull request: build + `--selftest`; the exe is in the run artifacts;
   - `release.yml` — a `v*` tag: build with the tag's version, self-test, a zip with ffmpeg, `ClipKeeper.exe` for
     updates, `SHA256SUMS.txt` and a release with the change list. A tag with a hyphen (`v1.1.0-beta.1`) is a pre-release.
-    **Code signing** is optional: add the repository secrets `SIGN_PFX` (the `.pfx` certificate in base64:
-    `[Convert]::ToBase64String([IO.File]::ReadAllBytes("cert.pfx"))`) and `SIGN_PASSWORD`, and the exe is signed (with a
-    timestamp) before the self-test and the checksums. Without them it stays unsigned and SmartScreen warns on first start.
+    **Code signing** goes through [SignPath](https://signpath.org/) and is optional: with the repository variable
+    `SIGNPATH_ORGANIZATION_ID` and the secret `SIGNPATH_API_TOKEN` the built exe goes to SignPath, waits there for a manual
+    approval (up to an hour) and comes back signed before the self-test and the checksums. The SignPath project uses
+    [`.signpath/artifact-configuration.xml`](.signpath/artifact-configuration.xml). Without them the exe stays unsigned
+    and SmartScreen warns on first start.
 - **Release a version:**
 
   ```bash

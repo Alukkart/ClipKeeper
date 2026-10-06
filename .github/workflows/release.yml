@@ -1,5 +1,5 @@
 # Release: git tag v1.2.3 && git push origin v1.2.3
-# Builds ClipKeeper.exe with the version from the tag, signs it if a certificate is set up (see "Sign"),
+# Builds ClipKeeper.exe with the version from the tag, signs it through SignPath if that is set up (see "Sign"),
 # runs the self-test and publishes a release:
 #   ClipKeeper-<version>.zip — for a first install: the app + ffmpeg/ffprobe (BtbN build, GPL) + README with pictures;
 #   ClipKeeper.exe           — for an update: replace the file next to the old one, settings stay;
@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  actions: read   # SignPath reads this run's details and the unsigned exe artifact
 
 env:
   FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
@@ -21,10 +22,12 @@ jobs:
   release:
     runs-on: windows-latest
     env:
-      # optional code signing: repository secrets SIGN_PFX (the .pfx file in base64) and SIGN_PASSWORD.
+      # optional code signing through SignPath (free for open source, certificate by SignPath Foundation):
+      # repository variable SIGNPATH_ORGANIZATION_ID and secret SIGNPATH_API_TOKEN; SIGNPATH_PROJECT_SLUG and
+      # SIGNPATH_POLICY_SLUG only if they differ from ClipKeeper / release-signing. The artifact configuration to
+      # paste into the SignPath project is .signpath/artifact-configuration.xml.
       # Without them the exe stays unsigned and Windows SmartScreen warns about it on the first start
-      SIGN_PFX: ${{ secrets.SIGN_PFX }}
-      SIGN_PASSWORD: ${{ secrets.SIGN_PASSWORD }}
+      SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
     steps:
       - uses: actions/checkout@v5
 
@@ -48,22 +51,40 @@ jobs:
         shell: cmd
         run: build.cmd
 
+      # SignPath takes the exe as a run artifact, checks that it was built here from this tag and that its metadata is
+      # ClipKeeper <version>, waits for a manual approval in SignPath and returns the signed exe
+      - name: Upload the unsigned exe
+        id: unsigned
+        if: env.SIGNPATH_ORGANIZATION_ID != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned
+          path: ClipKeeper.exe
+          retention-days: 1
+
       - name: Sign
-        if: env.SIGN_PFX != ''
+        if: env.SIGNPATH_ORGANIZATION_ID != ''
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'ClipKeeper' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          parameters: |
+            version: "${{ env.VERSION }}"
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600   # time to approve the request in SignPath
+          output-artifact-directory: signed
+
+      - name: Check the signature
+        if: env.SIGNPATH_ORGANIZATION_ID != ''
         shell: pwsh
         run: |
-          $pfx = Join-Path $env:RUNNER_TEMP 'sign.pfx'
-          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:SIGN_PFX))
-          try {
-            $tool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter signtool.exe |
-              Where-Object { $_.FullName -like '*\x64\*' } | Sort-Object FullName -Descending | Select-Object -First 1
-            if (-not $tool) { throw "signtool.exe not found" }
-            & $tool.FullName sign /f $pfx /p $env:SIGN_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /d ClipKeeper ClipKeeper.exe
-            if ($LASTEXITCODE -ne 0) { throw "signing failed (exit code $LASTEXITCODE)" }
-            & $tool.FullName verify /pa ClipKeeper.exe
-            if ($LASTEXITCODE -ne 0) { throw "the signature does not verify" }
-          }
-          finally { Remove-Item $pfx -ErrorAction SilentlyContinue }
+          Copy-Item signed\ClipKeeper.exe ClipKeeper.exe -Force
+          $s = Get-AuthenticodeSignature .\ClipKeeper.exe
+          if ($s.Status -ne 'Valid') { throw "the signature does not verify: $($s.Status) $($s.StatusMessage)" }
+          "signed by $($s.SignerCertificate.Subject)"
 
       - name: Self-test
         shell: pwsh

@@ -99,7 +99,7 @@ namespace DeviceGuard
             clipVms[0].Editing = false;
             mw.PreviewSelect(0, 1, 3);   // several clips selected, the bar at the bottom
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-select.png"));
-            mw.PreviewMerge(new List<ClipVm> { clipVms[3], clipVms[0], clipVms[1] });   // the join card
+            mw.PreviewMerge(new List<ClipVm> { clipVms[3], clipVms[0], clipVms[1] }, 1);   // the second card shows its part   // the join card
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-merge.png"));
             mw.PreviewMerge(null);
             mw.PreviewSelect();

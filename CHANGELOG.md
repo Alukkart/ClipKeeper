@@ -20,8 +20,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   or for the Recycle Bin. Nothing is deleted until the end.
 - The first-run setup checks what OBS needs for clips — the WebSocket server, the replay buffer, a Save Replay key — and
   fixes what is missing; it ends with a test clip.
-- Join selected clips into one: in the order they were selected, back to back or with a short fade, at full quality or
-  fitted for Discord, Nitro or Telegram.
+- Join selected clips into one: in the order they were selected (drag a card or press its ‹ › to move it), each whole
+  or only a part of it, back to back or with a short fade, at full quality or fitted for Discord, Nitro or Telegram,
+  saved to Ready, next to the first clip or a folder you choose.
 - Even loudness when sharing (off by default): the clip comes out at −14 LUFS, as YouTube plays it.
 - A GIF target in the editor: an animation without sound, GIF or WebP, with its width and frame rate.
 

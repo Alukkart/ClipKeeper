@@ -173,6 +173,22 @@
             </DataTemplate.Triggers>
         </DataTemplate>
 
+        <!-- a clip in the queue of "Go through new clips": its frame, what was decided, the current one outlined -->
+        <DataTemplate x:Key="TriageTpl">
+            <Button Style="{StaticResource BtnBare}" Tag="triage" Margin="0,0,6,0" ToolTip="{Binding Tip}">
+                <Border Width="68" Height="38" CornerRadius="6" BorderThickness="2" BorderBrush="{Binding Ring}" Padding="0">
+                    <Grid Opacity="{Binding Dim}">
+                        <Border CornerRadius="4" Background="#1A1B1F"/>
+                        <Border CornerRadius="4" Background="{Binding Thumb}"/>
+                        <Border CornerRadius="3" Background="#D90B0C0E" Padding="3,1" Margin="2" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                Visibility="{Binding MarkVis}">
+                            <TextBlock Style="{StaticResource Icon}" Text="{Binding Mark}" FontSize="10" Foreground="{Binding MarkBrush}"/>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Button>
+        </DataTemplate>
+
         <!-- game card in the library: 2:3 cover, name, clip count and total length -->
         <DataTemplate x:Key="GameTpl">
             <Button Style="{StaticResource BtnBare}" Tag="game" Margin="0,0,16,18" ToolTip="{Binding Tip}">
@@ -575,6 +591,8 @@
                                         <TextBlock Text="All to collection¦Всё в коллекцию"/>
                                     </StackPanel>
                                 </Button>
+                                <Button x:Name="BtnTriage" Style="{StaticResource BtnGhost}" Visibility="Collapsed" Margin="0,0,6,0"
+                                        ToolTip="New clips one by one: keep, trim later or to the Recycle Bin — one key each¦Новые клипы по одному: оставить, обрезать потом или в корзину — по одной клавише"/>
                                 <Button x:Name="BtnClipsRefresh" Style="{StaticResource BtnIcon}" Content="&#xE72C;" Margin="0,0,6,0" ToolTip="Refresh¦Обновить"/>
                                 <Button x:Name="BtnClipsFolder" Style="{StaticResource BtnIcon}" Content="&#xE838;" ToolTip="{Binding Text, ElementName=ClipsFolder}"/>
                             </StackPanel>
@@ -644,6 +662,61 @@
                         <StackPanel x:Name="SelActions" Orientation="Horizontal"/>
                     </StackPanel>
                 </Border>
+
+                <!-- "Go through new clips": one clip at a time, a key decides (MainWindowTriage.cs); takes the library's place -->
+                <Grid x:Name="TriagePage" Visibility="Collapsed" Margin="34,0,34,24">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="BtnTriageClose" Style="{StaticResource BtnIcon}" Content="&#xE711;" Margin="0,0,14,0" ToolTip="Finish (Esc)¦Закончить (Esc)"/>
+                        <TextBlock x:Name="TriageTitle" Grid.Column="1" Style="{StaticResource H1}" FontSize="21" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock x:Name="TriageStats" Grid.Column="2" Foreground="{StaticResource Muted}" FontSize="12.5" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </Grid>
+                    <Border Grid.Row="1" Height="3" CornerRadius="1.5" Background="{StaticResource Line}">
+                        <Border x:Name="TriageProgress" HorizontalAlignment="Left" CornerRadius="1.5" Background="{StaticResource Text}" Width="0"/>
+                    </Border>
+                    <Grid Grid.Row="2" Margin="0,14,0,0">
+                        <Border x:Name="TriageStage" Background="Black" CornerRadius="10" ClipToBounds="True">
+                            <Grid>
+                                <MediaElement x:Name="TriagePlayer" LoadedBehavior="Manual" UnloadedBehavior="Manual" ScrubbingEnabled="True" Stretch="Uniform"/>
+                                <TextBlock x:Name="TriageMsg" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Margin="40"/>
+                                <Border CornerRadius="5" Background="#CC0B0C0E" Padding="8,3" Margin="12" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                    <TextBlock x:Name="TriageInfo" Foreground="White" FontSize="12.5"/>
+                                </Border>
+                                <Border CornerRadius="5" Background="#CC0B0C0E" Padding="8,3" Margin="12,12,12,20" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                                    <TextBlock x:Name="TriageTime" Foreground="White" FontFamily="{StaticResource MonoFont}" FontSize="12"/>
+                                </Border>
+                                <!-- a click on the line jumps there -->
+                                <Grid x:Name="TriageSeek" Height="8" VerticalAlignment="Bottom" Background="#59000000" Cursor="Hand">
+                                    <Border x:Name="TriageSeekFill" HorizontalAlignment="Left" Background="{StaticResource Text}" Width="0"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                        <Border x:Name="TriageDone" Visibility="Collapsed" Style="{StaticResource CardBorder}" VerticalAlignment="Top">
+                            <StackPanel x:Name="TriageSummary"/>
+                        </Border>
+                    </Grid>
+                    <ScrollViewer x:Name="TriageQueueScroll" Grid.Row="3" Margin="0,14,0,0" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl x:Name="TriageQueue" ItemTemplate="{StaticResource TriageTpl}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    <UniformGrid x:Name="TriageKeys" Grid.Row="4" Rows="1" Columns="4" Margin="0,14,0,0"/>
+                </Grid>
 
                 <!-- Statistics: built in code (MainWindowStats.cs) -->
                 <ScrollViewer x:Name="PageStats" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

@@ -147,6 +147,7 @@ namespace DeviceGuard
 
         public void ShowPage(int i)
         {
+            if (triageOn) CloseTriage(false);   // another page: the going through ends, nothing undecided is lost
             if (!PageOn(i)) i = PageOn(PageClips) ? PageClips : PageOn(PageRecord) ? PageRecord : PageSettings;
             for (int k = 0; k < pages.Length; k++)
             {

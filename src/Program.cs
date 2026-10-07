@@ -26,7 +26,7 @@ namespace DeviceGuard
                 Directory.CreateDirectory(local);
                 if (!File.Exists(Path.Combine(local, "settings.json")))
                 {
-                    foreach (var name in new[] { "settings.json", "devices.json", "favorites.json", "clipstats.json", "clipcache.json" })
+                    foreach (var name in new[] { "settings.json", "devices.json", "favorites.json", "reviewed.json", "clipstats.json", "clipcache.json" })
                         if (File.Exists(Path.Combine(exeDir, name))) File.Copy(Path.Combine(exeDir, name), Path.Combine(local, name));
                     string covers = Path.Combine(exeDir, "covers");
                     if (Directory.Exists(covers))
@@ -621,6 +621,7 @@ namespace DeviceGuard
 
             MainWindow.TestFind(check);
             ClipNames.Test(check);
+            MainWindow.TestTriage(check);
 
             Windows(check);
 

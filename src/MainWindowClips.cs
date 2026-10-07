@@ -84,6 +84,8 @@ namespace DeviceGuard
             public List<GameCardVm> Cards;
             public List<ClipVm> Page;
             public bool More, Flat, Group;
+            public List<string> Fresh;   // clips waiting to be gone through (MainWindowTriage.cs)
+            public string FreshName;
             public string Stats, Folder, Newest;
         }
 
@@ -101,6 +103,7 @@ namespace DeviceGuard
             InitFind();
             InitRename();
             InitSelect();
+            InitTriage();
             gamesList.AddHandler(Button.ClickEvent, new RoutedEventHandler(OnGameButton));
             F<Button>("BtnClipsBack").Click += (s, e) => GoBack();
             F<Button>("BtnClipsRefresh").Click += (s, e) => LoadClips(true);
@@ -371,6 +374,12 @@ namespace DeviceGuard
                 Func<HashSet<string>> trimmed = () => cut ?? (cut = ClipStats.TrimmedSources(readyRoot, collRoot));
                 bool byDay = find.Sort == SortNew || find.Sort == SortOld;
                 var d = new LibData { Folder = root, Group = byDay };
+                if (kind == SrcObs && view != FavKey)
+                {
+                    bool everything = view == null || view == AllKey;
+                    d.Fresh = FreshClips(everything ? all : all.Where(f => game(f) == view), trimmed);
+                    d.FreshName = everything ? L.T("all clips", "все клипы") : Covers.Title(view);
+                }
                 Action<List<FileInfo>, string> fillPage = (list, v) =>
                 {
                     var shown = Refine(list, find, game, f => TitleFor(f, kind), trimmed);
@@ -433,6 +442,7 @@ namespace DeviceGuard
             clips.Clear();
             ApplyGrouping(d.Group);
             ShowFindBar(home, d.Flat, view);
+            ShowTriageButton(d.Fresh, d.FreshName);
             var sv = F<ScrollViewer>("PageClips");
             if (home && d.Flat)
             {

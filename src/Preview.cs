@@ -97,6 +97,8 @@ namespace DeviceGuard
             mw.PreviewSelect();
             mw.PreviewFind("hunt", clipsRoot, Directory.Exists(cfg.TrimFolder) ? cfg.TrimFolder : null, cfg.CollectionFolder);
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-find.png"));
+            mw.PreviewTriage(clipVms.Select(v => v.Path).Take(8).ToList(), game);   // going through new clips
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-triage.png"));
 
             // source editor
             mw.ShowPage(MainWindow.PageRecord);

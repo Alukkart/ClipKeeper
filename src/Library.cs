@@ -622,6 +622,45 @@ namespace DeviceGuard
         }
     }
 
+    // Clips already looked at in "Go through new clips" (MainWindowTriage.cs): by file name, like favorites
+    static class Reviewed
+    {
+        static string FilePath { get { return Path.Combine(Program.Dir, "reviewed.json"); } }
+        static HashSet<string> set;
+        static readonly object Sync = new object();
+
+        static HashSet<string> Set()
+        {
+            if (set != null) return set;
+            set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!File.Exists(FilePath)) return set;
+            try { foreach (var o in (object[])Json.Parse(File.ReadAllText(FilePath, Encoding.UTF8))) set.Add(Convert.ToString(o)); }
+            catch (Exception ex) { Log.Write("reviewed.json could not be read: " + ex.Message); }
+            return set;
+        }
+
+        public static bool Has(string path) { lock (Sync) return Set().Contains(Path.GetFileName(path)); }
+
+        public static void Mark(string path, bool on)
+        {
+            lock (Sync)
+            {
+                bool changed = on ? Set().Add(Path.GetFileName(path)) : Set().Remove(Path.GetFileName(path));
+                if (changed) Save();
+            }
+        }
+
+        public static void Renamed(string from, string to)
+        {
+            lock (Sync) if (Set().Remove(Path.GetFileName(from))) { set.Add(Path.GetFileName(to)); Save(); }
+        }
+
+        static void Save()
+        {
+            try { Json.WriteFile(FilePath, set.OrderBy(x => x).ToList()); } catch (Exception ex) { Log.Write("reviewed: " + ex.Message); }
+        }
+    }
+
     static class Fmt
     {
         public static string Duration(double sec)

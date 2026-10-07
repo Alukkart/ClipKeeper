@@ -32,6 +32,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Sharing minutes of video into a small limit (Discord's 10 MB) now fits: the sound drops to 64 kbps and the picture to
   480p instead of going over the limit.
 - Drop-down menus have rounded corners.
+- The first-run setup takes the whole window instead of a small card over the app, with its steps listed on the
+  left; a passed step opens again with a click.
 - A day's header in the library ("Today · 3 clips · 7 min") counts the whole day, and a folder's in the search the
   whole folder, not only the clips loaded so far.
 - After the library is first opened, ready and collection clips not read yet are read quietly in the background, so

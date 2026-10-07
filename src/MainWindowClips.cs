@@ -75,7 +75,7 @@ namespace DeviceGuard
         int folderView = SrcObs;
         double homeScroll;
         int clipsLimit = 30;
-        bool clipsLoading;
+        bool clipsLoading, clipsReload, flatView;
         DateTime clipsLoadedAt = DateTime.MinValue;
         List<Trimmer.Move> sortPlan;
 
@@ -83,7 +83,7 @@ namespace DeviceGuard
         {
             public List<GameCardVm> Cards;
             public List<ClipVm> Page;
-            public bool More, Flat;
+            public bool More, Flat, Group;
             public string Stats, Folder, Newest;
         }
 
@@ -98,8 +98,9 @@ namespace DeviceGuard
             gamesList.ItemsSource = games;
             clipsList.AddHandler(Button.ClickEvent, new RoutedEventHandler(OnClipButton));
             InitScrub();
+            InitFind();
             gamesList.AddHandler(Button.ClickEvent, new RoutedEventHandler(OnGameButton));
-            F<Button>("BtnClipsBack").Click += (s, e) => OpenGame(null);
+            F<Button>("BtnClipsBack").Click += (s, e) => GoBack();
             F<Button>("BtnClipsRefresh").Click += (s, e) => LoadClips(true);
             F<Button>("BtnClipsFolder").Click += (s, e) =>
             {
@@ -123,7 +124,7 @@ namespace DeviceGuard
             {
                 if (e.Key == Key.Back && gameView != null && pages[PageClips].IsVisible && !(Keyboard.FocusedElement is TextBox))
                 {
-                    OpenGame(null);
+                    GoBack();
                     e.Handled = true;
                 }
             };
@@ -131,7 +132,7 @@ namespace DeviceGuard
             {
                 if (e.ChangedButton == MouseButton.XButton1 && gameView != null && pages[PageClips].IsVisible)
                 {
-                    OpenGame(null);
+                    GoBack();
                     e.Handled = true;
                 }
             };
@@ -236,6 +237,8 @@ namespace DeviceGuard
         {
             folderView = kind;
             gameView = null;
+            findFrom = null;
+            ResetFind();
             homeScroll = 0;
             clipsLimit = 30;
             sourceChipsSig = null;
@@ -248,12 +251,20 @@ namespace DeviceGuard
         {
             var sv = F<ScrollViewer>("PageClips");
             if (gameView == null && key != null) homeScroll = sv.VerticalOffset;
+            if (key != FindKey) ResetFind();
             gameView = key;
             clipsLimit = 30;
             // reserve the banner space right away so clips don't jump down when the picture loads
             if (key != null && !key.StartsWith("*") && Covers.IsGame(key)) ShowHero(null, true);
             else HideHero();
             LoadClips(true);
+        }
+
+        // back: from a search over all folders to where it started, from a game to the library
+        void GoBack()
+        {
+            if (gameView == FindKey) BackFromFind();
+            else OpenGame(null);
         }
 
         // a clip's game: subfolder (sorting / collection) → ClipKeeper data in the file → "Game - Replay …" in the name
@@ -318,12 +329,15 @@ namespace DeviceGuard
                 games.Clear();
                 clips.Clear();
                 HideHero();
+                F<FrameworkElement>("ClipsTools").Visibility = Visibility.Collapsed;
+                F<FrameworkElement>("BtnSearchAll").Visibility = Visibility.Collapsed;
                 clipsEmpty.Text = folderView == SrcObs ? L.T("The clip folder is unknown yet — ClipKeeper learns it from OBS settings after connecting.", "Папка клипов пока неизвестна — ClipKeeper узнает её из настроек OBS после подключения.")
                                                        : L.T("No folder chosen — press the \"", "Папка не выбрана — нажми на кнопку «") + SrcNames[folderView] + L.T("\" button above.", "» выше.");
                 clipsEmpty.Visibility = Visibility.Visible;
                 return;
             }
-            if (clipsLoading || (!force && root == clipsRoot && (DateTime.Now - clipsLoadedAt).TotalSeconds < 30)) return;
+            if (clipsLoading) { clipsReload |= force; return; }   // read again once this reading is done: the view or the search changed
+            if (!force && root == clipsRoot && (DateTime.Now - clipsLoadedAt).TotalSeconds < 30) return;
             clipsLoading = true;
             clipsRoot = root;
             F<TextBlock>("ClipsStats").Text = L.T("reading the folder…", "читаю папку…");
@@ -331,22 +345,40 @@ namespace DeviceGuard
             string obsRoot = RootOf(last), readyRoot = ReadyRoot, collRoot = CollectionRoot;
             int limit = clipsLimit, kind = folderView;
             string view = gameView;
+            var find = CurrentFind();
             Task.Factory.StartNew(() =>
             {
+                if (view == FindKey)
+                {
+                    bool more;
+                    string stats;
+                    var found = new LibData { Folder = root, Group = true };
+                    found.Page = FindEverywhere(find, limit, lastClip, out more, out stats);
+                    found.More = more;
+                    found.Stats = stats;
+                    ClipIndex.Save();
+                    return found;
+                }
                 var all = ClipScanner.Scan(root, int.MaxValue);
                 // folders may be nested — a clip is shown only in its own one
                 foreach (var other in new[] { obsRoot, readyRoot, collRoot })
                     if (other != null && other.Length > root.Length && other.StartsWith(root + "\\", StringComparison.OrdinalIgnoreCase))
                         all = all.Where(f => !f.FullName.StartsWith(other + "\\", StringComparison.OrdinalIgnoreCase)).ToList();
                 Func<FileInfo, string> game = f => GameFor(f, root, kind);
-                var d = new LibData { Folder = root };
-                Action<List<FileInfo>, string> fillPage = (shown, v) =>
+                HashSet<string> cut = null;
+                Func<HashSet<string>> trimmed = () => cut ?? (cut = ClipStats.TrimmedSources(readyRoot, collRoot));
+                bool byDay = find.Sort == SortNew || find.Sort == SortOld;
+                var d = new LibData { Folder = root, Group = byDay };
+                Action<List<FileInfo>, string> fillPage = (list, v) =>
                 {
+                    var shown = Refine(list, find, game, f => TitleFor(f, kind), trimmed);
+                    d.Stats = Summary(shown);
                     d.Page = shown.Take(limit).Select(f =>
                     {
                         var vm = kind == SrcObs ? ClipScanner.Describe(f, root, lastClip) : DescribeNamed(f);
                         vm.Fav = Favorites.Has(f.FullName);
                         vm.Game = game(f);
+                        if (byDay) vm.Group = DayOf(f.LastWriteTime);
                         if (kind == SrcObs && v != AllKey && v != FavKey) GameViewTitle(vm);
                         if (kind == SrcReady && cfg.UseCollection) vm.ReturnTip = collRoot == null ? L.T("To collection — choose its folder first", "В коллекцию — сначала выбери её папку")
                             : KnownGame(vm.Game) ? L.T("To collection: ", "В коллекцию: ") + Trimmer.GameDir(collRoot, vm.Game) : L.T("To collection — pick a game", "В коллекцию — выбрать игру");
@@ -364,12 +396,12 @@ namespace DeviceGuard
                         d.Flat = true;
                         fillPage(all, AllKey);
                     }
+                    else d.Group = false;
                 }
                 else
                 {
                     var shown = view == AllKey ? all : view == FavKey ? all.Where(f => Favorites.Has(f.FullName)).ToList()
                               : all.Where(f => game(f) == view).ToList();
-                    d.Stats = Summary(shown);
                     d.Newest = shown.Count > 0 ? shown[0].FullName : null;
                     if (view != AllKey && view != FavKey && Directory.Exists(Path.Combine(root, view))) d.Folder = Path.Combine(root, view);
                     fillPage(shown, view);
@@ -380,8 +412,8 @@ namespace DeviceGuard
             {
                 clipsLoading = false;
                 clipsLoadedAt = DateTime.Now;
+                if (clipsReload || view != gameView || kind != folderView) { clipsReload = false; LoadClips(true); return; }   // changed while reading
                 if (t.IsFaulted) { Log.Write("gallery: " + t.Exception); F<TextBlock>("ClipsStats").Text = ""; return; }
-                if (view != gameView || kind != folderView) { LoadClips(true); return; }   // switched while reading
                 ShowLibrary(t.Result, view);
             })));
         }
@@ -389,12 +421,16 @@ namespace DeviceGuard
         void ShowLibrary(LibData d, string view)
         {
             bool home = view == null;
+            flatView = home && d.Flat;
             F<Button>("BtnClipsBack").Visibility = home ? Visibility.Collapsed : Visibility.Visible;
-            F<TextBlock>("ClipsTitle").Text = home ? SrcNames[folderView] : view == FavKey ? L.T("Favorites", "Избранное") : view == AllKey ? L.T("All clips", "Все клипы") : Covers.Title(view);
+            F<TextBlock>("ClipsTitle").Text = home ? SrcNames[folderView] : view == FavKey ? L.T("Favorites", "Избранное") : view == AllKey ? L.T("All clips", "Все клипы")
+                                            : view == FindKey ? L.T("Search", "Поиск") : Covers.Title(view);
             F<TextBlock>("ClipsStats").Text = d.Stats ?? "";
             clipsFolder.Text = d.Folder;
             games.Clear();
             clips.Clear();
+            ApplyGrouping(d.Group);
+            ShowFindBar(home, d.Flat, view);
             var sv = F<ScrollViewer>("PageClips");
             if (home && d.Flat)
             {
@@ -595,7 +631,9 @@ namespace DeviceGuard
                     v.Thumb = b;
                 });
             }
-            clipsEmpty.Text = gameView == FavKey ? L.T("Favorites are empty — star a clip on its preview.", "В избранном пусто — отметь клип звёздочкой на превью.") : L.T("No clips here yet.", "Здесь пока нет клипов.");
+            clipsEmpty.Text = CurrentFind().Any || gameView == FindKey ? L.T("Nothing found.", "Ничего не нашлось.")
+                            : gameView == FavKey ? L.T("Favorites are empty — star a clip on its preview.", "В избранном пусто — отметь клип звёздочкой на превью.")
+                            : L.T("No clips here yet.", "Здесь пока нет клипов.");
             clipsEmpty.Visibility = list.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             clipsMore.Visibility = more ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -613,7 +651,13 @@ namespace DeviceGuard
             F<TextBlock>("ClipsTitle").Text = Covers.Title(title);
             clipsFolder.Text = dir;
             games.Clear();
-            foreach (var vm in list) clips.Add(vm);
+            ShowFindBar(false, false, title);
+            ApplyGrouping(true);
+            foreach (var vm in list)
+            {
+                vm.Group = DayOf(File.GetLastWriteTime(vm.Path));
+                clips.Add(vm);
+            }
             clipsEmpty.Visibility = Visibility.Collapsed;
             var hero = Covers.FetchHero(title, files.Count > 0 ? files[0].FullName : null);
             if (hero != null) ShowHero(hero, false);

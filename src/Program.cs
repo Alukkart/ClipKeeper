@@ -619,6 +619,8 @@ namespace DeviceGuard
             }
             finally { try { File.Delete(obsIni); } catch { } }
 
+            MainWindow.TestFind(check);
+
             Windows(check);
 
             sb.AppendLine(fails == 0 ? "RESULT: ALL PASSED" : "RESULT: " + fails + " FAILED");

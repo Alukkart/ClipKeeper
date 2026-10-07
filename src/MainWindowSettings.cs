@@ -233,43 +233,10 @@ namespace DeviceGuard
 
         FrameworkElement SearchBox(string query)
         {
-            var box = new Border { Background = Wpf.Res<Brush>("Input"), BorderBrush = Wpf.Res<Brush>("LineHi"), BorderThickness = new Thickness(1),
-                                   CornerRadius = new CornerRadius(7), Height = 34, Margin = new Thickness(0, 0, 0, 4),
-                                   ToolTip = L.T("Find a setting (Ctrl+F)", "Найти настройку (Ctrl+F)") };
-            var g = new Grid();
-            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            g.ColumnDefinitions.Add(new ColumnDefinition());
-            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            g.Children.Add(new TextBlock { Style = S("Icon"), Text = "\uE721", FontSize = 13, Foreground = Wpf.Res<Brush>("Muted"), Margin = new Thickness(11, 0, 0, 0) });
-            var hint = new TextBlock { Text = L.T("Search  (Ctrl+F)", "Поиск  (Ctrl+F)"), Foreground = Wpf.Res<Brush>("Muted"), FontSize = 13,
-                                       Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
-            Grid.SetColumn(hint, 1);
-            g.Children.Add(hint);
-            settingsSearch = new TextBox
-            {
-                Text = query, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = Wpf.Res<Brush>("Text"),
-                CaretBrush = Wpf.Res<Brush>("Text"), SelectionBrush = Wpf.Br(Color.FromRgb(0x5A, 0x5C, 0x66), 255), FontSize = 13,
-                VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0), FocusVisualStyle = null,
-            };
-            Grid.SetColumn(settingsSearch, 1);
-            g.Children.Add(settingsSearch);
-            var clear = new Button { Style = S("BtnLink"), Content = new TextBlock { Style = S("Icon"), Text = "\uE711", FontSize = 10 }, Padding = new Thickness(10, 6, 10, 6), ToolTip = L.T("Clear", "Очистить") };
-            clear.Click += (s, e) => { settingsSearch.Text = ""; settingsSearch.Focus(); };
-            Grid.SetColumn(clear, 2);
-            g.Children.Add(clear);
-            box.Child = g;
-
-            Action sync = () =>
-            {
-                bool empty = settingsSearch.Text.Length == 0;
-                hint.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
-                clear.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
-            };
-            sync();
-            settingsSearch.TextChanged += (s, e) => { sync(); ApplySettingsSearch(); ScrollOf(PageSettings).ScrollToTop(); };
-            settingsSearch.GotKeyboardFocus += (s, e) => box.BorderBrush = Wpf.Br(Color.FromRgb(0x6B, 0x6D, 0x76), 255);
-            settingsSearch.LostKeyboardFocus += (s, e) => box.BorderBrush = Wpf.Res<Brush>("LineHi");
-            settingsSearch.PreviewKeyDown += (s, e) => { if (e.Key == Key.Escape && settingsSearch.Text.Length > 0) { settingsSearch.Text = ""; e.Handled = true; } };
+            settingsSearch = new TextBox { Text = query };
+            var box = SearchField(settingsSearch, L.T("Search  (Ctrl+F)", "Поиск  (Ctrl+F)"), L.T("Find a setting (Ctrl+F)", "Найти настройку (Ctrl+F)"));
+            box.Margin = new Thickness(0, 0, 0, 4);
+            settingsSearch.TextChanged += (s, e) => { ApplySettingsSearch(); ScrollOf(PageSettings).ScrollToTop(); };
             return box;
         }
 

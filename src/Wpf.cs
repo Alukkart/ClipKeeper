@@ -213,6 +213,8 @@ namespace DeviceGuard
         public Visibility DurationVis { get { return string.IsNullOrEmpty(Duration) ? Visibility.Collapsed : Visibility.Visible; } }
         public Visibility NewVis { get; set; }
         public Brush Thumb { get { return thumb; } set { Set(ref thumb, value); } }
+        public string Group { get; set; }   // the day (or the folder in a search over all folders) it is listed under
+        public double Seconds;
 
         // frames under the mouse (MainWindowScrub.cs): the current frame and a progress line of the thumbnail width
         Brush scrub;

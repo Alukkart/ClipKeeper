@@ -97,6 +97,7 @@ namespace DeviceGuard
                 Title = title,
                 Sub = date + ", " + when.ToString("HH:mm") + " · " + size,
                 Duration = duration,
+                Seconds = sec,
                 NewVis = string.Equals(f.FullName, lastClip, StringComparison.OrdinalIgnoreCase) ? Visibility.Visible : Visibility.Collapsed,
             };
         }

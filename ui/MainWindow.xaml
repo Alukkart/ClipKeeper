@@ -559,6 +559,18 @@
                             <StackPanel x:Name="ClipSource" Orientation="Horizontal"/>
                             <TextBlock x:Name="ClipsStats" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource Muted}" FontSize="12.5"/>
                         </Grid>
+                        <!-- the search, filters and the order of clips (MainWindowFind.cs); filters wrap in a narrow window -->
+                        <Grid x:Name="ClipsTools" Margin="0,0,12,14" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="ClipsSearchHost" Width="220" VerticalAlignment="Top"/>
+                            <WrapPanel x:Name="ClipsFilters" Grid.Column="1" Margin="10,3,0,-6" VerticalAlignment="Top"/>
+                            <Button x:Name="BtnClipsSort" Grid.Column="2" Style="{StaticResource BtnLink}" VerticalAlignment="Top" Margin="8,4,0,0"
+                                    ToolTip="The order of clips¦Порядок клипов"/>
+                        </Grid>
                         <Border x:Name="SortCard" Visibility="Collapsed" Style="{StaticResource CardBorder}" Margin="0,0,12,14">
                             <StackPanel>
                                 <TextBlock x:Name="SortTitle" FontWeight="SemiBold" Margin="0,0,0,8"/>
@@ -590,6 +602,7 @@
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
                         <TextBlock x:Name="ClipsEmpty" Visibility="Collapsed" Style="{StaticResource SubText}" Text="No clips yet.¦Клипов пока нет."/>
+                        <Button x:Name="BtnSearchAll" Style="{StaticResource BtnGhost}" HorizontalAlignment="Left" Visibility="Collapsed" Margin="0,4,0,12"/>
                         <Button x:Name="BtnClipsMore" Style="{StaticResource BtnGhost}" HorizontalAlignment="Left" Visibility="Collapsed" Content="Show more¦Показать ещё"/>
                     </StackPanel>
                   </Grid>

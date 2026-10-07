@@ -130,6 +130,21 @@ namespace DeviceGuard
             }
         }
 
+        // names of the sources a trim was made from (ClipKeeper writes the source into every trim) — the "not trimmed" filter
+        public static HashSet<string> TrimmedSources(string readyRoot, string collRoot)
+        {
+            var cut = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var root in new[] { readyRoot, collRoot })
+                if (root != null)
+                    foreach (var f in ClipScanner.Scan(root, int.MaxValue))
+                    {
+                        var m = ClipIndex.Meta(f).Item1;
+                        if (m != null && !string.IsNullOrEmpty(m.Source)) cut.Add(m.Source);
+                    }
+            ClipIndex.Save();
+            return cut;
+        }
+
         // the log may be open for writing by the program — read with shared access
         static IEnumerable<string> ReadLines(string path)
         {

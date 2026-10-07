@@ -133,12 +133,13 @@ namespace DeviceGuard
         }
 
         // names of the sources a trim was made from (ClipKeeper writes the source into every trim) — the "not trimmed" filter
-        public static HashSet<string> TrimmedSources(string readyRoot, string collRoot)
+        // since: only trims written from then on are read (ffprobe for a file not seen before) — a trim is always newer than its source
+        public static HashSet<string> TrimmedSources(string readyRoot, string collRoot, DateTime since)
         {
             var cut = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var root in new[] { readyRoot, collRoot })
                 if (root != null)
-                    foreach (var f in ClipScanner.Scan(root, int.MaxValue))
+                    foreach (var f in ClipScanner.Scan(root, int.MaxValue).Where(f => f.LastWriteTime >= since))
                     {
                         var m = ClipIndex.Meta(f).Item1;
                         if (m != null && !string.IsNullOrEmpty(m.Source)) cut.Add(m.Source);

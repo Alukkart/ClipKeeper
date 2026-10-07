@@ -62,6 +62,7 @@ namespace DeviceGuard
             try { File.Move(path, to); }
             catch (IOException ex) { return L.T("The file is busy — close it in the player and try again (", "Файл занят — закрой его в плеере и попробуй снова (") + ex.Message + ")"; }
             catch (Exception ex) { return ex.Message; }
+            ClipIndex.Renamed(path, to);
             Favorites.Renamed(path, to);
             Reviewed.Renamed(path, to);
             ClipStats.Renamed(Path.GetFileName(path), Path.GetFileName(to));

@@ -320,6 +320,14 @@ namespace DeviceGuard
             return char.IsLower(c) ? char.ToUpper(c) + t.Substring(1) : t;
         }
 
+        // a step of saving and checking (Trimmer): its state as an icon and a colour — the editor and the join show the same list
+        public static EventVm Of(TrimStep s)
+        {
+            var c = s.State == 1 ? Wpf.Ok : s.State == 2 ? Wpf.Bad : s.State == 3 ? Wpf.Grey : Wpf.Accent;
+            string g = s.State == 1 ? "" : s.State == 2 ? "" : s.State == 3 ? "" : "";
+            return new EventVm { Text = s.Text, Glyph = g, GlyphBrush = Wpf.Br(c, 255) };
+        }
+
         public static EventVm Problem(string text, bool due)
         {
             return new EventVm { Text = text, Glyph = due ? "" : "", GlyphBrush = Wpf.Br(due ? Wpf.Bad : Wpf.Warn, 255) };

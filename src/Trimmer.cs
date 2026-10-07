@@ -25,6 +25,7 @@ namespace DeviceGuard
     {
         public string Game, Source;
         public DateTime Recorded;
+        public int Mix = -1;   // which audio track of a trim is the common mix (-1 — not written: trims before the join)
     }
 
     class TrimJob
@@ -121,6 +122,7 @@ namespace DeviceGuard
                 string k = part.Substring(0, eq), v = part.Substring(eq + 1);
                 if (k == "game") m.Game = v;
                 else if (k == "source") m.Source = v;
+                else if (k == "mix") { int x; if (int.TryParse(v, out x)) m.Mix = x; }
                 else if (k == "recorded")
                 {
                     DateTime d;
@@ -136,8 +138,12 @@ namespace DeviceGuard
         {
             var m = j.Meta;
             if (m == null) return "";
+            // where the common mix ended up among the kept tracks: a join takes exactly that track
+            var plan = Plan(j);
+            int mix = j.MixIndex >= 0 ? plan.FindIndex(t => t.Source == j.MixIndex) : -1;
+            if (mix < 0 && plan.Count == 1) mix = 0;
             string data = MetaTag + "|game=" + Clean(m.Game) + "|recorded=" + m.Recorded.ToString("yyyy-MM-ddTHH:mm:ss", Inv) +
-                          "|source=" + Clean(m.Source);
+                          "|source=" + Clean(m.Source) + (mix >= 0 ? "|mix=" + mix : "");
             string human = Clean(NoGame.Text(m.Game)) + L.T(" · clip from ", " · клип от ") + m.Recorded.ToString("dd.MM.yyyy HH:mm", Inv);
             return " -metadata title=\"" + Clean(j.Title) + "\" -metadata genre=\"" + Clean(m.Game) + "\"" +
                    " -metadata comment=\"" + human + "\" -metadata description=\"" + data + "\"" +

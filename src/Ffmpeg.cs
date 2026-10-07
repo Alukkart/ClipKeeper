@@ -139,6 +139,14 @@ namespace DeviceGuard
             return m.Groups[1].Value == "-inf" ? double.NegativeInfinity : double.Parse(m.Groups[1].Value, Inv);
         }
 
+        // the average level of an audio track over the whole file, dB (−∞ — silence or not read)
+        public static double MeanDb(string file, int audioIndex, CancellationToken cancel)
+        {
+            var r = Run("-nostats -i " + Q(file) + " -map 0:a:" + audioIndex + " -af volumedetect -vn -sn -dn -f null NUL", cancel);
+            var m = Regex.Match(r.Err, @"mean_volume:\s*(-?[\d.]+|-inf) dB");
+            return !m.Success || m.Groups[1].Value == "-inf" ? double.NegativeInfinity : double.Parse(m.Groups[1].Value, Inv);
+        }
+
         // integrated loudness of an audio track, LUFS (EBU R128); NaN — not measured
         public static double Lufs(string file, int audioIndex, CancellationToken cancel)
         {

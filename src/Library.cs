@@ -562,6 +562,31 @@ namespace DeviceGuard
             return Tuple.Create(meta, title);
         }
 
+        // the title if ffprobe has read this file before, null otherwise: a search does not probe hundreds of files
+        // (a ready clip's file name is its title anyway)
+        public static string CachedTitle(FileInfo f)
+        {
+            lock (Sync)
+            {
+                var d = Entry(f);
+                return Json.GetInt(d, "m", 0) == 1 ? Json.GetStr(d, "t") : null;
+            }
+        }
+
+        // a renamed file keeps what is known about it (its length and time stay the same, so the entry stays valid)
+        public static void Renamed(string from, string to)
+        {
+            lock (Sync)
+            {
+                object v;
+                string k = from.ToLowerInvariant();
+                if (cache == null || !cache.TryGetValue(k, out v)) return;
+                cache.Remove(k);
+                cache[to.ToLowerInvariant()] = v;
+                dirty = true;
+            }
+        }
+
         public static void Save()
         {
             lock (Sync)

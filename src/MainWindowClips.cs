@@ -370,19 +370,25 @@ namespace DeviceGuard
                     if (other != null && other.Length > root.Length && other.StartsWith(root + "\\", StringComparison.OrdinalIgnoreCase))
                         all = all.Where(f => !f.FullName.StartsWith(other + "\\", StringComparison.OrdinalIgnoreCase)).ToList();
                 Func<FileInfo, string> game = f => GameFor(f, root, kind);
+                // sources a trim was made from; a trim is written after its source, so only trims newer than the oldest clip asked about count
                 HashSet<string> cut = null;
-                Func<HashSet<string>> trimmed = () => cut ?? (cut = ClipStats.TrimmedSources(readyRoot, collRoot));
+                DateTime cutSince = DateTime.MaxValue;
+                Func<DateTime, HashSet<string>> trimmedSince = since =>
+                {
+                    if (cut == null || since < cutSince) { cut = ClipStats.TrimmedSources(readyRoot, collRoot, since); cutSince = since; }
+                    return cut;
+                };
                 bool byDay = find.Sort == SortNew || find.Sort == SortOld;
                 var d = new LibData { Folder = root, Group = byDay };
                 if (kind == SrcObs && view != FavKey)
                 {
                     bool everything = view == null || view == AllKey;
-                    d.Fresh = FreshClips(everything ? all : all.Where(f => game(f) == view), trimmed);
+                    d.Fresh = FreshClips(everything ? all : all.Where(f => game(f) == view), trimmedSince);
                     d.FreshName = everything ? L.T("all clips", "все клипы") : Covers.Title(view);
                 }
                 Action<List<FileInfo>, string> fillPage = (list, v) =>
                 {
-                    var shown = Refine(list, find, game, f => TitleFor(f, kind), trimmed);
+                    var shown = Refine(list, find, game, f => TitleFor(f, kind), () => trimmedSince(list.Count > 0 ? list.Min(f => f.LastWriteTime) : DateTime.Now));
                     d.Stats = Summary(shown);
                     d.Page = shown.Take(limit).Select(f =>
                     {
@@ -636,9 +642,12 @@ namespace DeviceGuard
             if (string.IsNullOrEmpty(saved)) return file;
             string safe = Trimmer.SafeName(saved);
             if (!file.StartsWith(safe, StringComparison.OrdinalIgnoreCase)) return file;
-            string rest = file.Substring(safe.Length);
-            return rest.Length == 0 || rest.StartsWith(" — ") || rest.StartsWith(" (") ? saved : file;
+            return EditorSuffix.IsMatch(file.Substring(safe.Length)) ? saved : file;
         }
+
+        // what the editor adds to a title in the file name: " — trim", "(discord)", "(25 MB)", " 2" for a second copy —
+        // anything else ("Duel (best)") is a name given later
+        static readonly Regex EditorSuffix = new Regex(@"^( — (trim|обрезка))?( \((discord|nitro|telegram|\d+ MB)\))?( \d+)?$", RegexOptions.IgnoreCase);
 
         void ShowClips(List<ClipVm> list, bool more)
         {

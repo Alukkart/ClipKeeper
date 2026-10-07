@@ -306,8 +306,9 @@ namespace DeviceGuard
             return words.All(w => hay.Contains(w));
         }
 
-        // a ready clip's title lives in its data (cached); a source's name is all it has — ffprobe on every source would be slow
-        static string TitleFor(FileInfo f, int kind) { return kind == SrcObs ? null : MetaOf(f).Item2; }
+        // a ready clip's title lives in its data — only what is cached already: probing every unread file would make a search
+        // take minutes, and the file name (searched anyway) is the title; a source's name is all it has
+        static string TitleFor(FileInfo f, int kind) { return kind == SrcObs ? null : ClipIndex.CachedTitle(f); }
 
         // "Today", "Yesterday", "5 October", "5 October 2025"
         static string DayOf(DateTime when)
@@ -378,6 +379,9 @@ namespace DeviceGuard
                 var first = Refine(all, new FindSpec { Words = new string[0], Sort = SortOld }, noGame, noTitle, none);
                 var big = Refine(all, new FindSpec { Words = new string[0], Sort = SortBig }, noGame, noTitle, none);
                 check(first[0].Name == old.Name && big[0].Name == today.Name && big[2].Name == old.Name, "library order: oldest first, largest first");
+                check(OwnTitle("Duel (discord)", "Duel") == "Duel" && OwnTitle("Duel (25 MB) 2", "Duel") == "Duel" && OwnTitle("Duel", "Duel") == "Duel"
+                      && OwnTitle("Duel (best)", "Duel") == "Duel (best)" && OwnTitle("Bridge", "Duel") == "Bridge",
+                      "ready clips: the editor's suffixes keep the saved title, a later name wins");
                 check(DayOf(DateTime.Now) == L.T("Today", "Сегодня") && DayOf(DateTime.Now.AddDays(-1)) == L.T("Yesterday", "Вчера"), "library days: today, yesterday");
             }
             finally { try { Directory.Delete(dir, true); } catch { } }

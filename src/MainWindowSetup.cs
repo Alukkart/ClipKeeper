@@ -39,6 +39,7 @@ namespace DeviceGuard
             F<Grid>("Root").Children.Remove(setup);
             setup = null;
             setupLive = null;
+            StopKeyGrab();
             if (!cfg.SetupDone)
             {
                 cfg.SetupDone = true;
@@ -70,6 +71,7 @@ namespace DeviceGuard
             setupStep = Math.Max(0, Math.Min(setupStep, setupSteps.Count - 1));
             setupLive = null;
             setupClip = null;
+            StopKeyGrab();
             setup.Children.Clear();
 
             var card = new Border

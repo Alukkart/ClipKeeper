@@ -139,6 +139,22 @@ namespace DeviceGuard
             return m.Groups[1].Value == "-inf" ? double.NegativeInfinity : double.Parse(m.Groups[1].Value, Inv);
         }
 
+        // integrated loudness of an audio track, LUFS (EBU R128); NaN — not measured
+        public static double Lufs(string file, int audioIndex, CancellationToken cancel)
+        {
+            var r = Run("-nostats -i " + Q(file) + " -map 0:a:" + audioIndex + " -af ebur128 -vn -sn -dn -f null NUL", cancel);
+            return ParseLufs(r.Err);
+        }
+
+        // the summary ebur128 prints at the end: "Integrated loudness: I: -23.0 LUFS"
+        public static double ParseLufs(string err)
+        {
+            var all = Regex.Matches(err ?? "", @"I:\s+(-?[\d.]+|-inf) LUFS");
+            if (all.Count == 0) return double.NaN;
+            string v = all[all.Count - 1].Groups[1].Value;
+            return v == "-inf" ? double.NegativeInfinity : double.Parse(v, Inv);
+        }
+
         // the video is readable: decode the start and end, decoder errors = a broken file
         public static string DecodeErrors(string file, double duration, CancellationToken cancel)
         {

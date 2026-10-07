@@ -268,15 +268,17 @@
                                     </ToggleButton>
                                 </UniformGrid>
                                 <StackPanel x:Name="SharePanel" Visibility="Collapsed" Margin="0,8,0,0">
-                                    <UniformGrid Rows="1" Columns="4">
-                                        <ToggleButton x:Name="TgtDiscord" Style="{StaticResource Chip}" Padding="2,4" Content="Discord" IsChecked="True" Margin="0,0,4,0"
+                                    <UniformGrid Rows="1" Columns="5">
+                                        <ToggleButton x:Name="TgtDiscord" Style="{StaticResource Chip}" Padding="2,4" FontSize="11.5" Content="Discord" IsChecked="True" Margin="0,0,4,0"
                                                       ToolTip="Up to 10 MB: the size is fitted to the limit, long ranges become 720p¦До 10 МБ: размер подбирается под лимит, длинные отрезки станут 720p"/>
-                                        <ToggleButton x:Name="TgtNitro" Style="{StaticResource Chip}" Padding="2,4" Content="Nitro" Margin="2,0,2,0"
+                                        <ToggleButton x:Name="TgtNitro" Style="{StaticResource Chip}" Padding="2,4" FontSize="11.5" Content="Nitro" Margin="2,0,2,0"
                                                       ToolTip="Up to 500 MB (Discord Nitro)¦До 500 МБ (Discord Nitro)"/>
-                                        <ToggleButton x:Name="TgtTelegram" Style="{StaticResource Chip}" Padding="2,4" Content="Telegram" Margin="2,0,2,0"
+                                        <ToggleButton x:Name="TgtTelegram" Style="{StaticResource Chip}" Padding="2,4" FontSize="11.5" Content="Telegram" Margin="2,0,2,0"
                                                       ToolTip="Good quality up to 2 GB (the Telegram limit)¦Хорошее качество до 2 ГБ (лимит Telegram)"/>
-                                        <ToggleButton x:Name="TgtCustom" Style="{StaticResource Chip}" Padding="2,4" Content="Custom¦Свой" Margin="4,0,0,0"
+                                        <ToggleButton x:Name="TgtCustom" Style="{StaticResource Chip}" Padding="2,4" FontSize="11.5" Content="Custom¦Свой" Margin="2,0,2,0"
                                                       ToolTip="Your own size limit in MB¦Свой лимит размера в МБ"/>
+                                        <ToggleButton x:Name="TgtGif" Style="{StaticResource Chip}" Padding="2,4" FontSize="11.5" Content="GIF" Margin="4,0,0,0"
+                                                      ToolTip="An animation without sound — for chats where a video does not play by itself¦Анимация без звука — для чатов, где видео само не играет"/>
                                     </UniformGrid>
                                     <StackPanel x:Name="CustomRow" Orientation="Horizontal" Margin="2,8,0,0" Visibility="Collapsed">
                                         <TextBlock Text="Size limit¦Лимит размера" Foreground="{StaticResource Sub}" FontSize="12.5" VerticalAlignment="Center"/>
@@ -284,6 +286,23 @@
                                         <TextBlock Text="MB¦МБ" Foreground="{StaticResource Sub}" FontSize="12.5" VerticalAlignment="Center"/>
                                     </StackPanel>
                                     <TextBlock x:Name="ShareHint" Foreground="{StaticResource Muted}" FontSize="12" Margin="2,6,0,0" TextWrapping="Wrap"/>
+                                    <!-- GIF: format, width, frame rate (built in TrimWindowShare.cs); a long range is warned about -->
+                                    <Grid x:Name="GifRow" Visibility="Collapsed" Margin="2,10,0,0"/>
+                                    <TextBlock x:Name="GifWarn" Visibility="Collapsed" Foreground="{StaticResource Warn}" FontSize="12" Margin="2,8,0,0" TextWrapping="Wrap"/>
+                                    <!-- even loudness: off by default; when on — how loud it is now and how loud it becomes -->
+                                    <Grid x:Name="LoudRow" Margin="2,12,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Margin="0,0,12,0">
+                                            <TextBlock Text="Even loudness¦Ровная громкость" FontWeight="SemiBold" FontSize="12.5"/>
+                                            <TextBlock Text="As YouTube plays it: -14 LUFS. The clip is not quieter or louder than the rest of the chat¦Как на YouTube: −14 LUFS. Клип не будет тише или громче остальных в чате"
+                                                       Foreground="{StaticResource Muted}" FontSize="11.5" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                            <TextBlock x:Name="LoudText" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource Sub}" Margin="0,5,0,0" Visibility="Collapsed"/>
+                                        </StackPanel>
+                                        <CheckBox x:Name="LoudToggle" Grid.Column="1" Style="{StaticResource Toggle}" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                    </Grid>
                                 </StackPanel>
 
                                 <Grid Margin="0,14,0,0">
@@ -319,7 +338,7 @@
                                         <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="SEND IN ONE CLICK¦ОТПРАВИТЬ В ОДИН КЛИК" Style="{StaticResource SideCaption}"/>
-                                    <TextBlock Grid.Column="1" Text="the file is copied — Ctrl+V in the chat¦файл скопируется — Ctrl+V в чат" Foreground="{StaticResource Muted}"
+                                    <TextBlock Grid.Column="1" Text="the file is copied — Ctrl&#x2060;+&#x2060;V in the chat¦файл скопируется — Ctrl&#x2060;+&#x2060;V в чат" Foreground="{StaticResource Muted}"
                                                FontSize="11.5" Margin="10,0,0,0" TextWrapping="Wrap" TextAlignment="Right"/>
                                 </Grid>
                                 <UniformGrid Rows="1" Columns="3">

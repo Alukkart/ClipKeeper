@@ -865,6 +865,10 @@ namespace DeviceGuard
                 new TrimJob { Source = src, OutputDir = outDir, In = mid - 15, Out = mid + 15, Mode = TrimMode.Lossless },
                 new TrimJob { Source = src, OutputDir = outDir, In = mid - 5, Out = mid + 5, Mode = TrimMode.Precise },
                 new TrimJob { Source = src, OutputDir = outDir, In = mid - 10, Out = mid + 10, Mode = TrimMode.Share, Target = ShareTarget.Discord, ShareAudio = info.Audio.Count - 1 },
+                new TrimJob { Source = src, OutputDir = outDir, In = mid - 10, Out = mid + 10, Mode = TrimMode.Share, Target = ShareTarget.Discord, ShareAudio = info.Audio.Count - 1,
+                              Loudness = true, Title = "Loudness test" },
+                new TrimJob { Source = src, OutputDir = outDir, In = mid - 3, Out = mid + 3, Mode = TrimMode.Share, Target = ShareTarget.Gif, Title = "Gif test" },
+                new TrimJob { Source = src, OutputDir = outDir, In = mid - 3, Out = mid + 3, Mode = TrimMode.Share, Target = ShareTarget.Gif, GifFormat = "webp", Title = "Webp test" },
             };
             int fails = 0;
             foreach (var j in cases)

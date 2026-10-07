@@ -139,6 +139,10 @@ namespace DeviceGuard
                 Render((FrameworkElement)tw.W.Content, 1400, 900, Path.Combine(dir, "16-trim.png"));
                 tw.PreviewShare(true);
                 Render((FrameworkElement)tw.W.Content, 1400, 900, Path.Combine(dir, "16-trim-share.png"));
+                tw.PreviewShareTarget(false);   // even loudness on
+                Render((FrameworkElement)tw.W.Content, 1400, 900, Path.Combine(dir, "16-trim-loud.png"));
+                tw.PreviewShareTarget(true);    // the GIF target
+                Render((FrameworkElement)tw.W.Content, 1400, 900, Path.Combine(dir, "16-trim-gif.png"));
                 tw.PreviewShare(false);
                 tw.PreviewZoom(55, 80, 64.2);   // 5.6× zoom and the time label under the cursor
                 Render((FrameworkElement)tw.W.Content, 1400, 900, Path.Combine(dir, "16-trim-zoom.png"));

@@ -27,7 +27,7 @@ namespace DeviceGuard
             get
             {
                 return tgtNitro.IsChecked == true ? ShareTarget.Nitro : tgtTelegram.IsChecked == true ? ShareTarget.Telegram
-                     : tgtCustom.IsChecked == true ? ShareTarget.Custom : ShareTarget.Discord;
+                     : tgtCustom.IsChecked == true ? ShareTarget.Custom : tgtGif.IsChecked == true ? ShareTarget.Gif : ShareTarget.Discord;
             }
         }
 
@@ -37,6 +37,7 @@ namespace DeviceGuard
             F<TextBlock>("ShareHint").Text = Target == ShareTarget.Discord ? L.T("up to 10 MB — long ranges become 720p", "до 10 МБ — длинные отрезки станут 720p")
                                            : Target == ShareTarget.Nitro ? L.T("up to 500 MB", "до 500 МБ")
                                            : Target == ShareTarget.Custom ? L.T("up to the size you set — small sizes lower the resolution", "до заданного размера — при маленьком размере снизится разрешение")
+                                           : Target == ShareTarget.Gif ? L.T("an animation without sound, plays by itself in any chat", "анимация без звука — сама играет в любом чате")
                                            : L.T("good quality up to 2 GB", "хорошее качество до 2 ГБ");
             F<StackPanel>("CustomRow").Visibility = Target == ShareTarget.Custom ? Visibility.Visible : Visibility.Collapsed;
             UpdateEstimate();
@@ -69,6 +70,7 @@ namespace DeviceGuard
             {
                 Source = source, In = inT, Out = outT, Mode = Mode, Target = Target, CustomMb = cfg.ShareCustomMb, SourceInfo = info, Meta = meta,
                 Title = nameBox.Text, OutputDir = string.IsNullOrEmpty(cfg.TrimFolder) ? null : cfg.TrimFolder,
+                Loudness = cfg.ShareLoudness, GifFormat = cfg.GifFormat, GifWidth = cfg.GifWidth, GifFps = cfg.GifFps,
                 MixIndex = mixIndex, RebuildMix = rebuildMix.IsChecked == true,
                 Cuts = cuts.Count > 0 ? cuts.Select(c => new[] { c[0], c[1] }).ToList() : null,
                 Tracks = rows.Select(r => new TrackPlan
@@ -85,7 +87,8 @@ namespace DeviceGuard
             int tracks = Mode == TrimMode.Share ? 1 : j.Tracks.Count(t => t.On);
             estSize.Text = Trimmer.Estimate(j);
             estDur.Text = Trimmer.Dur(j.Length);
-            estTracks.Text = L.N(tracks, "track", "tracks", "дорожка", "дорожки", "дорожек");
+            estTracks.Text = j.Gif ? L.T("no sound", "без звука") : L.N(tracks, "track", "tracks", "дорожка", "дорожки", "дорожек");
+            UpdateShare(j);
             string file = Trimmer.OutputPath(j);
             estFile.Text = Path.GetFileName(file);
             estFile.ToolTip = file;

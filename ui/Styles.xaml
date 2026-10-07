@@ -195,11 +195,20 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContextMenu">
-                    <Border Background="{StaticResource Card2}" BorderBrush="{StaticResource LineHi}" BorderThickness="1" Padding="4">
-                        <ScrollViewer MaxHeight="440" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                            <ItemsPresenter/>
-                        </ScrollViewer>
-                    </Border>
+                    <!-- rounded like the cards; the margin leaves the popup room for the shadow, which lies under the menu
+                         (an effect on the menu itself would blur its text) -->
+                    <Grid Margin="0,4,10,12">
+                        <Border Background="{StaticResource Card2}" CornerRadius="10">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Opacity="0.5" Color="Black"/>
+                            </Border.Effect>
+                        </Border>
+                        <Border Background="{StaticResource Card2}" BorderBrush="{StaticResource LineHi}" BorderThickness="1" Padding="5" CornerRadius="10">
+                            <ScrollViewer MaxHeight="440" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <ItemsPresenter/>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

@@ -7,6 +7,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-07
+
+The library for hundreds of clips: search, names, selecting and joining clips, going through new ones; sharing with
+even loudness and as a GIF; a first-run setup that checks and fixes OBS.
+
 ### Added
 - A search in the library by name, game or date ("bridge", "yesterday", "5 october"; Ctrl+F). From the library's home,
   or with "Search all folders" from a game, it looks through Sources, Ready and the collection at once.
@@ -19,7 +24,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - "Go through new clips": the clips of the last two weeks play one by one, and a key keeps each, marks it to trim later
   or for the Recycle Bin. Nothing is deleted until the end.
 - The first-run setup checks what OBS needs for clips — the WebSocket server, the replay buffer, a Save Replay key — and
-  fixes what is missing; it ends with a test clip.
+  fixes what is missing, restarting OBS when it has to and showing each step of that; it ends with a test clip.
 - The Recording page says when OBS later loses what clips need (the replay buffer turned off, no Save Replay key, a fix
   waiting for OBS to close), with a link to fix it.
 - Join selected clips into one: in the order they were selected (drag a card or press its ‹ › to move it), each whole
@@ -88,7 +93,8 @@ The first public release.
 - Statistics by month and game, and a month recap to share as a picture.
 - First-run setup, starting together with OBS, updates from GitHub releases, English and Russian interface.
 
-[Unreleased]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/Alukkart/ClipKeeper/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Alukkart/ClipKeeper/releases/tag/v1.0.0

@@ -10,7 +10,7 @@ using System.Windows.Threading;
 namespace DeviceGuard
 {
     // ClipKeeper.exe --preview <folder> [--lang en|ru] — renders every screen to PNG without showing windows (for design checks)
-    static class Preview
+    static partial class Preview
     {
         public static int Run(string dir)
         {
@@ -297,13 +297,18 @@ namespace DeviceGuard
 
         static void Save(FrameworkElement el, double w, double h, string path, Brush bg)
         {
-            const double scale = 1.25;
+            File.WriteAllBytes(path, PngOf(Snap(el, w, h, bg, 1.25)));
+        }
+
+        static BitmapSource Snap(FrameworkElement el, double w, double h, Brush bg, double scale)
+        {
             var rtb = new RenderTargetBitmap((int)(w * scale), (int)(h * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
             var dv = new DrawingVisual();
             using (var dc = dv.RenderOpen()) dc.DrawRectangle(bg, null, new Rect(0, 0, w, h));
             rtb.Render(dv);
             rtb.Render(el);
-            File.WriteAllBytes(path, PngOf(rtb));
+            rtb.Freeze();
+            return rtb;
         }
 
         static byte[] PngOf(BitmapSource b)

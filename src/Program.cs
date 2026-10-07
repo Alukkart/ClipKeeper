@@ -99,6 +99,8 @@ namespace DeviceGuard
                 return RunWpf(() => Icons.MakeFile(args.Length > 1 ? args[1] : Path.Combine(Dir, "app.ico")));
             if (args.Length > 0 && args[0] == "--preview-settings")
                 return RunWpf(() => Preview.SettingsScreens(args.Length > 1 ? args[1] : Path.Combine(Dir, "preview")));
+            if (args.Length > 0 && args[0] == "--showcase")
+                return RunWpf(() => Preview.Showcase(args.Length > 1 ? args[1] : Path.Combine(Dir, "preview", "showcase")));
             if (args.Length > 0 && args[0] == "--preview")
                 return RunWpf(() => Preview.Run(args.Length > 1 ? args[1] : Path.Combine(Dir, "preview")));
             if (args.Length > 3 && args[0] == "--trimtest")

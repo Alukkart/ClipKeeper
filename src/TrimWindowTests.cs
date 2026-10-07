@@ -205,6 +205,14 @@ namespace DeviceGuard
             UpdateMode();
         }
 
+        // a still frame where the video plays (the showcase GIF): the player shows nothing off screen
+        public void PreviewFrame(ImageSource frame)
+        {
+            if (frame == null) return;
+            ((Grid)player.Parent).Children.Insert(0, new Image { Source = frame, Stretch = Stretch.Uniform });
+            playerMsg.Visibility = Visibility.Collapsed;
+        }
+
         public void PreviewCuts(IEnumerable<double[]> list)
         {
             foreach (var c in list) cuts.Add(c);

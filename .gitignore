@@ -27,7 +27,12 @@ ffmpeg/
 .idea/
 .vs/
 .vscode/
+.claude/
 *.user
+
+# promo sources (the site uses its own copies in docs/media) and site drafts
+/promo/
+/docs/b.html
 
 # test and preview output
 selftest.txt

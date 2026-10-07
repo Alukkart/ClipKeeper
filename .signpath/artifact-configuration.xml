@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The SignPath artifact configuration for release.yml: paste it into the SignPath project (Artifact configurations).
+     The GitHub artifact is a zip with ClipKeeper.exe; only that exe is signed, and only if its metadata is ClipKeeper
+     with the version of the tag being released (the "version" parameter comes from the workflow). -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="ClipKeeper.exe" product-name="ClipKeeper" product-version="${version}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

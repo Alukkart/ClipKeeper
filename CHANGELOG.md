@@ -7,6 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-07
+
 ### Added
 - Built-in sounds: four for the alarm (Fall, Motif, Monitor, Bell) and four for "Clip saved" (Marimba, Glass,
   Shutter, Drop), picked with a click that also plays them.
@@ -54,6 +56,7 @@ The first public release.
 - Statistics by month and game, and a month recap to share as a picture.
 - First-run setup, starting together with OBS, updates from GitHub releases, English and Russian interface.
 
-[Unreleased]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Alukkart/ClipKeeper/releases/tag/v1.0.0

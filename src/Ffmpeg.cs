@@ -73,7 +73,7 @@ namespace DeviceGuard
         static string Q(string path) { return "\"" + path + "\""; }
 
         // ── file analysis ──
-        public class StreamInfo { public string Type, Codec, Title; public int Index; public double Fps; }
+        public class StreamInfo { public string Type, Codec, Title; public int Index, Width, Height; public double Fps; }
 
         public class MediaInfo
         {
@@ -89,7 +89,7 @@ namespace DeviceGuard
 
         public static MediaInfo Info(string file)
         {
-            var r = Run(Probe, "-v error -show_entries format=duration,size:format_tags:stream=index,codec_type,codec_name,avg_frame_rate:stream_tags=title,handler_name -of json " + Q(file),
+            var r = Run(Probe, "-v error -show_entries format=duration,size:format_tags:stream=index,codec_type,codec_name,avg_frame_rate,width,height:stream_tags=title,handler_name -of json " + Q(file),
                         null, CancellationToken.None);
             if (r.Code != 0) throw new IOException("ffprobe: " + LastLine(r.Err));
             var d = Json.Obj(Json.Parse(r.Out));
@@ -112,7 +112,7 @@ namespace DeviceGuard
                 info.Streams.Add(new StreamInfo
                 {
                     Index = Json.GetInt(s, "index", 0), Type = Json.GetStr(s, "codec_type"), Codec = Json.GetStr(s, "codec_name"), Title = title,
-                    Fps = Rate(Json.GetStr(s, "avg_frame_rate")),
+                    Fps = Rate(Json.GetStr(s, "avg_frame_rate")), Width = Json.GetInt(s, "width", 0), Height = Json.GetInt(s, "height", 0),
                 });
             }
             return info;

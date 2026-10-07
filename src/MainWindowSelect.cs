@@ -39,6 +39,11 @@ namespace DeviceGuard
             clips.CollectionChanged += (s, e) => { if (e.Action == NotifyCollectionChangedAction.Reset || e.Action == NotifyCollectionChangedAction.Remove) SelChanged(); };
             W.PreviewKeyDown += (s, e) =>
             {
+                if (merge != null)   // the join card is open: Esc closes it, the library under it does not take keys
+                {
+                    if (e.Key == Key.Escape && !mergeRunning) { CloseMerge(); e.Handled = true; }
+                    return;
+                }
                 if (!pages[PageClips].IsVisible || Keyboard.FocusedElement is TextBox) return;
                 if (e.Key == Key.A && Keyboard.Modifiers == ModifierKeys.Control && clips.Count > 0)
                 {
@@ -124,6 +129,7 @@ namespace DeviceGuard
             SelButton(p, allFav ? "" : "", allFav ? L.T("Unstar", "Убрать из избранного") : L.T("Favorite", "В избранное"), "BtnLink", () => SelFavorite(!allFav));
             SelButton(p, "", L.T("Copy", "Копировать"), "BtnLink", SelCopy);
             if (folderView == SrcReady && cfg.UseCollection) SelButton(p, "", L.T("To collection", "В коллекцию"), "BtnLink", SelToCollection);
+            if (sel.Count >= 2) SelButton(p, "", L.T("Join", "Склеить"), "BtnPrimary", () => ShowMerge(Selection.OrderBy(c => c.SelectedAt).ToList()));
             p.Children.Add(new Border { Width = 1, Height = 22, Background = Wpf.Res<System.Windows.Media.Brush>("LineHi"), Margin = new Thickness(6, 0, 6, 0) });
             var del = SelButton(p, "", selDeleteArmed ? L.T("Sure? To the Recycle Bin", "Точно? В корзину") : L.T("Recycle Bin", "В корзину"), "BtnLink", SelDelete);
             del.Foreground = Wpf.Br(Wpf.Bad, 255);

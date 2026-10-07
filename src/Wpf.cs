@@ -219,7 +219,18 @@ namespace DeviceGuard
         // selected in the library (MainWindowSelect.cs): while any clip is, every card shows its circle
         bool selected, selecting;
         static readonly Brush RingOff = Wpf.Br("#BFFFFFFF"), FillOff = Wpf.Br("#730B0C0E"), Clear = Brushes.Transparent;
-        public bool Selected { get { return selected; } set { selected = value; Notify("Selected", "CheckOpacity", "CheckRing", "CheckFill", "CheckMark"); } }
+        public bool Selected
+        {
+            get { return selected; }
+            set
+            {
+                if (value && !selected) SelectedAt = ++selectClock;   // the order clips were selected in: the order they are joined in
+                selected = value;
+                Notify("Selected", "CheckOpacity", "CheckRing", "CheckFill", "CheckMark");
+            }
+        }
+        static long selectClock;
+        public long SelectedAt;
         public bool Selecting { get { return selecting; } set { selecting = value; Notify("CheckOpacity"); } }
         public double CheckOpacity { get { return selected || selecting ? 1 : 0; } }
         public Brush CheckRing { get { return selected ? Wpf.Res<Brush>("Text") : RingOff; } }

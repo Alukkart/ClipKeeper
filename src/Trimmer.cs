@@ -67,7 +67,7 @@ namespace DeviceGuard
     }
 
     // Trimming plus a mandatory check of the result
-    static class Trimmer
+    static partial class Trimmer
     {
         static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         const double SilentDb = -60;        // quieter counts as silence
@@ -567,22 +567,25 @@ namespace DeviceGuard
             for (double k = 0.93; k > 0.5; k -= 0.12)
             {
                 double totalKbps = limitMb * 8 * 1024 * k / Math.Max(1, j.Length);
-                double videoKbps = Math.Min(ShareMaxKbps, Math.Max(150, totalKbps - 128));
+                // a long range into a small limit (minutes into Discord's 10 MB): the sound gives up half, the picture goes to 480p
+                bool tight = totalKbps < 500;
+                string tryRest = tight ? rest.Replace("-b:a 128k", "-b:a 64k") : rest;
+                double videoKbps = Math.Min(ShareMaxKbps, Math.Max(90, totalKbps - (tight ? 64 : 128)));
                 // at a low bitrate 1080p60 turns to mush — reduce the frame size and rate
-                string vf = videoKbps < 1500 ? "scale=-2:720,fps=30" : videoKbps < 4500 ? "scale=-2:720" : null;
+                string vf = videoKbps < 600 ? "scale=-2:480,fps=30" : videoKbps < 1500 ? "scale=-2:720,fps=30" : videoKbps < 4500 ? "scale=-2:720" : null;
                 string rate = ((int)videoKbps) + "k", buf = ((int)videoKbps * 2) + "k";
                 string hw = Encoders.Bitrate(rate, buf), v = null;
                 r = null;
                 if (hw != null)
                 {
                     v = " -map 0:v:0 " + hw + " -pix_fmt yuv420p" + (vf != null ? " -vf " + vf : "");
-                    r = Encode(range + v + rest, j.Output, prog, cancel);
+                    r = Encode(range + v + tryRest, j.Output, prog, cancel);
                 }
                 if (r == null || r.Code != 0)
                 {
                     v = " -map 0:v:0 -c:v libx264 -preset veryfast -b:v " + rate + " -maxrate " + rate + " -bufsize " + buf + " -pix_fmt yuv420p" +
                         (vf != null ? " -vf " + vf : "");
-                    r = Encode(range + v + rest, j.Output, prog, cancel);
+                    r = Encode(range + v + tryRest, j.Output, prog, cancel);
                 }
                 if (r.Code != 0) return r;
                 if (new FileInfo(j.Output).Length <= limitMb * 1048576) return r;   // fits

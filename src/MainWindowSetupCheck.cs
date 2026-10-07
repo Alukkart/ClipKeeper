@@ -74,15 +74,17 @@ namespace DeviceGuard
                     "Чтобы клипы сохранялись, в OBS должно быть включено вот это. Чего не хватает — можно исправить прямо здесь."));
             ObsFix.Status st = null;
             DateTime readAt = DateTime.MinValue;
-            var waiting = new HashSet<string>();   // fixed while OBS is open: waits for it to close
             string capture = null;                 // the save key being pressed: what to show meanwhile
+            // "Restart OBS now" pressed: it takes a while (OBS closes, the fixes are written, it starts and connects) — shown step by step
+            bool restarting = false, sawDown = false;
+            DateTime restartAt = DateTime.MinValue, doneAt = DateTime.MinValue;
             Snapshot shown = last;
             Action refresh = null;
 
             Action<string, string> fixDone = (what, err) =>
             {
-                if (err == ObsScript.WaitObs) waiting.Add(what);
-                else if (err != null && app != null) app.ShowNotice(L.T("Not fixed", "Не исправилось"), new List<string> { err }, false);
+                // waiting for OBS to close is not an error: ObsFix keeps it and the rows show it
+                if (err != null && err != ObsScript.WaitObs && app != null) app.ShowNotice(L.T("Not fixed", "Не исправилось"), new List<string> { err }, false);
                 readAt = DateTime.MinValue;
                 refresh();
             };
@@ -121,13 +123,29 @@ namespace DeviceGuard
             // OBS is open: what was fixed waits, because OBS writes its files back when it closes
             var waitBox = new Border { Style = S("CardBorder"), Background = Wpf.Res<Brush>("Input"), Margin = new Thickness(0, 10, 0, 0), Visibility = Visibility.Collapsed };
             var waitPanel = new StackPanel();
-            waitPanel.Children.Add(new TextBlock { Style = S("SubText"), FontSize = 12.5, TextWrapping = TextWrapping.Wrap,
+            var waitText = new TextBlock { Style = S("SubText"), FontSize = 12.5, TextWrapping = TextWrapping.Wrap,
                 Text = L.T("OBS is open and writes its settings back when it closes, so the fix waits: it is made the moment OBS closes — or restart OBS now.",
-                           "OBS открыт и при закрытии перезапишет свои настройки, поэтому исправление ждёт: оно запишется, как только OBS закроется, — или перезапусти OBS сейчас.") });
+                           "OBS открыт и при закрытии перезапишет свои настройки, поэтому исправление ждёт: оно запишется, как только OBS закроется, — или перезапусти OBS сейчас.") };
+            waitPanel.Children.Add(waitText);
+            var progress = new StackPanel { Orientation = Orientation.Horizontal, Visibility = Visibility.Collapsed };
+            var spinner = Wpf.Spinner(18);
+            spinner.VerticalAlignment = VerticalAlignment.Center;
+            var phase = new TextBlock { FontWeight = FontWeights.SemiBold, Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap, MaxWidth = 500 };
+            progress.Children.Add(spinner);
+            progress.Children.Add(phase);
+            waitPanel.Children.Add(progress);
             var restart = Btn("", L.T("Restart OBS now", "Перезапустить OBS сейчас"), "BtnGhost");
             restart.HorizontalAlignment = HorizontalAlignment.Left;
             restart.Margin = new Thickness(0, 10, 0, 0);
-            restart.Click += (s, e) => { if (app != null) app.Guard.RequestRestartObs(); restart.IsEnabled = false; };
+            restart.Click += (s, e) =>
+            {
+                if (app == null || restarting) return;
+                app.Guard.RequestRestartObs();
+                restarting = true;
+                sawDown = false;
+                restartAt = DateTime.Now;
+                refresh();
+            };
             waitPanel.Children.Add(restart);
             waitBox.Child = waitPanel;
             p.Children.Add(waitBox);
@@ -135,12 +153,13 @@ namespace DeviceGuard
             refresh = () =>
             {
                 var s = shown;
-                if (st == null || (DateTime.Now - readAt).TotalSeconds > 3)
+                if (st == null || (DateTime.Now - readAt).TotalSeconds > (restarting ? 1 : 3))
                 {
                     ObsFix.ApplyPending();   // OBS closed by itself: what waited is written now
-                    st = ObsFix.Read();
+                    var fresh = ObsFix.Read();   // null while OBS rewrites its profile — keep what was known
+                    if (fresh != null) st = fresh;
+                    else if (st == null) st = new ObsFix.Status();
                     readAt = DateTime.Now;
-                    if (!ObsFix.Pending) waiting.Clear();
                 }
                 string exe = app != null ? app.Guard.ObsExe() : null;
                 if (exe != null) obsRow.Show(0, L.T("OBS is found", "OBS найден"), exe, null);
@@ -148,7 +167,7 @@ namespace DeviceGuard
 
                 bool connected = s != null && s.Connected;
                 if (connected) wsRow.Show(0, L.T("WebSocket is on", "WebSocket включён"), L.T("connected · ", "подключено · ") + s.Endpoint, null);
-                else if (waiting.Contains("ws")) wsRow.Show(1, L.T("WebSocket will be turned on", "WebSocket включится"), L.T("once OBS closes", "как только OBS закроется"), null);
+                else if (ObsFix.IsPending(ObsFix.FixWebSocket)) wsRow.Show(1, L.T("WebSocket will be turned on", "WebSocket включится"), L.T("once OBS closes", "как только OBS закроется"), null);
                 else if (st.WsFile != null && !st.WsOn) wsRow.Show(2, L.T("The WebSocket server is off", "Сервер WebSocket выключен"),
                     L.T("Without it ClipKeeper can't see OBS", "Без него ClipKeeper не видит OBS"), L.T("Turn on", "Включить"));
                 else if (!st.Settings) wsRow.Show(1, L.T("OBS was never started", "OBS ещё не запускался"), L.T("Start OBS once, then come back", "Запусти OBS один раз и вернись сюда"), null);
@@ -157,7 +176,7 @@ namespace DeviceGuard
                 if (rbRow != null)
                 {
                     if ((s != null && s.RbState == 1) || st.RbOn) rbRow.Show(0, L.T("The replay buffer is on", "Буфер повтора включён"), s != null && s.RbState == 1 ? s.RbInfo : null, null);
-                    else if (waiting.Contains("rb")) rbRow.Show(1, L.T("The replay buffer will be turned on", "Буфер повтора включится"), L.T("once OBS closes", "как только OBS закроется"), null);
+                    else if (ObsFix.IsPending(ObsFix.FixReplayBuffer)) rbRow.Show(1, L.T("The replay buffer will be turned on", "Буфер повтора включится"), L.T("once OBS closes", "как только OBS закроется"), null);
                     else rbRow.Show(2, L.T("The replay buffer is off", "Буфер повтора выключен"), L.T("Without it the key has nothing to save", "Без него клавише нечего сохранять"),
                                     st.ProfileIni != null ? L.T("Turn on", "Включить") : null);
                 }
@@ -165,11 +184,11 @@ namespace DeviceGuard
                 {
                     string key = st.Key ?? (app != null ? app.Guard.SaveKeyText : null);
                     if (capture != null) keyRow.Show(1, L.T("The \"Save Replay\" key", "Клавиша «Сохранить повтор»"), capture, null);
-                    else if (waiting.Contains("key")) keyRow.Show(1, L.T("The key will be set", "Клавиша назначится"), L.T("once OBS closes", "как только OBS закроется"), null);
+                    else if (ObsFix.IsPending(ObsFix.FixSaveKey)) keyRow.Show(1, L.T("The key will be set", "Клавиша назначится"), L.T("once OBS closes", "как только OBS закроется"), null);
                     else if (key != null) keyRow.Show(0, L.T("Save Replay: ", "Сохранить повтор: ") + key, L.T("the key that saves a clip", "клавиша, которая сохраняет клип"), L.T("Change…", "Сменить…"));
                     else keyRow.Show(1, L.T("No \"Save Replay\" key", "Нет клавиши «Сохранить повтор»"), L.T("Press the key you will save clips with", "Нажми клавишу, которой будешь сохранять клипы"),
                                      st.ProfileIni != null ? L.T("Set…", "Назначить…") : null);
-                    if (key != null && capture == null && !waiting.Contains("key")) keyRow.Fix.Style = S("BtnGhost");
+                    if (key != null && capture == null && !ObsFix.IsPending(ObsFix.FixSaveKey)) keyRow.Fix.Style = S("BtnGhost");
                     else keyRow.Fix.Style = S("BtnPrimary");
                 }
                 if (devRow != null)
@@ -178,8 +197,38 @@ namespace DeviceGuard
                     if (n > 0) devRow.Show(0, L.T("Devices are remembered", "Устройства запомнены"), string.Join(", ", s.Refs.Select(r => r.Key)), null);
                     else devRow.Show(1, L.T("Devices are not remembered yet", "Устройства ещё не запомнены"), L.T("That is the next step", "Это следующий шаг"), null);
                 }
-                waitBox.Visibility = waiting.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                // the restart, step by step: OBS closes (if it hides to the tray, it is ended after a few seconds),
+                // the fixes are written, OBS starts and ClipKeeper connects again
+                if (restarting)
+                {
+                    bool running = ObsScript.ObsRunning();
+                    if (!connected) sawDown = true;
+                    double sec = (DateTime.Now - restartAt).TotalSeconds;
+                    if (ObsFix.Pending && running)
+                        phase.Text = L.T("Closing OBS… if it hides in the tray, it is closed for it in a few seconds", "Закрываю OBS… Если он прячется в трей, через несколько секунд закрою его сам");
+                    else if (ObsFix.Pending) phase.Text = L.T("OBS is closed — writing the fixes…", "OBS закрыт — записываю исправления…");
+                    else if (!connected || (!sawDown && sec < 25)) phase.Text = L.T("Starting OBS and connecting…", "Запускаю OBS и подключаюсь…");
+                    else
+                    {
+                        restarting = false;
+                        doneAt = DateTime.Now;
+                        readAt = DateTime.MinValue;   // what is in OBS now
+                    }
+                    if (restarting && sec > 90)
+                    {
+                        restarting = false;
+                        doneAt = DateTime.Now;
+                        phase.Text = L.T("OBS did not come back in a minute and a half — check that it runs", "OBS не вернулся за полторы минуты — проверь, запущен ли он");
+                    }
+                    else if (!restarting) phase.Text = L.T("✓ OBS is restarted, the fixes are in place", "✓ OBS перезапущен, исправления на месте");
+                }
+                bool justDone = !restarting && (DateTime.Now - doneAt).TotalSeconds < 6;
+                progress.Visibility = restarting || justDone ? Visibility.Visible : Visibility.Collapsed;
+                spinner.Visibility = restarting ? Visibility.Visible : Visibility.Collapsed;
+                waitText.Visibility = ObsFix.Pending && !restarting ? Visibility.Visible : Visibility.Collapsed;
+                restart.Visibility = restarting || justDone ? Visibility.Collapsed : Visibility.Visible;
                 restart.IsEnabled = app != null && app.Guard.ObsExe() != null;
+                waitBox.Visibility = ObsFix.Pending || restarting || justDone ? Visibility.Visible : Visibility.Collapsed;
             };
             setupLive = s => { shown = s; refresh(); };
             refresh();

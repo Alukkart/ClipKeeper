@@ -125,7 +125,7 @@ namespace DeviceGuard
             name.SetValue(TextBlock.FontSizeProperty, 14.5);
             name.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
             var meta = new FrameworkElementFactory(typeof(TextBlock));
-            var mb = new MultiBinding { Converter = new GroupMeta() };
+            var mb = new MultiBinding { Converter = new GroupMeta(day => { Tuple<int, double> t; return day != null && groupTotals != null && groupTotals.TryGetValue(day, out t) ? t : null; }) };
             mb.Bindings.Add(new Binding());
             mb.Bindings.Add(new Binding("ItemCount"));
             meta.SetBinding(TextBlock.TextProperty, mb);
@@ -145,15 +145,20 @@ namespace DeviceGuard
         }
 
         // "3 clips · 7 min" under a day or a folder
+        // the whole day (or folder) as the reading counted it, not only the cards loaded so far; the loaded cards if unknown
         class GroupMeta : IMultiValueConverter
         {
+            readonly Func<string, Tuple<int, double>> totals;
+            public GroupMeta(Func<string, Tuple<int, double>> totals) { this.totals = totals; }
+
             public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
             {
                 var g = values[0] as CollectionViewGroup;
                 if (g == null) return "";
-                var items = g.Items.OfType<ClipVm>().ToList();
-                double sec = items.Sum(c => c.Seconds);
-                return L.N(items.Count, "clip", "clips", "клип", "клипа", "клипов") + (sec > 0 ? " · " + Fmt.Duration(sec) : "");
+                var t = totals(g.Name as string);
+                int n = t != null ? t.Item1 : g.Items.Count;
+                double sec = t != null ? t.Item2 : g.Items.OfType<ClipVm>().Sum(c => c.Seconds);
+                return L.N(n, "clip", "clips", "клип", "клипа", "клипов") + (sec > 0 ? " · " + Fmt.Duration(sec) : "");
             }
             public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture) { throw new NotSupportedException(); }
         }
@@ -346,14 +351,15 @@ namespace DeviceGuard
             HideHero();
             bool more;
             string stats;
-            var page = FindIn(roots, new FindSpec { Words = Words(query), Sort = SortNew }, 9, null, out more, out stats);
+            Dictionary<string, Tuple<int, double>> totals;
+            var page = FindIn(roots, new FindSpec { Words = Words(query), Sort = SortNew }, 9, null, out more, out stats, out totals);
             foreach (var vm in page)
             {
                 var img = Thumbs.Load(vm.Path, 320, 180);
                 if (img != null) vm.Thumb = new ImageBrush(img) { Stretch = Stretch.UniformToFill };
             }
             ClipIndex.Save();
-            ShowLibrary(new LibData { Folder = roots[0], Stats = stats, Group = true, Page = page, More = more }, FindKey);
+            ShowLibrary(new LibData { Folder = roots[0], Stats = stats, Group = true, Page = page, More = more, Totals = totals }, FindKey);
         }
 
         // for the self-test: words, dates, the "older than a month" filter and the order on files made for it
@@ -398,12 +404,18 @@ namespace DeviceGuard
         }
 
         // one search over Sources, Ready and the collection; a clip shows in its own folder only (folders may be nested)
-        List<ClipVm> FindEverywhere(FindSpec f, int limit, string lastClip, out bool more, out string stats)
+        List<ClipVm> FindEverywhere(FindSpec f, int limit, string lastClip, out bool more, out string stats, out Dictionary<string, Tuple<int, double>> totals)
         {
-            return FindIn(new[] { RootOf(last), ReadyRoot, cfg.UseCollection ? CollectionRoot : null }, f, limit, lastClip, out more, out stats);
+            return FindIn(new[] { RootOf(last), ReadyRoot, cfg.UseCollection ? CollectionRoot : null }, f, limit, lastClip, out more, out stats, out totals);
         }
 
-        static List<ClipVm> FindIn(string[] roots, FindSpec f, int limit, string lastClip, out bool more, out string stats)
+        // the clips and length of each day (or folder) of a list, for the group headers
+        static Dictionary<string, Tuple<int, double>> TotalsBy(IEnumerable<FileInfo> files, Func<FileInfo, string> group)
+        {
+            return files.GroupBy(group).ToDictionary(g => g.Key, g => Tuple.Create(g.Count(), g.Sum(f => ClipIndex.Duration(f))));
+        }
+
+        static List<ClipVm> FindIn(string[] roots, FindSpec f, int limit, string lastClip, out bool more, out string stats, out Dictionary<string, Tuple<int, double>> totals)
         {
             var found = new List<Tuple<FileInfo, int, string>>();
             for (int k = 0; k < roots.Length; k++)
@@ -420,6 +432,7 @@ namespace DeviceGuard
             more = found.Count > limit;
             stats = L.N(found.Count, "clip", "clips", "клип", "клипа", "клипов") + L.T(" in all folders", " во всех папках");
             var names = SrcNames;
+            totals = found.GroupBy(t => names[t.Item2]).ToDictionary(g => g.Key, g => Tuple.Create(g.Count(), g.Sum(t => ClipIndex.Duration(t.Item1))));
             return found.Take(limit).Select(t =>
             {
                 var vm = t.Item2 == SrcObs ? ClipScanner.Describe(t.Item1, t.Item3, lastClip) : DescribeNamed(t.Item1);

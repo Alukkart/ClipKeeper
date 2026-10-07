@@ -689,9 +689,10 @@ namespace DeviceGuard
             try { File.Delete(recapPng); } catch { }
 
             var tabs = mw.SettingsTabKeys.ToList();
-            check(string.Join(",", tabs) == "general,obs,checks,alarm,sorting,library,editor", "settings: all tabs with every feature on (" + string.Join(",", tabs) + ")");
+            check(string.Join(",", tabs) == "general,about,obs,obs-app,replay,checks,alarm,clip-saved,hotkeys,sorting,folders,covers,cleanup,encoder,editor-keys",
+                  "settings: all sections with every feature on (" + string.Join(",", tabs) + ")");
             foreach (var tab in tabs)
-                run("settings tab " + tab, () =>
+                run("settings section " + tab, () =>
                 {
                     mw.ShowSettingsTab(tab);
                     layout(root);
@@ -707,15 +708,30 @@ namespace DeviceGuard
             });
             if (hit != null)
             {
-                check(hit[0] >= 3 && hit[1] >= 2, "settings search: \"replay\" finds rows in several tabs (" + hit[0] + " rows, " + hit[1] + " tabs)");
+                check(hit[0] >= 3 && hit[1] >= 2, "settings search: \"replay\" finds rows in several sections (" + hit[0] + " rows, " + hit[1] + " sections)");
                 check(none[0] == 0 && none[1] == 0, "settings search: nonsense finds nothing");
-                check(back[1] == 1, "settings search: clearing it shows one tab again");
+                check(back[1] == 1, "settings search: clearing it shows one section again");
             }
             run("a problem link opens its setting", () =>
             {
                 mw.ShowSettingsRow(MainWindow.TabChecks, MainWindow.RowDisk);
                 layout(root);
                 if (mw.ShownSettingsTab != MainWindow.TabChecks) throw new Exception("shown: " + mw.ShownSettingsTab);
+                // the row decides the section, the given one is only for a row that is not there
+                mw.ShowSettingsRow(MainWindow.TabGeneral, MainWindow.RowReplayBuffer);
+                layout(root);
+                if (mw.ShownSettingsTab != MainWindow.TabReplay) throw new Exception("shown: " + mw.ShownSettingsTab);
+            });
+            run("settings: the sidebar turns into its sections, back returns to the page before", () =>
+            {
+                mw.ShowPage(MainWindow.PageStats);
+                mw.ShowPage(MainWindow.PageSettings);
+                layout(root);
+                if (((System.Windows.FrameworkElement)root.FindName("MainSide")).Visibility == System.Windows.Visibility.Visible) throw new Exception("the page list is still shown");
+                mw.LeaveSettings();
+                layout(root);
+                if (mw.CurrentPage != MainWindow.PageStats) throw new Exception("back to page " + mw.CurrentPage);
+                if (((System.Windows.FrameworkElement)root.FindName("MainSide")).Visibility != System.Windows.Visibility.Visible) throw new Exception("the page list is not back");
             });
             for (int i = 0; i < 5; i++)
             {
@@ -724,20 +740,20 @@ namespace DeviceGuard
             }
             mw.PreviewSetup(-1);
 
-            // a feature turned off takes its tabs away
+            // a feature turned off takes its sections away
             var noGuard = fresh();
             noGuard.GuardEnabled = false;
             run("settings without the recording guard", () =>
             {
                 var keys = new MainWindow(null, noGuard).SettingsTabKeys.ToList();
-                if (keys.Contains(MainWindow.TabChecks) || keys.Contains(MainWindow.TabAlarm)) throw new Exception(string.Join(",", keys));
+                if (keys.Contains(MainWindow.TabChecks) || keys.Contains(MainWindow.TabAlarm) || keys.Contains(MainWindow.TabReplay) || keys.Contains(MainWindow.TabClipSaved)) throw new Exception(string.Join(",", keys));
             });
             var noLibrary = fresh();
             noLibrary.LibraryEnabled = false;
             run("settings without the library", () =>
             {
                 var keys = new MainWindow(null, noLibrary).SettingsTabKeys.ToList();
-                if (keys.Contains(MainWindow.TabLibrary) || keys.Contains(MainWindow.TabEditor)) throw new Exception(string.Join(",", keys));
+                if (keys.Contains(MainWindow.TabFolders) || keys.Contains(MainWindow.TabHotkeys) || keys.Contains(MainWindow.TabEncoder) || !keys.Contains(MainWindow.TabSorting)) throw new Exception(string.Join(",", keys));
             });
 
             Action<System.Windows.FrameworkElement> fit = el =>

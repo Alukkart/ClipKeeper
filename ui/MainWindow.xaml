@@ -219,9 +219,10 @@
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
 
-        <!-- ── sidebar ── -->
+        <!-- ── sidebar: the pages; on the settings page it turns into the list of settings sections ── -->
         <Border Background="{StaticResource Side}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0">
-            <DockPanel>
+            <Grid>
+            <DockPanel x:Name="MainSide">
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="22,20,0,24">
                     <Grid Width="26" Height="26">
                         <Viewbox>
@@ -288,6 +289,24 @@
                     </RadioButton>
                 </StackPanel>
             </DockPanel>
+
+            <!-- settings: back to the page you came from, the search and the sections in groups (built in MainWindowSettings.cs) -->
+            <DockPanel x:Name="SettingsSide" Visibility="Collapsed">
+                <Button x:Name="SettingsBack" DockPanel.Dock="Top" Style="{StaticResource BtnLink}" Foreground="{StaticResource Text}"
+                        HorizontalAlignment="Left" Margin="12,12,0,10" Padding="8,6,12,6" ToolTip="Back (Esc)¦Назад (Esc)"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE72B;" FontSize="14" Width="26" VerticalAlignment="Center"/>
+                        <TextBlock Text="Settings¦Настройки" FontFamily="{StaticResource DisplayFont}" FontSize="15.5" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <StackPanel x:Name="SettingsHead" DockPanel.Dock="Top" Margin="14,0,14,6"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="SettingsNav" Margin="10,0,10,8"/>
+                </ScrollViewer>
+            </DockPanel>
+            </Grid>
         </Border>
 
         <!-- ── content ── -->
@@ -543,18 +562,10 @@
                     <StackPanel x:Name="StatsPanel" Margin="34,0,34,30"/>
                 </ScrollViewer>
 
-                <!-- Settings: the title, search and category tabs stay in place, the chosen category scrolls under them.
-                     Built in code (MainWindowSettings.cs) -->
-                <Grid x:Name="PageSettings" Visibility="Collapsed">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <StackPanel x:Name="SettingsHead" Margin="34,0,34,0"/>
-                    <ScrollViewer x:Name="SettingsScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                        <StackPanel x:Name="SettingsPanel" Margin="34,4,34,30"/>
-                    </ScrollViewer>
-                </Grid>
+                <!-- Settings: the chosen section; the sections themselves are in the sidebar. Built in code (MainWindowSettings.cs) -->
+                <ScrollViewer x:Name="PageSettings" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="SettingsPanel" Margin="34,0,34,30"/>
+                </ScrollViewer>
             </Grid>
         </Grid>
     </Grid>

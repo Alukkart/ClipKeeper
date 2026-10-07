@@ -86,7 +86,7 @@ namespace DeviceGuard
             tAudio.Click = ShowSources;
             tScreen.Click = ShowSources;
             tObs.Click = () => ShowSettingsRow(TabObs, RowConnection);
-            tRb.Click = () => ShowSettingsRow(TabObs, RowReplayBuffer);
+            tRb.Click = () => ShowSettingsRow(TabReplay, RowReplayBuffer);
             tDisk.Click = () => ShowSettingsRow(TabChecks, RowDisk);
             problemsList.AddHandler(System.Windows.Controls.Primitives.ButtonBase.ClickEvent, new RoutedEventHandler((s, e) =>
             {
@@ -142,6 +142,7 @@ namespace DeviceGuard
         }
 
         int currentPage = -1;
+        int pageBeforeSettings = PageClips;   // where "back" on the settings page goes
         public int CurrentPage { get { return currentPage; } }
 
         public void ShowPage(int i)
@@ -155,6 +156,10 @@ namespace DeviceGuard
                 if (show && k != currentPage && k == PageSettings) ClearSettingsSearch();
                 pages[k].Visibility = show ? Visibility.Visible : Visibility.Collapsed;
             }
+            if (i == PageSettings && currentPage >= 0 && currentPage != PageSettings) pageBeforeSettings = currentPage;
+            // on the settings page the sidebar is the list of its sections, with a way back
+            F<FrameworkElement>("MainSide").Visibility = i == PageSettings ? Visibility.Collapsed : Visibility.Visible;
+            F<FrameworkElement>("SettingsSide").Visibility = i == PageSettings ? Visibility.Visible : Visibility.Collapsed;
             currentPage = i;
             if (navs[i].IsChecked != true) navs[i].IsChecked = true;
             if (i == PageClips) LoadClips(false);
@@ -163,7 +168,7 @@ namespace DeviceGuard
 
         ScrollViewer ScrollOf(int page)
         {
-            return page == PageSettings ? F<ScrollViewer>("SettingsScroll") : (ScrollViewer)pages[page];
+            return (ScrollViewer)pages[page];
         }
 
         public void FocusPassword()
@@ -280,10 +285,10 @@ namespace DeviceGuard
         FrameworkElement SliderBox(int min, int max, int value, int step, Func<int, string> fmt, Action<int> set, UIElement extra)
         {
             var sp = new StackPanel { Orientation = Orientation.Horizontal };
-            var sl = MakeSlider(min, max, value, step, 200);
+            var sl = MakeSlider(min, max, value, step, 160);
             var lbl = new TextBlock
             {
-                Text = fmt((int)sl.Value), Width = 70, Margin = new Thickness(12, 0, 0, 0),
+                Text = fmt((int)sl.Value), Width = 58, Margin = new Thickness(10, 0, 0, 0),
                 VerticalAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Right, Foreground = Wpf.Res<Brush>("Sub"),
             };
             sl.ValueChanged += (s, e) =>
@@ -486,8 +491,8 @@ namespace DeviceGuard
                 vm.Link = ShowSources;
             }
             else if (key == "ws") { vm.LinkText = settings; vm.Link = () => ShowSettingsRow(TabObs, RowConnection); }
-            else if (key == "obs" || key == "hang") { vm.LinkText = settings; vm.Link = () => ShowSettingsRow(TabObs, RowObsProgram); }
-            else if (key == "rb") { vm.LinkText = settings; vm.Link = () => ShowSettingsRow(TabObs, RowReplayBuffer); }
+            else if (key == "obs" || key == "hang") { vm.LinkText = settings; vm.Link = () => ShowSettingsRow(TabObsApp, RowObsProgram); }
+            else if (key == "rb") { vm.LinkText = settings; vm.Link = () => ShowSettingsRow(TabReplay, RowReplayBuffer); }
             else if (key == "disk") { vm.LinkText = settings; vm.Link = () => ShowSettingsRow(TabChecks, RowDisk); }
             else if (key == "perf") { vm.LinkText = settings; vm.Link = () => ShowSettingsRow(TabChecks, RowFrames); }
             return vm;

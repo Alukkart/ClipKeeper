@@ -14,22 +14,25 @@ using Run = System.Windows.Documents.Run;
 
 namespace DeviceGuard
 {
-    // Settings: categories are tabs under a fixed title with a search box; the chosen category scrolls under them.
-    // A category is made of cards: a caption and rows split by thin lines. The search goes over every row of every category.
+    // Settings: on the left the title, the search and the sections in groups; the chosen section scrolls on the right.
+    // A section opens with a banner (its name, what it is for, a picture) and is made of cards: a caption and rows split by thin lines.
+    // The search goes over every row of every section.
     partial class MainWindow
     {
-        public const string TabGeneral = "general", TabObs = "obs", TabChecks = "checks", TabAlarm = "alarm",
-                            TabSorting = "sorting", TabLibrary = "library", TabEditor = "editor";
+        public const string TabGeneral = "general", TabAbout = "about", TabObs = "obs", TabObsApp = "obs-app", TabReplay = "replay",
+                            TabChecks = "checks", TabAlarm = "alarm", TabClipSaved = "clip-saved", TabHotkeys = "hotkeys", TabSorting = "sorting",
+                            TabFolders = "folders", TabCovers = "covers", TabCleanup = "cleanup", TabEncoder = "encoder", TabEditorKeys = "editor-keys";
         // rows other places link to (a problem on the Recording page, a tile)
         public const string RowConnection = "connection", RowPassword = "password", RowObsProgram = "obs-program",
                             RowReplayBuffer = "replay-buffer", RowDisk = "disk", RowFrames = "frames", RowUpdates = "updates", RowClipSound = "clip-sound", RowObsScript = "obs-script";
 
         class SettingsTab
         {
-            public string Key, Title;
+            public string Key, Title, Group;
             public RadioButton Button;
             public StackPanel Panel;
-            public TextBlock Heading;   // the category name: only shown in search results, the tab says it otherwise
+            public FrameworkElement Banner;   // the name, what the section is for and its picture: hidden in search results
+            public TextBlock Heading;         // the section name: only shown in search results, the banner says it otherwise
         }
 
         class SettingsCard
@@ -52,9 +55,11 @@ namespace DeviceGuard
         readonly List<SettingsCard> settingsCards = new List<SettingsCard>();
         readonly List<SettingsItem> settingsItems = new List<SettingsItem>();
         readonly Dictionary<string, FrameworkElement> settingsRows = new Dictionary<string, FrameworkElement>();
+        StackPanel settingsNav;
+        string buildGroup;
         SettingsTab buildTab;
         SettingsCard buildCard;
-        string settingsTab = TabGeneral;   // survives rebuilds, so a switched toggle does not throw you to the first tab
+        string settingsTab = TabGeneral;   // survives rebuilds, so a switched toggle does not throw you to the first section
         TextBox settingsSearch;
         TextBlock settingsNothing;
         bool syncingTabs;
@@ -64,52 +69,78 @@ namespace DeviceGuard
         void BuildSettings()
         {
             var head = F<StackPanel>("SettingsHead");
+            settingsNav = F<StackPanel>("SettingsNav");
             var p = F<StackPanel>("SettingsPanel");
             string query = settingsSearch != null ? settingsSearch.Text : "";
             head.Children.Clear();
+            settingsNav.Children.Clear();
             p.Children.Clear();
             settingsTabs.Clear();
             settingsCards.Clear();
             settingsItems.Clear();
             settingsRows.Clear();
 
-            // title on the left, search on the right
-            var top = new Grid();
-            top.ColumnDefinitions.Add(new ColumnDefinition());
-            top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var titles = new StackPanel();
-            Header(titles, L.T("Settings", "Настройки"), L.T("Changes apply right away.", "Изменения применяются сразу."));
-            top.Children.Add(titles);
-            var search = SearchBox(query);
-            Grid.SetColumn(search, 1);
-            top.Children.Add(search);
-            head.Children.Add(top);
+            head.Children.Add(SearchBox(query));
 
-            var tabs = new WrapPanel();
-            head.Children.Add(new Border { BorderBrush = Wpf.Res<Brush>("Line"), BorderThickness = new Thickness(0, 0, 0, 1), Margin = new Thickness(0, 12, 0, 0), Child = tabs });
-
-            Tab(p, tabs, TabGeneral, "\uE713", L.T("General", "Общие"), L.T("Language, startup and what ClipKeeper does at all", "Язык, автозапуск и что ClipKeeper вообще делает"));
+            Group(L.T("Basics", "Основное"));
+            Tab(p, TabGeneral, "", L.T("General", "Общие"), L.T("Language, startup and which parts of ClipKeeper are on", "Язык, автозапуск и какие части ClipKeeper включены"));
             BuildGeneral();
-            Tab(p, tabs, TabObs, "\uE703", "OBS", L.T("Connection to OBS and what to do with it", "Связь с OBS и что с ним делать"));
-            BuildObs();
+            Tab(p, TabAbout, "", L.T("About", "О программе"), L.T("The version, updates and how to report a problem", "Версия, обновления и как сообщить о проблеме"));
+            BuildAbout();
+
+            Group("OBS");
+            Tab(p, TabObs, "", L.T("Connection", "Подключение"), L.T("How ClipKeeper reaches OBS over WebSocket", "Как ClipKeeper связывается с OBS по WebSocket"));
+            BuildConnection();
+            Tab(p, TabObsApp, "", L.T("OBS program", "Программа OBS"), L.T("Where OBS is installed, starting together and getting back up after a crash",
+                                                                                   "Где установлен OBS, запуск вместе с ним и восстановление после падения"));
+            BuildObsProgram();
             if (cfg.GuardEnabled)
             {
-                Tab(p, tabs, TabChecks, "\uE73E", L.T("Checks", "Проверки"), L.T("What ClipKeeper checks in the recording besides devices", "Что ClipKeeper проверяет в записи помимо устройств"));
+                Tab(p, TabReplay, "", L.T("Replay buffer", "Буфер повтора"), L.T("If you save clips with the replay buffer rather than regular recording",
+                                                                                       "Если сохраняешь клипы буфером повтора, а не обычной записью"));
+                BuildReplayBuffer();
+
+                Group(L.T("Monitoring", "Наблюдение"));
+                Tab(p, TabChecks, "", L.T("Checks", "Проверки"), L.T("What ClipKeeper checks in the recording besides devices", "Что ClipKeeper проверяет в записи помимо устройств"));
                 BuildChecks();
-                Tab(p, tabs, TabAlarm, "\uEA8F", L.T("Alarm", "Тревога"), L.T("How ClipKeeper calls you when something is wrong with recording", "Как ClipKeeper зовёт тебя, если с записью что-то не так"));
+                Tab(p, TabAlarm, "", L.T("Alarm", "Тревога"), L.T("How ClipKeeper calls you when something is wrong with recording", "Как ClipKeeper зовёт тебя, если с записью что-то не так"));
                 BuildAlarm();
             }
-            // sorting works without the library: it is done while recording
-            Tab(p, tabs, TabSorting, "\uE8CB", L.T("Sorting", "Раскладка"), L.T("Saved clips go into the folder of the game you are playing — no OBS script needed",
-                                                                                   "Сохранённые клипы попадают в папку игры, в которую ты играешь, — скрипт в OBS не нужен"));
-            BuildSorting();
+
+            Group(L.T("Clips", "Клипы"));
+            if (cfg.GuardEnabled)
+            {
+                Tab(p, TabClipSaved, "", L.T("Clip saved", "Клип сохранён"), L.T("What happens the moment you save a clip", "Что происходит в момент, когда ты сохранил клип"));
+                BuildClipSaved();
+            }
             if (cfg.LibraryEnabled)
             {
-                Tab(p, tabs, TabLibrary, "\uE8F1", L.T("Library", "Библиотека"), L.T("Where ClipKeeper looks for clips and how it sorts them. The same three folders are the buttons on top of the library",
-                                                                                         "Где ClipKeeper ищет клипы и как их раскладывает. Те же три папки — кнопки вверху библиотеки"));
-                BuildLibrary();
-                Tab(p, tabs, TabEditor, "\uE8C6", L.T("Editor", "Редактор"), L.T("How trims are re-encoded and which keys do what", "Как пережимаются обрезки и какие клавиши что делают"));
-                BuildEditor();
+                Tab(p, TabHotkeys, "", L.T("Hotkeys in game", "Клавиши в игре"), L.T("Do things with the last clip without leaving the game", "Действия с последним клипом, не выходя из игры"));
+                BuildHotkeys();
+            }
+            // sorting works without the library: it is done while recording
+            Tab(p, TabSorting, "", L.T("Sorting by game", "Раскладка по играм"), L.T("Saved clips go into the folder of the game you are playing — no OBS script needed",
+                                                                                             "Сохранённые клипы попадают в папку игры, в которую ты играешь, — скрипт в OBS не нужен"));
+            BuildSorting();
+
+            if (cfg.LibraryEnabled)
+            {
+                Group(L.T("Library", "Библиотека"));
+                Tab(p, TabFolders, "", L.T("Folders", "Папки"), L.T("Where ClipKeeper looks for clips. The same three folders are the buttons on top of the library",
+                                                                         "Где ClipKeeper ищет клипы. Те же три папки — кнопки вверху библиотеки"));
+                BuildFolders();
+                Tab(p, TabCovers, "", L.T("Games and covers", "Игры и обложки"), L.T("How the library tells which game a clip is from and what to show on it",
+                                                                                          "Как библиотека понимает, из какой игры клип, и что показать на обложке"));
+                BuildCovers();
+                Tab(p, TabCleanup, "", L.T("Cleanup", "Уборка"), L.T("Old source clips go to the Recycle Bin; nothing you kept is touched",
+                                                                          "Старые исходники уходят в корзину; то, что ты оставил, не трогается"));
+                BuildCleanup();
+
+                Group(L.T("Editor", "Редактор"));
+                Tab(p, TabEncoder, "", L.T("Video encoder", "Кодировщик"), L.T("What re-encodes trims and cuts", "Чем пережимаются обрезки и вырезы"));
+                BuildEncoder();
+                Tab(p, TabEditorKeys, "", L.T("Editor keys", "Клавиши редактора"), L.T("Like in Premiere, and any key can be changed", "Как в Premiere, и любую можно поменять"));
+                BuildEditorKeys();
             }
 
             settingsNothing = new TextBlock { Style = S("SubText"), Margin = new Thickness(2, 24, 0, 0), Visibility = Visibility.Collapsed };
@@ -120,23 +151,52 @@ namespace DeviceGuard
         }
 
         // ── building blocks ──
-        void Tab(StackPanel p, WrapPanel tabs, string key, string glyph, string title, string sub)
+        // a group caption in the list; the sections after it belong to it
+        void Group(string name)
         {
-            var t = new SettingsTab { Key = key, Title = title, Panel = new StackPanel() };
+            buildGroup = name;
+            settingsNav.Children.Add(new TextBlock { Text = name.ToUpperInvariant(), Style = S("Caption"),
+                                                     Margin = new Thickness(10, settingsNav.Children.Count == 0 ? 8 : 14, 0, 3) });
+        }
+
+        void Tab(StackPanel p, string key, string glyph, string title, string sub)
+        {
+            var t = new SettingsTab { Key = key, Title = title, Group = buildGroup, Panel = new StackPanel() };
+            t.Banner = Banner(key, title, sub);
+            t.Panel.Children.Add(t.Banner);
             t.Heading = new TextBlock { Text = title, FontFamily = Wpf.Res<FontFamily>("DisplayFont"), FontSize = 20, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 26, 0, 0) };
             t.Panel.Children.Add(t.Heading);
-            t.Panel.Children.Add(new TextBlock { Text = sub, Style = S("SubText"), Margin = new Thickness(0, 10, 0, 0) });
             p.Children.Add(t.Panel);
 
             var sp = new StackPanel { Orientation = Orientation.Horizontal };
-            sp.Children.Add(new TextBlock { Style = S("Icon"), Text = glyph, FontSize = 14, Margin = new Thickness(0, 0, 9, 0) });
+            sp.Children.Add(new TextBlock { Style = S("Icon"), Text = glyph, FontSize = 14, Width = 26, VerticalAlignment = VerticalAlignment.Center });
             sp.Children.Add(new TextBlock { Text = title });
-            t.Button = new RadioButton { Style = S("Tab"), GroupName = "settingsTabs", Content = sp };
+            t.Button = new RadioButton { Style = S("SubNav"), GroupName = "settingsTabs", Content = sp };
             t.Button.Checked += (s, e) => { if (!syncingTabs) ShowSettingsTab(key); };
-            tabs.Children.Add(t.Button);
+            settingsNav.Children.Add(t.Button);
 
             settingsTabs.Add(t);
             buildTab = t;
+        }
+
+        // the top of a section: its name and what it is for on the left, its picture on the right
+        static FrameworkElement Banner(string key, string title, string sub)
+        {
+            var g = new Grid();
+            g.ColumnDefinitions.Add(new ColumnDefinition());
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var tx = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 20, 0) };
+            tx.Children.Add(new TextBlock { Text = title, Style = S("H1"), FontSize = 21 });
+            tx.Children.Add(new TextBlock { Text = sub, Style = S("SubText"), Margin = new Thickness(0, 6, 0, 0) });
+            g.Children.Add(tx);
+            var art = SettingsArt(key);
+            Grid.SetColumn(art, 1);
+            g.Children.Add(art);
+            return new Border
+            {
+                Background = Wpf.Res<Brush>("Card"), BorderBrush = Wpf.Res<Brush>("Line"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12),
+                Padding = new Thickness(22, 8, 12, 8), Margin = new Thickness(0, 2, 0, 4), Child = g,
+            };
         }
 
         // a new card in the category being built; rows go into it until the next card
@@ -174,14 +234,14 @@ namespace DeviceGuard
         FrameworkElement SearchBox(string query)
         {
             var box = new Border { Background = Wpf.Res<Brush>("Input"), BorderBrush = Wpf.Res<Brush>("LineHi"), BorderThickness = new Thickness(1),
-                                   CornerRadius = new CornerRadius(7), Width = 250, Height = 34, VerticalAlignment = VerticalAlignment.Bottom,
-                                   Margin = new Thickness(20, 0, 0, 6) };
+                                   CornerRadius = new CornerRadius(7), Height = 34, Margin = new Thickness(0, 0, 0, 4),
+                                   ToolTip = L.T("Find a setting (Ctrl+F)", "Найти настройку (Ctrl+F)") };
             var g = new Grid();
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             g.ColumnDefinitions.Add(new ColumnDefinition());
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             g.Children.Add(new TextBlock { Style = S("Icon"), Text = "\uE721", FontSize = 13, Foreground = Wpf.Res<Brush>("Muted"), Margin = new Thickness(11, 0, 0, 0) });
-            var hint = new TextBlock { Text = L.T("Find a setting  (Ctrl+F)", "Найти настройку  (Ctrl+F)"), Foreground = Wpf.Res<Brush>("Muted"), FontSize = 13,
+            var hint = new TextBlock { Text = L.T("Search  (Ctrl+F)", "Поиск  (Ctrl+F)"), Foreground = Wpf.Res<Brush>("Muted"), FontSize = 13,
                                        Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
             Grid.SetColumn(hint, 1);
             g.Children.Add(hint);
@@ -213,9 +273,15 @@ namespace DeviceGuard
             return box;
         }
 
-        // Ctrl+F on the settings page goes to the search
+        // Ctrl+F on the settings page goes to the search; Esc or the arrow on top goes back to the page you came from.
+        // Esc is caught after the controls: the search and a hotkey field being set use it themselves
         void InitSettingsKeys()
         {
+            F<Button>("SettingsBack").Click += (s, e) => LeaveSettings();
+            W.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Escape && Keyboard.Modifiers == ModifierKeys.None && pages[PageSettings].IsVisible) { LeaveSettings(); e.Handled = true; }
+            };
             W.PreviewKeyDown += (s, e) =>
             {
                 if (e.Key != Key.F || Keyboard.Modifiers != ModifierKeys.Control || !pages[PageSettings].IsVisible || settingsSearch == null) return;
@@ -225,22 +291,32 @@ namespace DeviceGuard
             };
         }
 
+        public void LeaveSettings()
+        {
+            ShowPage(PageOn(pageBeforeSettings) ? pageBeforeSettings : PageClips);   // ShowPage falls back further if the library is off
+        }
+
         public void ShowSettingsTab(string key)
         {
             settingsTab = key;
             if (settingsSearch != null && settingsSearch.Text.Length > 0) settingsSearch.Text = "";   // TextChanged applies it
             else ApplySettingsSearch();
             ScrollOf(PageSettings).ScrollToTop();
+            var t = settingsTabs.FirstOrDefault(x => x.Key == key);
+            if (t != null) t.Button.BringIntoView();   // the list scrolls when the window is low
         }
 
-        // opens the tab and scrolls to the row, which lights up for a moment; a row that is not there (its feature is off) — just the tab
+        // opens the section the row is in and scrolls to the row, which lights up for a moment;
+        // a row that is not there (its feature is off) — just the given section
         public void ShowSettingsRow(string tab, string row)
         {
             ShowPage(PageSettings);
-            if (!settingsTabs.Any(t => t.Key == tab)) tab = TabGeneral;
-            ShowSettingsTab(tab);
             FrameworkElement el;
-            if (!settingsRows.TryGetValue(row, out el) || !settingsTabs.First(t => t.Key == tab).Panel.IsAncestorOf(el)) return;
+            var owner = settingsRows.TryGetValue(row, out el) ? settingsTabs.FirstOrDefault(t => t.Panel.IsAncestorOf(el)) : null;
+            if (owner != null) tab = owner.Key;
+            else if (!settingsTabs.Any(t => t.Key == tab)) tab = TabGeneral;
+            ShowSettingsTab(tab);
+            if (owner == null) return;
             W.Dispatcher.BeginInvoke(new Action(() =>
             {
                 var sv = ScrollOf(PageSettings);
@@ -279,7 +355,8 @@ namespace DeviceGuard
             if (settingsSearch != null && settingsSearch.Text.Length > 0) settingsSearch.Text = "";
         }
 
-        // no search: only the chosen tab. A search: matching rows from every tab, under category names
+        // no search: only the chosen section. A search: matching rows from every section, under section names;
+        // in the list, sections without matches fade
         void ApplySettingsSearch()
         {
             string q = settingsSearch != null ? settingsSearch.Text.Trim().ToLowerInvariant() : "";
@@ -291,7 +368,7 @@ namespace DeviceGuard
                 bool show = true;
                 if (searching)
                 {
-                    string hay = (it.Card.Tab.Title + " " + (it.Card.Caption != null ? it.Card.Caption.Text : "") + " " + it.Words + " " + (it.OwnText ? TextOf(it.Row) : "")).ToLowerInvariant();
+                    string hay = (it.Card.Tab.Group + " " + it.Card.Tab.Title + " " + (it.Card.Caption != null ? it.Card.Caption.Text : "") + " " + it.Words + " " + (it.OwnText ? TextOf(it.Row) : "")).ToLowerInvariant();
                     show = words.All(w => hay.Contains(w));
                 }
                 it.Row.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
@@ -310,9 +387,10 @@ namespace DeviceGuard
                 found |= show;
                 t.Panel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
                 t.Heading.Visibility = searching ? Visibility.Visible : Visibility.Collapsed;
-                // the subtitle explains the tab; in search results the category name is enough
-                t.Panel.Children[1].Visibility = searching ? Visibility.Collapsed : Visibility.Visible;
+                // the banner explains the section; in search results its name is enough
+                t.Banner.Visibility = searching ? Visibility.Collapsed : Visibility.Visible;
                 t.Button.IsChecked = !searching && t.Key == settingsTab;
+                t.Button.Opacity = searching && !show ? 0.4 : 1;
             }
             syncingTabs = false;
             settingsNothing.Text = L.T("Nothing found for “", "Ничего не нашлось по запросу «") + q + L.T("”", "»");
@@ -395,6 +473,7 @@ namespace DeviceGuard
         const string ReleasesUrl = "https://github.com/Alukkart/ClipKeeper/releases";
 
         // ── General: language, startup, modules ─────────────────────────────
+        // the language chips go under the description: on the right they would squeeze it in a narrow window
         void BuildGeneral()
         {
             Card(L.T("Interface", "Интерфейс"));
@@ -405,7 +484,7 @@ namespace DeviceGuard
             {
                 string code = o[0];
                 var b = Btn(null, o[1], code == cfg.Language ? "BtnPrimary" : "BtnGhost");
-                b.Margin = new Thickness(6, 0, 0, 0);
+                b.Margin = new Thickness(0, 0, 6, 0);
                 b.Click += (s, e) =>
                 {
                     if (code == cfg.Language) return;
@@ -416,10 +495,12 @@ namespace DeviceGuard
                 };
                 chips.Children.Add(b);
             }
-            Add(Row("\uF2B7", "Language · Язык",
-                L.T("ClipKeeper restarts to apply it. As in Windows: Russian on a Russian Windows, English otherwise",
-                    "Чтобы применить, ClipKeeper перезапустится. Как в Windows: русский на русской Windows, иначе английский"), chips),
-                "language язык english русский");
+            var langDesc = new StackPanel();
+            langDesc.Children.Add(new TextBlock { Style = S("SubText"), FontSize = 12.5, Margin = new Thickness(0, 2, 0, 10),
+                Text = L.T("ClipKeeper restarts to apply it. As in Windows: Russian on a Russian Windows, English otherwise",
+                           "Чтобы применить, ClipKeeper перезапустится. Как в Windows: русский на русской Windows, иначе английский") });
+            langDesc.Children.Add(chips);
+            Add(Row("\uF2B7", "Language · Язык", langDesc, null), "language язык english русский");
             Add(Row("\uE890", L.T("Hide ClipKeeper windows from recordings and screenshots", "Скрывать окна ClipKeeper из записи и скриншотов"),
                 L.T("The main window and the editor stay out of OBS, screenshots and screen sharing. Alarms, notifications and the tray menu are always hidden", "Главное окно и редактор не попадают в OBS, скриншоты и демонстрацию экрана. Тревоги, уведомления и меню трея скрыты всегда"),
                 Toggle(cfg.HideFromCapture, v => { cfg.HideFromCapture = v; Wpf.ApplyCaptureSetting(v); })),
@@ -456,8 +537,12 @@ namespace DeviceGuard
                 L.T("Features, OBS, devices and folders step by step", "Возможности, OBS, устройства и папки по шагам"),
                 RowButton(null, L.T("Run again", "Пройти заново"), "BtnGhost", ShowSetup)),
                 "wizard мастер");
+        }
 
-            Card(L.T("About", "О программе"));
+        // ── About: the version and updates, reporting a problem ─────────────
+        void BuildAbout()
+        {
+            Card(null);
             updateText = new TextBlock { Style = S("SubText"), FontSize = 12.5 };
             updateButton = new Button { Style = S("BtnGhost") };
             updateButton.Click += (s, e) => UpdateButtonClick();
@@ -560,8 +645,8 @@ namespace DeviceGuard
             c.Unchecked += changed;
         }
 
-        // ── OBS: connection, the program, the replay buffer ─────────────────
-        void BuildObs()
+        // ── OBS: the connection ─────────────────────────────────────────────
+        void BuildConnection()
         {
             // the connection status at the top: the first thing to look at when something does not work
             Card(null);
@@ -590,7 +675,12 @@ namespace DeviceGuard
                 RowButton(null, L.T("Save and reconnect", "Сохранить и переподключиться"), "BtnPrimary", SaveConnection)),
                 "websocket save reconnect сохранить переподключиться");
 
-            Card(L.T("OBS program", "Программа OBS"));
+        }
+
+        // ── OBS program: where it is, starting together, restarting after a crash, backups ──
+        void BuildObsProgram()
+        {
+            Card(null);
             obsExe = new TextBlock { Style = S("SubText"), FontSize = 12, FontFamily = Wpf.Res<FontFamily>("MonoFont"), TextTrimming = TextTrimming.CharacterEllipsis };
             UpdateObsExe();
             var exeButtons = new StackPanel { Orientation = Orientation.Horizontal };
@@ -613,20 +703,24 @@ namespace DeviceGuard
                 Add(Row("\uE74E", L.T("OBS settings backup", "Резервная копия настроек OBS"),
                     L.T("Once a day into the backups folder, the last 7 copies are kept", "Раз в день в папку backups, хранятся 7 последних копий"),
                     Toggle(cfg.Backup, v => cfg.Backup = v)), "backup бэкап");
+            }
+        }
 
-                Card(L.T("Replay buffer", "Буфер повтора"));
-                Add(Row("\uE916", L.T("I record with the replay buffer", "Записываю буфером повтора"),
-                    L.T("Off — for regular recording: no buffer checks, OBS starts without the buffer", "Выключи, если пишешь обычной записью: буфер не проверяется, OBS запускается без него"),
-                    Toggle(cfg.UseReplayBuffer, v => { cfg.UseReplayBuffer = v; Changed(true); })), "replay buffer", true, RowReplayBuffer);
-                if (cfg.UseReplayBuffer)
-                {
-                    Add(Row("\uE7C8", L.T("The replay buffer must always run", "Буфер повтора должен работать всегда"),
-                        L.T("Alarm if it is not running a minute after OBS starts", "Тревога, если он не запущен через минуту после старта OBS"),
-                        Toggle(cfg.ReplayBufferMustRun, v => cfg.ReplayBufferMustRun = v)), "replay buffer");
-                    Add(Row("\uE72C", L.T("Restart the buffer after an error", "Перезапускать буфер после ошибки"),
-                        L.T("Up to 5 attempts; 3 crashes in 10 minutes — alarm right away", "До 5 попыток; если падает 3 раза за 10 минут — сразу тревога"),
-                        Toggle(cfg.RbAutoRestart, v => cfg.RbAutoRestart = v)), "replay buffer");
-                }
+        // ── Replay buffer (with the guard only) ─────────────────────────────
+        void BuildReplayBuffer()
+        {
+            Card(null);
+            Add(Row("\uE916", L.T("I record with the replay buffer", "Записываю буфером повтора"),
+                L.T("Off — for regular recording: no buffer checks, OBS starts without the buffer", "Выключи, если пишешь обычной записью: буфер не проверяется, OBS запускается без него"),
+                Toggle(cfg.UseReplayBuffer, v => { cfg.UseReplayBuffer = v; Changed(true); })), "replay buffer", true, RowReplayBuffer);
+            if (cfg.UseReplayBuffer)
+            {
+                Add(Row("\uE7C8", L.T("The replay buffer must always run", "Буфер повтора должен работать всегда"),
+                    L.T("Alarm if it is not running a minute after OBS starts", "Тревога, если он не запущен через минуту после старта OBS"),
+                    Toggle(cfg.ReplayBufferMustRun, v => cfg.ReplayBufferMustRun = v)), "replay buffer");
+                Add(Row("\uE72C", L.T("Restart the buffer after an error", "Перезапускать буфер после ошибки"),
+                    L.T("Up to 5 attempts; 3 crashes in 10 minutes — alarm right away", "До 5 попыток; если падает 3 раза за 10 минут — сразу тревога"),
+                    Toggle(cfg.RbAutoRestart, v => cfg.RbAutoRestart = v)), "replay buffer");
             }
         }
 
@@ -774,7 +868,12 @@ namespace DeviceGuard
                 L.T("Alarm if less is left for clips", "Тревога, если для клипов осталось меньше"),
                 SliderBox(0, 100, cfg.MinFreeGB, 5, v => v == 0 ? L.T("off", "выкл.") : v + L.T(" GB", " ГБ"), v => cfg.MinFreeGB = v, null)), "disk диск", true, RowDisk);
 
-            Card(L.T("\"Clip saved\"", "«Клип сохранён»"));
+        }
+
+        // ── "Clip saved": the card, the sound, the instant answer to the key ──
+        void BuildClipSaved()
+        {
+            Card(null);
             Add(Row("\uE73E", L.T("Show the card", "Показывать карточку"),
                 L.T("A card in the top right corner: a frame, the game, length and size, the folder it went to; open, trim, copy. A clip with a problem is always shown",
                     "Карточка в правом верхнем углу: кадр, игра, длина и размер, в какую папку попал; открыть, обрезать, скопировать. Клип с проблемой показывается всегда"),
@@ -791,6 +890,7 @@ namespace DeviceGuard
                                 : L.T("The key is not found yet: it is read from the current OBS profile after connecting (OBS → Settings → Hotkeys → Replay Buffer → Save Replay)",
                                       "Клавиша пока не найдена: она читается из текущего профиля OBS после подключения (OBS → Настройки → Горячие клавиши → Буфер повтора → Сохранить повтор)")),
                 Toggle(cfg.ClipInstant, v => cfg.ClipInstant = v)), "instant fast delay key press сразу быстро задержка клавиша нажатие");
+            Card(L.T("Sound", "Звук"));
             SoundRows(() => cfg.ClipSoundFile, f => cfg.ClipSoundFile = f, () => cfg.ClipSoundVolume, v => cfg.ClipSoundVolume = v, true,
                       L.T("\"Clip saved\" sound", "Звук «Клип сохранён»"), "clip saved клип сохранён");
         }
@@ -823,40 +923,113 @@ namespace DeviceGuard
                 RowButton(null, L.T("Test alarm", "Тест тревоги"), "BtnPrimary", () => { if (app != null) app.TestAlert(); })), "test тест");
         }
 
-        // volume with "Listen" and the sound file — the same rows for the alarm and for "Clip saved"
+        // the sound (built-in ones, the user's own, "Upload…") and its volume with "Listen" — the same rows for the alarm and for "Clip saved".
+        // A click on a sound picks it and plays it
         void SoundRows(Func<string> file, Action<string> setFile, Func<int> volume, Action<int> setVolume, bool chime, string title, string words)
         {
             Slider slider = null;
-            var listen = Btn("\uE768", null, "BtnIcon");
+            Func<int> vol = () => slider != null ? (int)slider.Value : volume();
+            var chips = new WrapPanel { Margin = new Thickness(0, 0, 0, 4) };
+            var note = new TextBlock { Style = S("SubText"), FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 10) };
+            string hint = Ffmpeg.Available
+                ? L.T("Your own: any audio file (WAV, MP3, OGG, M4A…), the first " + Alarm.MaxSec + " s are kept. Right click on it — delete",
+                      "Свой: любой аудиофайл (WAV, MP3, OGG, M4A…), берутся первые " + Alarm.MaxSec + " с. Правый клик по нему — удалить")
+                : L.T("Your own: a WAV file (other formats need ffmpeg). Right click on it — delete",
+                      "Свой: файл WAV (другие форматы — с ffmpeg). Правый клик по нему — удалить");
+            Action fill = null;
+            Action<string> choose = f =>
+            {
+                setFile(f);
+                Save();
+                fill();
+                Alarm.Preview(f, vol(), chime);
+            };
+            Action upload = () =>
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = title,
+                    Filter = Ffmpeg.Available ? L.T("Audio", "Аудио") + "|*.wav;*.mp3;*.ogg;*.opus;*.flac;*.m4a;*.aac;*.wma|" + L.T("All files", "Все файлы") + "|*.*"
+                                              : "WAV (*.wav)|*.wav",
+                };
+                if (dlg.ShowDialog(W) != true) return;
+                string err, dst;
+                Mouse.OverrideCursor = Cursors.Wait;
+                try { dst = Alarm.Import(dlg.FileName, out err); }
+                finally { Mouse.OverrideCursor = null; }
+                if (dst != null) choose(dst);
+                else note.Text = L.T("Not added: ", "Не добавлен: ") + err;
+            };
+            fill = () =>
+            {
+                chips.Children.Clear();
+                string cur = file();
+                bool found = false;
+                Func<string, string, string, System.Windows.Controls.Primitives.ToggleButton> chip = (value, text, tip) =>
+                {
+                    bool on = string.Equals(value, cur, StringComparison.OrdinalIgnoreCase);
+                    found |= on;
+                    var b = new System.Windows.Controls.Primitives.ToggleButton { Style = S("Chip"), Content = text, IsChecked = on, ToolTip = tip, Margin = new Thickness(0, 0, 6, 6) };
+                    b.Click += (s, e) => choose(value);
+                    chips.Children.Add(b);
+                    return b;
+                };
+                foreach (var id in chime ? Alarm.ClipSounds : Alarm.AlarmSounds) chip(Alarm.Builtin + id, Alarm.Name(id), null);
+                var own = Alarm.Uploaded().ToList();
+                if (!Alarm.IsBuiltin(cur) && File.Exists(cur) && !Alarm.InFolder(cur)) own.Insert(0, cur);   // a file chosen before uploads existed
+                foreach (var f in own)
+                {
+                    string path = f;
+                    var b = chip(path, Path.GetFileNameWithoutExtension(path), path);
+                    if (!Alarm.InFolder(path)) continue;
+                    var menu = DarkMenu();
+                    menu.Items.Add(Item(L.T("Delete", "Удалить"), () => DeleteSound(path)));
+                    b.ContextMenu = menu;
+                }
+                if (!found) ((System.Windows.Controls.Primitives.ToggleButton)chips.Children[0]).IsChecked = true;   // what actually plays: the default one
+                var addSp = new StackPanel { Orientation = Orientation.Horizontal };
+                addSp.Children.Add(new TextBlock { Style = S("Icon"), Text = "", FontSize = 11, Margin = new Thickness(0, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center });
+                addSp.Children.Add(new TextBlock { Text = L.T("Upload…", "Загрузить…") });
+                // looks like the sounds, but is a button: it never stays pressed
+                var add = new System.Windows.Controls.Primitives.ToggleButton { Style = S("Chip"), Content = addSp, Margin = new Thickness(0, 0, 6, 6) };
+                add.Click += (s, e) => { add.IsChecked = false; upload(); };
+                chips.Children.Add(add);
+                note.Text = !found && !string.IsNullOrEmpty(cur) && !Alarm.IsBuiltin(cur)
+                    ? L.T("The file is not found: ", "Файл не найден: ") + Path.GetFileName(cur) + L.T(" — the built-in one plays", " — играет встроенный")
+                    : hint;
+            };
+            fill();
+            var desc = new StackPanel();
+            desc.Children.Add(note);
+            desc.Children.Add(chips);
+            Add(Row("", title, desc, null), "sound file wav mp3 upload звук файл загрузить свой " +
+                string.Join(" ", (chime ? Alarm.ClipSounds : Alarm.AlarmSounds).Select(Alarm.Name)) + " " + words);
+
+            var listen = Btn("", null, "BtnIcon");
             listen.Margin = new Thickness(10, 0, 0, 0);
             listen.ToolTip = L.T("Listen", "Прослушать");
-            listen.Click += (s, e) => Alarm.Preview(file(), slider != null ? (int)slider.Value : volume(), chime);
+            listen.Click += (s, e) => Alarm.Preview(file(), vol(), chime);
             var volBox = SliderBox(0, 100, volume(), 5, v => v + "%", setVolume, listen);
             slider = (Slider)volBox.Tag;
-            Add(Row("\uE995", L.T("Volume", "Громкость"), null, volBox), "sound звук " + words);
-
-            var name = new TextBlock { Style = S("SubText"), FontSize = 12.5 };
-            Action show = () => name.Text = File.Exists(file()) ? Path.GetFileName(file())
-                : chime ? L.T("built-in chime (file not found)", "встроенный сигнал (файл не найден)")
-                        : L.T("built-in beep (file not found)", "встроенный сигнал (файл не найден)");
-            show();
-            Action pick = () =>
-            {
-                var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "WAV (*.wav)|*.wav", Title = title };
-                try { dlg.InitialDirectory = File.Exists(file()) ? Path.GetDirectoryName(file()) : @"C:\Windows\Media"; }
-                catch { }
-                if (dlg.ShowDialog(W) != true) return;
-                setFile(dlg.FileName);
-                show();
-                Save();
-            };
-            Add(Row("\uE8D6", L.T("Sound file", "Файл звука"), name, RowButton(null, L.T("Choose…", "Выбрать…"), "BtnGhost", pick)), "wav sound звук " + words);
+            Add(Row("", L.T("Volume", "Громкость"), null, volBox), "sound звук " + words);
         }
 
-        // ── Library: folders, sorting, covers ───────────────────────────────
-        void BuildLibrary()
+        // an uploaded sound is deleted; whatever used it goes back to its default
+        void DeleteSound(string path)
         {
-            Card(L.T("Folders", "Папки"));
+            try { File.Delete(path); }
+            catch (Exception ex) { Log.Write("sound not deleted: " + ex.Message); return; }
+            if (string.Equals(cfg.SoundFile, path, StringComparison.OrdinalIgnoreCase)) cfg.SoundFile = Alarm.DefaultAlarm;
+            if (string.Equals(cfg.ClipSoundFile, path, StringComparison.OrdinalIgnoreCase)) cfg.ClipSoundFile = Alarm.DefaultClip;
+            Log.Write("sound deleted: " + Path.GetFileName(path));
+            Save();
+            RebuildSettings();
+        }
+
+        // ── Library folders: sources, ready, collection ─────────────────────
+        void BuildFolders()
+        {
+            Card(null);
             Func<TextBlock> path = () => new TextBlock { Style = S("SubText"), FontSize = 12, FontFamily = Wpf.Res<FontFamily>("MonoFont"), TextTrimming = TextTrimming.CharacterEllipsis };
             obsPath = path();
             readyPath = path();
@@ -872,7 +1045,12 @@ namespace DeviceGuard
                 Add(Row("\uE8B7", L.T("Collection folder", "Папка коллекции"), collPath,
                     RowButton(null, L.T("Choose…", "Выбрать…"), "BtnGhost", () => PickSettingsFolder(SrcCollection))), "folder папка");
 
-            Card(L.T("Hotkeys in game", "Горячие клавиши в игре"));
+        }
+
+        // ── hotkeys in game: what to do with the last clip ──────────────────
+        void BuildHotkeys()
+        {
+            Card(null);
             hotkeyShows.Clear();
             Add(Row("\uE946", L.T("How to set", "Как задать"),
                 L.T("Click a field and press the keys: two modifiers (Ctrl+Shift+K) or one with an F key (Ctrl+F9). Esc — cancel, Backspace — clear",
@@ -887,7 +1065,12 @@ namespace DeviceGuard
             HotkeyRow("\uE714", L.T("Show the last clip again", "Показать последний клип ещё раз"), L.T("Its \"Clip saved\" card", "Его карточку «Клип сохранён»"), "HotkeyCard",
                       () => cfg.HotkeyCard, v => cfg.HotkeyCard = v);
 
-            Card(L.T("Sorting and covers", "Сортировка и обложки"));
+        }
+
+        // ── games and covers in the library ─────────────────────────────────
+        void BuildCovers()
+        {
+            Card(null);
             Add(Row("\uE8B7", L.T("Subfolders of the OBS folder are games", "Подпапки в папке OBS — это игры"),
                 L.T("Sorting by game puts clips into Game\\Month folders. Turn it off if you sort clips another way (by date…) — then the game comes from the file name",
                     "Раскладка по играм кладёт клипы в папки Игра\\Месяц. Выключи, если раскладываешь иначе (по датам…) — тогда игра берётся из имени файла"),
@@ -896,8 +1079,6 @@ namespace DeviceGuard
                 L.T("Game covers and banners from Steam and Wikipedia. Off — only your own pictures and frames from clips",
                     "Обложки и баннеры игр из Steam и Википедии. Выключено — только свои картинки и кадры из клипов"),
                 Toggle(cfg.OnlineCovers, v => { cfg.OnlineCovers = v; Changed(false); })), "steam art арт");
-
-            BuildCleanup();
         }
 
         // ── cleanup of old source clips (Cleanup): first "Check" shows what would go, then a double press moves it ──
@@ -905,7 +1086,7 @@ namespace DeviceGuard
 
         void BuildCleanup()
         {
-            Card(L.T("Cleanup of old clips", "Уборка старых клипов"));
+            Card(null);
             var status = new TextBlock { Style = S("SubText"), FontSize = 12.5 };
             var check = Btn(null, L.T("Check", "Проверить"), "BtnGhost");
             var move = Btn("\uE74D", L.T("To the Recycle Bin", "В корзину"), "BtnPrimary");
@@ -1074,10 +1255,10 @@ namespace DeviceGuard
             clipsLoadedAt = DateTime.MinValue;   // the library rereads the folder the next time it opens
         }
 
-        // ── Editor: the video encoder and the keys ──────────────────────────
-        void BuildEditor()
+        // ── Editor: the video encoder ───────────────────────────────────────
+        void BuildEncoder()
         {
-            Card(L.T("Video encoder", "Видеокодировщик"));
+            Card(null);
             var chips = new WrapPanel();
             foreach (var k in Encoders.All)
             {
@@ -1108,8 +1289,12 @@ namespace DeviceGuard
             desc.Children.Add(chips);
             Add(Row("\uE7F4", L.T("Re-encode trims with", "Пережимать обрезки через"), desc, null), "encoder nvenc amf qsv gpu cpu кодек");
 
-            // the same map as in the editor on "?"
-            Card(L.T("Keys", "Клавиши"));
+        }
+
+        // ── Editor keys: the same map as in the editor on "?" ───────────────
+        void BuildEditorKeys()
+        {
+            Card(null);
             var keys = new Border { Padding = new Thickness(22, 16, 22, 18), BorderBrush = Wpf.Res<Brush>("Line") };
             var keysBox = new StackPanel();
             keysBox.Children.Add(new TextBlock { Style = S("SubText"), FontSize = 12.5, Margin = new Thickness(0, 0, 0, 14),

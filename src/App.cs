@@ -480,7 +480,7 @@ namespace DeviceGuard
         public void ShowUpdates()
         {
             ShowMain(false, MainWindow.PageSettings);
-            main.ShowSettingsRow(MainWindow.TabGeneral, MainWindow.RowUpdates);
+            main.ShowSettingsRow(MainWindow.TabAbout, MainWindow.RowUpdates);
         }
 
         void UpdatesChanged()

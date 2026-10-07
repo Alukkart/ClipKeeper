@@ -160,6 +160,7 @@ namespace DeviceGuard
             // on the settings page the sidebar is the list of its sections, with a way back
             F<FrameworkElement>("MainSide").Visibility = i == PageSettings ? Visibility.Collapsed : Visibility.Visible;
             F<FrameworkElement>("SettingsSide").Visibility = i == PageSettings ? Visibility.Visible : Visibility.Collapsed;
+            F<FrameworkElement>("SelBar").Visibility = i == PageClips && clips.Any(c => c.Selected) ? Visibility.Visible : Visibility.Collapsed;
             currentPage = i;
             if (navs[i].IsChecked != true) navs[i].IsChecked = true;
             if (i == PageClips) LoadClips(false);

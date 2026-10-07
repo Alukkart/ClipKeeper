@@ -216,6 +216,16 @@ namespace DeviceGuard
         public string Group { get; set; }   // the day (or the folder in a search over all folders) it is listed under
         public double Seconds;
 
+        // selected in the library (MainWindowSelect.cs): while any clip is, every card shows its circle
+        bool selected, selecting;
+        static readonly Brush RingOff = Wpf.Br("#BFFFFFFF"), FillOff = Wpf.Br("#730B0C0E"), Clear = Brushes.Transparent;
+        public bool Selected { get { return selected; } set { selected = value; Notify("Selected", "CheckOpacity", "CheckRing", "CheckFill", "CheckMark"); } }
+        public bool Selecting { get { return selecting; } set { selecting = value; Notify("CheckOpacity"); } }
+        public double CheckOpacity { get { return selected || selecting ? 1 : 0; } }
+        public Brush CheckRing { get { return selected ? Wpf.Res<Brush>("Text") : RingOff; } }
+        public Brush CheckFill { get { return selected ? Wpf.Res<Brush>("Text") : FillOff; } }
+        public Brush CheckMark { get { return selected ? Wpf.Res<Brush>("Bg") : Clear; } }
+
         // its own name (ClipNames): a source is named in its file name, when and how big it is goes below
         public bool Named, Source;
         public string WhenText, SizeText;

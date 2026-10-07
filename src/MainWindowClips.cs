@@ -100,6 +100,7 @@ namespace DeviceGuard
             InitScrub();
             InitFind();
             InitRename();
+            InitSelect();
             gamesList.AddHandler(Button.ClickEvent, new RoutedEventHandler(OnGameButton));
             F<Button>("BtnClipsBack").Click += (s, e) => GoBack();
             F<Button>("BtnClipsRefresh").Click += (s, e) => LoadClips(true);
@@ -905,6 +906,7 @@ namespace DeviceGuard
             e.Handled = true;
             switch (b.Tag as string)
             {
+                case "select": ToggleSelect(vm); break;
                 case "open": Shell.Open(vm.Path); break;
                 case "trim": if (app != null) app.OpenTrim(vm.Path, clips.Select(c => c.Path).ToList()); break;   // ← → in the editor go through this list
                 case "folder": Shell.Select(vm.Path); break;

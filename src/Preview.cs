@@ -92,6 +92,9 @@ namespace DeviceGuard
             clipVms[0].Editing = true;
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-rename.png"));
             clipVms[0].Editing = false;
+            mw.PreviewSelect(0, 1, 3);   // several clips selected, the bar at the bottom
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-select.png"));
+            mw.PreviewSelect();
             mw.PreviewFind("hunt", clipsRoot, Directory.Exists(cfg.TrimFolder) ? cfg.TrimFolder : null, cfg.CollectionFolder);
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-find.png"));
 

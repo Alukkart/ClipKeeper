@@ -622,6 +622,7 @@ namespace DeviceGuard
             MainWindow.TestFind(check);
             ClipNames.Test(check);
             MainWindow.TestTriage(check);
+            ObsFix.Test(check);
 
             Windows(check);
 

@@ -53,11 +53,15 @@ namespace DeviceGuard
         // the steps depend on the features chosen on the first one
         List<Action<StackPanel>> SetupSteps()
         {
-            var steps = new List<Action<StackPanel>> { StepWelcome, StepObs };
+            var steps = new List<Action<StackPanel>> { StepWelcome, StepObs, StepCheck };
             if (cfg.GuardEnabled) steps.Add(StepDevices);
             if (cfg.LibraryEnabled) steps.Add(StepFolders);
-            steps.Add(StepDone);
+            // a test clip needs the guard (it hears OBS save) and the replay buffer (the key); otherwise the plain end
+            steps.Add(cfg.GuardEnabled && cfg.UseReplayBuffer ? (Action<StackPanel>)StepTestClip : StepDone);
             return steps;
+        }
+
+        public int SetupStepCount { get { return SetupSteps().Count; }
         }
 
         void ShowSetupStep()
@@ -65,6 +69,7 @@ namespace DeviceGuard
             setupSteps = SetupSteps();
             setupStep = Math.Max(0, Math.Min(setupStep, setupSteps.Count - 1));
             setupLive = null;
+            setupClip = null;
             setup.Children.Clear();
 
             var card = new Border

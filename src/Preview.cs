@@ -36,10 +36,14 @@ namespace DeviceGuard
             }
             mw.ShowSettingsTab(MainWindow.TabGeneral);
             // the first-run setup, every step
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < mw.SetupStepCount; i++)
             {
                 mw.PreviewSetup(i);
                 Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "20-setup-" + (i + 1) + ".png"));
+                var tc = i == mw.SetupStepCount - 1 ? ClipScanner.Scan(@"D:\Sources\Hunt Showdown", 1).FirstOrDefault() : null;
+                if (tc == null) continue;
+                mw.PreviewTestClip(new ClipInfo { Path = tc.FullName, Game = "Hunt Showdown", Duration = 140, Tracks = 4, Bytes = tc.Length, Today = 3 });   // the test clip has come
+                Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "20-setup-" + (i + 1) + "-saved.png"));
             }
             mw.PreviewSetup(-1);
             // statistics over the real folders

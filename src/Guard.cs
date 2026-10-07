@@ -552,6 +552,7 @@ namespace DeviceGuard
             string scriptErr = ObsScript.Sync(Cfg.ObsStartScript);
             if (scriptErr != null && scriptErr != ObsScript.WaitObs) Log.Write("OBS start script before launch: " + scriptErr);
             app.Post(app.SyncObsScript);   // the settings row shows the new state
+            ObsFix.ApplyPending();         // what the first-run check fixed while OBS was open (WebSocket, replay buffer, save key)
             // --disable-shutdown-check: no "OBS crashed, start in safe mode?" question
             string args = (Cfg.UseReplayBuffer ? "--startreplaybuffer " : "") + "--disable-shutdown-check" + (Cfg.ObsMinimized ? " --minimize-to-tray" : "");
             try

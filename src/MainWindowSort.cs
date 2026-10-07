@@ -9,15 +9,15 @@ namespace DeviceGuard
     // Settings → Sorting: where saved replays, recordings and screenshots go (Sorter)
     partial class MainWindow
     {
-        // turned on: the folders it makes are games; the first time Smart Replay Mover's settings are taken over
+        // turned on: the folders it makes are games; the first time, the settings of a sorting script in OBS are taken over
         void SetSorting(bool on)
         {
             cfg.SortClips = on;
             if (!on) return;
             cfg.SubfoldersAreGames = true;
             if (cfg.SortImported) return;
-            var srm = SmartReplayMover.Find();
-            if (srm != null) SmartReplayMover.Import(srm, cfg);
+            var script = SortScript.Find();
+            if (script != null) SortScript.Import(script, cfg);
             cfg.SortImported = true;
         }
 
@@ -34,22 +34,22 @@ namespace DeviceGuard
 
         void BuildSorting()
         {
-            if (cfg.SortClips && SmartReplayMover.Find() != null)
+            if (cfg.SortClips && SortScript.Find() != null)
                 Warn(L.T(
-                    "Smart Replay Mover is still connected in OBS — it and ClipKeeper would move the same files. Remove it: OBS → Tools → Scripts → select it → \"−\". " +
-                    "Its \"Smart Save\" hotkey goes away with it: set the key in OBS → Settings → Hotkeys → Replay Buffer → \"Save Replay\".",
-                    "Smart Replay Mover всё ещё подключён в OBS — он и ClipKeeper будут перемещать одни и те же файлы. Убери его: OBS → Сервис → Скрипты → выдели его → «−». " +
-                    "Вместе с ним пропадёт его горячая клавиша «Smart Save»: назначь клавишу в OBS → Настройки → Горячие клавиши → Буфер повтора → «Сохранить повтор»."));
-            else if (cfg.SortClips && cfg.UseReplayBuffer && !SmartReplayMover.SaveHotkeySet())
+                    "A clip-sorting script is still connected in OBS — it and ClipKeeper would move the same files. Remove it: OBS → Tools → Scripts → select it → \"−\". " +
+                    "If you saved clips with its hotkey, set the key in OBS → Settings → Hotkeys → Replay Buffer → \"Save Replay\".",
+                    "В OBS всё ещё подключён скрипт, который раскладывает клипы, — он и ClipKeeper будут перемещать одни и те же файлы. Убери его: OBS → Сервис → Скрипты → выдели его → «−». " +
+                    "Если сохранял клипы его клавишей, назначь клавишу в OBS → Настройки → Горячие клавиши → Буфер повтора → «Сохранить повтор»."));
+            else if (cfg.SortClips && cfg.UseReplayBuffer && !SortScript.SaveHotkeySet())
                 Warn(L.T(
                     "OBS has no key for saving a replay. Set it in OBS → Settings → Hotkeys → Replay Buffer → \"Save Replay\".",
                     "В OBS не назначена клавиша сохранения повтора. Назначь её в OBS → Настройки → Горячие клавиши → Буфер повтора → «Сохранить повтор»."));
 
             Card(null);
             Add(Row("\uE8CB", L.T("Sort clips by game", "Раскладывать клипы по играм"),
-                L.T("Into the folder of the game you are playing, like Smart Replay Mover — its settings are taken over",
-                    "В папку игры, в которую играешь, как Smart Replay Mover — его настройки переносятся"),
-                Toggle(cfg.SortClips, v => { SetSorting(v); Changed(true); })), "smart replay mover srm");
+                L.T("Into the folder of the game you are playing, the moment the clip is saved",
+                    "В папку игры, в которую играешь, в момент сохранения клипа"),
+                Toggle(cfg.SortClips, v => { SetSorting(v); Changed(true); })), "sort раскладка game игра folder папка");
             if (!cfg.SortClips) return;
 
             Card(L.T("Folders", "Папки"));

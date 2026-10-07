@@ -545,7 +545,7 @@ namespace DeviceGuard
                            (s.DiskRoot ?? "") + (cfg.MinFreeGB > 0 ? L.T(" · threshold ", " · порог ") + cfg.MinFreeGB + L.T(" GB", " ГБ") : ""));
             }
 
-            // last clip: which folder it went to (Smart Replay Mover sorts by game)
+            // last clip: which folder it went to (sorting puts it into the game's folder)
             string where = null;
             if (s.LastClipPath != null)
             {

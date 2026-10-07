@@ -205,7 +205,7 @@ namespace DeviceGuard
         public bool GuardEnabled = true, LibraryEnabled = true, UseReplayBuffer = true, SubfoldersAreGames = true,
                     OnlineCovers = true, UseCollection = true;
         public bool SetupDone = true;                           // the first-run setup was shown (false only for a new settings.json)
-        // sorting saved files into game folders (Sorter); what Smart Replay Mover did inside OBS
+        // sorting saved files into game folders (Sorter)
         public bool SortClips, SortPrefix = true, SortRecordings = true, SortScreenshots = true, SortImported;
         public string SortTemplate = @"{game}\{year}-{month}", SortFallback = "Desktop", SortNames = "";
         public bool UpdateCheck = true;                         // ask GitHub for a new version once a day (Updates)

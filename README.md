@@ -161,7 +161,7 @@ is asked only when a monitor really changed.
 </details>
 
 <details>
-<summary><b>🗂 Sorting by game</b> — what Smart Replay Mover did, without an OBS script</summary>
+<summary><b>🗂 Sorting by game</b> — clips go into game folders, no OBS script needed</summary>
 
 Turn on **Settings → Sorting → Sort clips by game**. Every replay (and, if you want, recordings and screenshots)
 moves from the OBS folder into the game's folder the moment it's saved: `Hunt Showdown\2026-10\Hunt Showdown - Replay ….mp4`.
@@ -170,15 +170,15 @@ moves from the OBS folder into the game's folder the moment it's saved: `Hunt Sh
   is used while it still runs. A game is a program from Steam / Epic / GOG / Riot / Xbox, a fullscreen window, or one
   hidden by anti-cheat — so a maximized editor or chat never gets its own folder.
 - **The name** comes from the store (Steam, Epic, GOG), then from the exe's properties, then from the exe name made
-  readable. A folder that already exists for the game is used as is, including Smart Replay Mover's
+  readable. A folder that already exists for the game is used as is
   (`HuntGame - Replay …` files in `Hunt Showdown` mean HuntGame goes there).
 - **Settings → Sorting**: the folder template (`{game}` `{type}` `{year}` `{month}` `{day}` `{date}`
-  `{yearmonth}`), the game name in front of the file name, the folder for "no game", and your own names in Smart Replay
-  Mover's format: `HuntGame > Hunt`, `+call duty > Call of Duty` (all words), `*minecraft* > Minecraft` (anywhere in the
+  `{yearmonth}`), the game name in front of the file name, the folder for "no game", and your own names:
+  `HuntGame > Hunt`, `+call duty > Call of Duty` (all words), `*minecraft* > Minecraft` (anywhere in the
   exe name or window title). **Check** shows which game is detected right now.
-- **Moving from Smart Replay Mover:** its template, names and switches are taken over when you turn sorting on. Then
-  remove the script in OBS → Tools → Scripts (ClipKeeper warns while it's still there) and, if you used its "Smart Save"
-  key, set the same key in OBS → Settings → Hotkeys → Replay Buffer → **Save Replay**.
+- **Another sorting script in OBS:** ClipKeeper warns while one is connected — both would move the same files. Remove it
+  in OBS → Tools → Scripts and, if you saved clips with its key, set the same key in OBS → Settings → Hotkeys →
+  Replay Buffer → **Save Replay**.
 - It works while ClipKeeper runs — keep **Start with Windows** or **Start ClipKeeper together with OBS** on. Clips saved while it was closed stay in the OBS
   folder (the library shows them under "No folder").
 
@@ -191,7 +191,7 @@ Clips come from three folders, following a clip's path:
 
 | Folder | What's in it |
 |---|---|
-| **Sources** | OBS recordings, including game folders made by sorting (or Smart Replay Mover). Subfolders count as games; if you sort clips another way (by date…), turn that off in Settings → Library and the game is taken from the file name. |
+| **Sources** | OBS recordings, including game folders made by sorting. Subfolders count as games; if you sort clips another way (by date…), turn that off in Settings → Library and the game is taken from the file name. |
 | **Ready** | Trims waiting for a video — the folder the editor saves to. |
 | **Collection** | Clips that made it into a video. Optional — Settings → Library. |
 
@@ -338,7 +338,7 @@ Tabs of a turned-off feature disappear:
 | OBS | Connection status; WebSocket address, port, password; OBS program path, start ClipKeeper together with OBS, crash restart, OBS backup; replay buffer or regular recording and buffer options |
 | Checks | Audio, picture, monitors, mixer, dropped frames, driver failures; clip checks, disk space; "Clip saved" card and its sound (file, volume) |
 | Alarm | Wait before the alarm, "tell me when fixed"; window, sound, volume, sound file, repeat; test alarm |
-| Sorting | Sort clips by game; Smart Replay Mover warning; folder template, game name in the file name, folder when there is no game; replays, recordings, screenshots; your game names, "which game is it now" |
+| Sorting | Sort clips by game; a warning about another sorting script; folder template, game name in the file name, folder when there is no game; replays, recordings, screenshots; your game names, "which game is it now" |
 | Library | Sources, Ready, Collection; hotkeys in game; "subfolders are games", online covers; cleanup of old clips |
 | Editor | Video encoder; the key map, every key can be changed |
 

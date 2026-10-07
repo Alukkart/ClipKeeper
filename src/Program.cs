@@ -426,7 +426,7 @@ namespace DeviceGuard
             var clipFile = new FileInfo(@"D:\Rec\2026-10\Replay 2026-10-05 12-00-00.mp4");
             ClipScanner.OwnRoots = new[] { @"D:\Clips" };
             ClipScanner.SubfoldersAreGames = true;
-            check(ClipScanner.GameOf(clipFile, @"D:\Rec") == "2026-10", "folders: subfolder as game (Smart Replay Mover)");
+            check(ClipScanner.GameOf(clipFile, @"D:\Rec") == "2026-10", "folders: subfolder as game");
             ClipScanner.SubfoldersAreGames = false;
             check(ClipScanner.GameOf(clipFile, @"D:\Rec") == NoGame.Folder, "folders: subfolders are not games in the OBS folder");
             check(ClipScanner.GameOf(new FileInfo(@"D:\Clips\Hunt\a.mp4"), @"D:\Clips") == "Hunt", "folders: the collection's subfolders are always games");

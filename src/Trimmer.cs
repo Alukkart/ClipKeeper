@@ -82,7 +82,7 @@ namespace DeviceGuard
             m.Recorded = t.Success && DateTime.TryParseExact(t.Value.Replace('_', ' '), "yyyy-MM-dd HH-mm-ss", Inv, DateTimeStyles.None, out when)
                 ? when : File.GetLastWriteTime(source);
 
-            // the game is the Smart Replay Mover folder ("Game\YYYY-MM\…"), otherwise the file name prefix ("HuntGame - Replay …")
+            // the game is the sorting folder ("Game\YYYY-MM\…"), otherwise the file name prefix ("HuntGame - Replay …")
             if (!string.IsNullOrEmpty(clipsRoot) && source.StartsWith(clipsRoot.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase))
             {
                 string g = ClipScanner.GameOf(new FileInfo(source), clipsRoot.TrimEnd('\\'));

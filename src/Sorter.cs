@@ -352,7 +352,7 @@ namespace DeviceGuard
         }
     }
 
-    // Sorts what OBS saves into game folders, as the Smart Replay Mover script did: replays, recordings, screenshots.
+    // Sorts what OBS saves into game folders: replays, recordings, screenshots.
     // The game is decided the moment OBS reports the save; the file is moved on a separate thread.
     class Sorter
     {
@@ -598,9 +598,9 @@ namespace DeviceGuard
         }
     }
 
-    // The Smart Replay Mover script in OBS: is it still connected (both would move the same files), its settings to take over,
+    // A clip-sorting script in OBS: is it still connected (both would move the same files), its settings to take over,
     // and whether OBS has its own "Save Replay" hotkey (the script's hotkey goes away with it)
-    static class SmartReplayMover
+    static class SortScript
     {
         static string ObsDir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "obs-studio"); } }
 
@@ -625,7 +625,7 @@ namespace DeviceGuard
                     }
                 }
             }
-            catch (Exception ex) { Log.Write("smart replay mover lookup: " + ex.Message); }
+            catch (Exception ex) { Log.Write("sorting script lookup: " + ex.Message); }
             return null;
         }
 
@@ -639,7 +639,7 @@ namespace DeviceGuard
             cfg.SortScreenshots = Json.GetBool(s, "organize_screenshots", true);
             var names = Json.GetArr(s, "custom_names").Select(o => Json.GetStr(Json.Obj(o), "value")).Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
             if (names.Count > 0) cfg.SortNames = string.Join("\n", names);
-            Log.Write("smart replay mover settings taken over: " + cfg.SortTemplate + ", prefix " + cfg.SortPrefix + ", " + names.Count + " names");
+            Log.Write("sorting script settings taken over: " + cfg.SortTemplate + ", prefix " + cfg.SortPrefix + ", " + names.Count + " names");
         }
 
         // false — no OBS profile has a key for "Save Replay"

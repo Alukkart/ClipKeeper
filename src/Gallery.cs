@@ -30,7 +30,7 @@ namespace DeviceGuard
         }
     }
 
-    // Finds clips in the OBS recording folder (including Smart Replay Mover subfolders)
+    // Finds clips in the OBS recording folder (including game subfolders)
     static class ClipScanner
     {
         static readonly string[] Exts = { ".mp4", ".mkv", ".mov", ".flv" };
@@ -55,7 +55,7 @@ namespace DeviceGuard
             return files.OrderByDescending(f => f.LastWriteTime).Take(max).ToList();
         }
 
-        // Smart Replay Mover puts clips into "Game\YYYY-MM\" — the first folder is the game.
+        // sorting puts clips into "Game\YYYY-MM\" — the first folder is the game.
         // In the OBS folder this is a setting (someone may sort clips by date); in Ready and the collection
         // (OwnRoots) the folders are made by ClipKeeper and are always games.
         public static bool SubfoldersAreGames = true;

@@ -77,7 +77,7 @@ namespace DeviceGuard
         static string Dir { get { return Path.Combine(Program.Dir, "covers"); } }
         static readonly ConcurrentDictionary<string, ImageSource> mem = new ConcurrentDictionary<string, ImageSource>();
         static readonly ConcurrentDictionary<string, object> locks = new ConcurrentDictionary<string, object>();
-        // folders Smart Replay Mover creates for non-games — no pictures are looked up
+        // folders sorting tools create for non-games — no pictures are looked up
         static readonly HashSet<string> NotGames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "Desktop", "SearchHost", "explorer", NoGame.Game, NoGame.Folder, "Windows", "chrome", "firefox", "zen", "msedge",
@@ -203,7 +203,7 @@ namespace DeviceGuard
         // ── search ──
         static string Norm(string s) { return Regex.Replace((s ?? "").ToLowerInvariant(), @"[^\p{L}\p{N}]", ""); }
 
-        // Smart Replay Mover folder name → a human one: "RimWorldWin64" → "RimWorld", "ShiftAtMidnight" → "Shift At Midnight"
+        // a folder named after the exe → a human name: "RimWorldWin64" → "RimWorld", "ShiftAtMidnight" → "Shift At Midnight"
         // the name to show: a readable game name, or "No game" / "No folder"
         public static string Title(string game)
         {

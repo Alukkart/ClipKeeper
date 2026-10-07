@@ -400,12 +400,12 @@ namespace DeviceGuard
                 p.Children.Add(folder(L.T("Collection folder", "Папка коллекции"), Existing(cfg.CollectionFolder), L.T("not chosen", "не выбрана"),
                                       () => PickSettingsFolder(SrcCollection)));
             p.Children.Add(SetupToggle(L.T("Sort clips by game", "Раскладывать клипы по играм"),
-                L.T("Each saved clip goes into the folder of the game you are playing — instead of the Smart Replay Mover script, its settings are taken over",
-                    "Каждый сохранённый клип — в папку игры, в которую играешь, вместо скрипта Smart Replay Mover; его настройки переносятся"),
+                L.T("Each saved clip goes into the folder of the game you are playing — no OBS script needed",
+                    "Каждый сохранённый клип — в папку игры, в которую играешь, без скриптов в OBS"),
                 cfg.SortClips, v => { SetSorting(v); ShowSetupStep(); }));
             if (!cfg.SortClips)
                 p.Children.Add(SetupToggle(L.T("Subfolders of the OBS folder are games", "Подпапки в папке OBS — это игры"),
-                    L.T("On if clips are in Game\\Month folders (Smart Replay Mover). Off if you sort clips another way.", "Включено, если клипы лежат в папках Игра\\Месяц (Smart Replay Mover). Выключи, если раскладываешь клипы иначе."),
+                    L.T("On if clips are in Game\\Month folders. Off if you sort clips another way.", "Включено, если клипы лежат в папках Игра\\Месяц. Выключи, если раскладываешь клипы иначе."),
                     cfg.SubfoldersAreGames, v => cfg.SubfoldersAreGames = v));
             p.Children.Add(SetupToggle(L.T("Covers from the internet", "Обложки из интернета"), L.T("Steam and Wikipedia", "Steam и Википедия"),
                                        cfg.OnlineCovers, v => cfg.OnlineCovers = v));

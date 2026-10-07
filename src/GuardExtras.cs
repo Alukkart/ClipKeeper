@@ -533,19 +533,19 @@ namespace DeviceGuard
             string p = Json.GetStr(data, "savedReplayPath");
             if (string.IsNullOrEmpty(p)) return;
             if (!Cfg.GuardEnabled || (!Cfg.ClipCheck && !Cfg.ClipToast && !Cfg.ClipSound)) return;
-            // sorted by ClipKeeper — the file is already in place; otherwise Smart Replay Mover may still be moving it
+            // sorted by ClipKeeper — the file is already in place; otherwise a sorting script in OBS may still be moving it
             // (only if it is there: without it every clip would wait for nothing)
             clips.Add(new PendingClip { Path = p.Replace('/', '\\'), Game = Json.GetStr(data, "game"), SavedAt = now,
-                                        DueAt = sorted || !SrmPresent(now) ? now : now.AddSeconds(2.5) });
+                                        DueAt = sorted || !SortScriptPresent(now) ? now : now.AddSeconds(2.5) });
         }
 
-        DateTime srmCheckedAt = DateTime.MinValue;
-        bool srmPresent;
+        DateTime sortScriptCheckedAt = DateTime.MinValue;
+        bool sortScriptPresent;
 
-        bool SrmPresent(DateTime now)
+        bool SortScriptPresent(DateTime now)
         {
-            if ((now - srmCheckedAt).TotalMinutes >= 1) { srmPresent = SmartReplayMover.Find() != null; srmCheckedAt = now; }
-            return srmPresent;
+            if ((now - sortScriptCheckedAt).TotalMinutes >= 1) { sortScriptPresent = SortScript.Find() != null; sortScriptCheckedAt = now; }
+            return sortScriptPresent;
         }
 
         int ClipWaitMs()
@@ -686,7 +686,7 @@ namespace DeviceGuard
             app.Post(() => app.ClipSaved(card));
         }
 
-        // the game for the card: what sorting decided, or the game folder the clip is in (Smart Replay Mover)
+        // the game for the card: what sorting decided, or the game folder the clip is in
         string GameOfClip(string file, PendingClip c)
         {
             if (c.Game != null) return c.Game;

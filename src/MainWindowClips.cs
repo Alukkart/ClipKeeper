@@ -256,7 +256,7 @@ namespace DeviceGuard
             LoadClips(true);
         }
 
-        // a clip's game: subfolder (Smart Replay Mover / collection) → ClipKeeper data in the file → "Game - Replay …" in the name
+        // a clip's game: subfolder (sorting / collection) → ClipKeeper data in the file → "Game - Replay …" in the name
         static string GameFor(FileInfo f, string root, int kind)
         {
             string g = ClipScanner.GameOf(f, root);

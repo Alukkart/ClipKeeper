@@ -889,8 +889,8 @@ namespace DeviceGuard
 
             Card(L.T("Sorting and covers", "Сортировка и обложки"));
             Add(Row("\uE8B7", L.T("Subfolders of the OBS folder are games", "Подпапки в папке OBS — это игры"),
-                L.T("Sorting by game (or Smart Replay Mover) puts clips into Game\\Month folders. Turn it off if you sort clips another way (by date…) — then the game comes from the file name",
-                    "Раскладка по играм (или Smart Replay Mover) кладёт клипы в папки Игра\\Месяц. Выключи, если раскладываешь иначе (по датам…) — тогда игра берётся из имени файла"),
+                L.T("Sorting by game puts clips into Game\\Month folders. Turn it off if you sort clips another way (by date…) — then the game comes from the file name",
+                    "Раскладка по играм кладёт клипы в папки Игра\\Месяц. Выключи, если раскладываешь иначе (по датам…) — тогда игра берётся из имени файла"),
                 Toggle(cfg.SubfoldersAreGames, v => { cfg.SubfoldersAreGames = v; Changed(false); })), "game игра folder папка");
             Add(Row("\uE774", L.T("Covers from the internet", "Обложки из интернета"),
                 L.T("Game covers and banners from Steam and Wikipedia. Off — only your own pictures and frames from clips",

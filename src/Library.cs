@@ -573,6 +573,12 @@ namespace DeviceGuard
             }
         }
 
+        // whether ffprobe has read this file's data already (Meta then answers without running it)
+        public static bool HasMeta(FileInfo f)
+        {
+            lock (Sync) return Json.GetInt(Entry(f), "m", 0) == 1;
+        }
+
         // a renamed file keeps what is known about it (its length and time stay the same, so the entry stays valid)
         public static void Renamed(string from, string to)
         {

@@ -76,6 +76,8 @@ namespace DeviceGuard
         double homeScroll;
         int clipsLimit = 30;
         bool clipsLoading, clipsReload, flatView;
+        Dictionary<string, Tuple<int, double>> groupTotals;
+        bool warming;
         DateTime clipsLoadedAt = DateTime.MinValue;
         List<Trimmer.Move> sortPlan;
 
@@ -85,6 +87,7 @@ namespace DeviceGuard
             public List<ClipVm> Page;
             public bool More, Flat, Group;
             public List<string> Fresh;   // clips waiting to be gone through (MainWindowTriage.cs)
+            public Dictionary<string, Tuple<int, double>> Totals;   // clips and seconds of each day / folder (the group headers)
             public string FreshName;
             public string Stats, Folder, Newest;
         }
@@ -358,7 +361,9 @@ namespace DeviceGuard
                     bool more;
                     string stats;
                     var found = new LibData { Folder = root, Group = true };
-                    found.Page = FindEverywhere(find, limit, lastClip, out more, out stats);
+                    Dictionary<string, Tuple<int, double>> totals;
+                    found.Page = FindEverywhere(find, limit, lastClip, out more, out stats, out totals);
+                    found.Totals = totals;
                     found.More = more;
                     found.Stats = stats;
                     ClipIndex.Save();
@@ -390,6 +395,7 @@ namespace DeviceGuard
                 {
                     var shown = Refine(list, find, game, f => TitleFor(f, kind), () => trimmedSince(list.Count > 0 ? list.Min(f => f.LastWriteTime) : DateTime.Now));
                     d.Stats = Summary(shown);
+                    if (byDay) d.Totals = TotalsBy(shown, f => DayOf(f.LastWriteTime));
                     d.Page = shown.Take(limit).Select(f =>
                     {
                         var vm = kind == SrcObs ? ClipScanner.Describe(f, root, lastClip) : DescribeNamed(f);
@@ -446,7 +452,9 @@ namespace DeviceGuard
             clipsFolder.Text = d.Folder;
             games.Clear();
             clips.Clear();
+            groupTotals = d.Totals;
             ApplyGrouping(d.Group);
+            WarmClipData();
             ShowFindBar(home, d.Flat, view);
             ShowTriageButton(d.Fresh, d.FreshName);
             var sv = F<ScrollViewer>("PageClips");
@@ -610,6 +618,34 @@ namespace DeviceGuard
 
         // ClipKeeper data from the file (cached in clipcache.json): game, recording date, title
         static Tuple<ClipMeta, string> MetaOf(FileInfo f) { return ClipIndex.Meta(f); }
+
+        // once the library has been opened, the data of ready and collection clips not read yet is read in the background,
+        // newest first, one by one at the lowest priority: their games, titles and the search are then at hand
+        void WarmClipData()
+        {
+            if (warming || app == null || !Ffmpeg.Available) return;
+            warming = true;
+            var roots = new[] { ReadyRoot, cfg.UseCollection ? CollectionRoot : null }.Where(r => r != null).ToList();
+            new System.Threading.Thread(() =>
+            {
+                try
+                {
+                    var files = roots.SelectMany(r => ClipScanner.Scan(r, int.MaxValue)).OrderByDescending(f => f.LastWriteTime)
+                                     .Where(f => !ClipIndex.HasMeta(f)).ToList();
+                    int n = 0;
+                    foreach (var f in files)
+                    {
+                        if (!f.Exists) continue;
+                        ClipIndex.Meta(f);
+                        if (++n % 20 == 0) ClipIndex.Save();
+                        System.Threading.Thread.Sleep(50);
+                    }
+                    ClipIndex.Save();
+                    if (n > 0) Log.Write("clip data read in the background: " + n + " clips");
+                }
+                catch (Exception ex) { Log.Write("clip data in the background: " + ex.Message); }
+            }) { IsBackground = true, Priority = System.Threading.ThreadPriority.Lowest, Name = "ClipKeeper-warm" }.Start();
+        }
 
         // inside a game its name on every card is redundant: the title is when it was recorded, below — the size
         public static void GameViewTitle(ClipVm vm)

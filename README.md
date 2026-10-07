@@ -214,9 +214,10 @@ Clips come from three folders, following a clip's path:
 - **Several at once:** Ctrl+click or the circle on a card selects it, Shift+click a range, Ctrl+A everything shown,
   Esc none. A bar at the bottom shows how many, how long and how big and offers favorites, copy (Discord takes them as
   several attachments), to the collection for ready clips, the Recycle Bin (press twice) and **Join**.
-- **Join:** two or more selected clips become one, in the order they were selected (drag a clip to move it), back to
-  back or with a 0.3 s fade. Kept at frame-exact quality or fitted for Discord / Nitro / Telegram, saved to Ready and
-  checked like a trim. Clips of another size or frame rate are brought to the first one's; each gives its common mix.
+- **Join:** two or more selected clips become one, in the order they were selected (drag a card or press its ‹ › to
+  move it); a click on a card takes only a part of that clip, chosen with two handles on its frames. Back to back or
+  with a 0.3 s fade, kept at frame-exact quality or fitted for Discord / Nitro / Telegram, saved to Ready, next to the
+  first clip or a folder you choose, and checked like a trim. Clips of another size or frame rate are brought to the first one's; each gives its common mix.
 - **Go through new clips:** when clips from the last two weeks wait without a star, a trim or a look, Sources show
   **Go through N new clips**. They play one after another and a key decides each: **F** keeps it with a star, **X** —
   trim later, **Delete** — for the Recycle Bin, **→** — skip, **Z** — undo, **Space** — pause. Nothing is deleted on the

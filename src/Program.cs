@@ -864,6 +864,8 @@ namespace DeviceGuard
             foreach (var m in new[]
             {
                 new MergeJob { Clips = clips.ToList(), Fade = true, Mode = TrimMode.Precise, MixIndex = 3, OutputDir = outDir, Title = "Merge test fade" },
+                new MergeJob { Clips = clips.ToList(), Ranges = new List<double[]> { new[] { 10.0, 20.0 }, new[] { 5.0, 15.5 } }, Fade = true, Mode = TrimMode.Precise, MixIndex = 3,
+                               OutputDir = outDir, Title = "Merge test parts" },
                 new MergeJob { Clips = clips.ToList(), Fade = false, Mode = TrimMode.Share, Target = ShareTarget.Discord, MixIndex = 3, OutputDir = outDir, Title = "Merge test discord" },
             })
             {

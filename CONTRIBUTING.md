@@ -77,7 +77,8 @@ Every file starts with a comment saying what it is for — read that first.
 
 ## Pull requests
 
-1. Fork, make a branch, keep the change focused on one thing.
+1. Fork, make a branch from `develop` (`feature/…` or `fix/…`), keep the change focused on one thing, and open the
+   pull request into `develop` — `main` only gets releases.
 2. `build.cmd` and `--selftest` pass.
 3. For a visible change, add a screenshot (both languages if you can, `--preview` renders them).
 4. If the change affects what the user does or sees, update `README.md` and `README.ru.md`.

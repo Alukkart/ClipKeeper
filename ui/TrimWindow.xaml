@@ -312,10 +312,15 @@
                                 </Grid>
                                 <!-- one click: a file under the service's limit, copied — then Ctrl+V in the chat -->
                                 <Border Height="1" Background="{StaticResource Line}" Margin="0,18,0,16"/>
+                                <!-- the hint takes what the caption leaves and wraps when that is not enough (the Russian one) -->
                                 <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
                                     <TextBlock Text="SEND IN ONE CLICK¦ОТПРАВИТЬ В ОДИН КЛИК" Style="{StaticResource SideCaption}"/>
-                                    <TextBlock Text="the file is copied — Ctrl+V in the chat¦файл скопируется — Ctrl+V в чат" Foreground="{StaticResource Muted}"
-                                               FontSize="11.5" HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Column="1" Text="the file is copied — Ctrl+V in the chat¦файл скопируется — Ctrl+V в чат" Foreground="{StaticResource Muted}"
+                                               FontSize="11.5" Margin="10,0,0,0" TextWrapping="Wrap" TextAlignment="Right"/>
                                 </Grid>
                                 <UniformGrid Rows="1" Columns="3">
                                     <Button x:Name="QuickDiscord" Style="{StaticResource QuickTile}" Margin="0,0,4,0"

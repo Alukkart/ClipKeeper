@@ -620,6 +620,7 @@ namespace DeviceGuard
             finally { try { File.Delete(obsIni); } catch { } }
 
             MainWindow.TestFind(check);
+            ClipNames.Test(check);
 
             Windows(check);
 

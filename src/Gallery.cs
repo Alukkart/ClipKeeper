@@ -73,9 +73,10 @@ namespace DeviceGuard
         public static ClipVm Describe(FileInfo f, string root, string lastClip)
         {
             string game = GameOf(f, root);
-            string title = game == NoGame.Folder ? Path.GetFileNameWithoutExtension(f.Name) : game;
+            string own = ClipNames.TitleOf(f.Name);   // named in the library
+            string title = own ?? (game == NoGame.Folder ? Path.GetFileNameWithoutExtension(f.Name) : game);
             string name = Path.GetFileNameWithoutExtension(f.Name);
-            if (name.Contains(" — ")) title += " · " + name.Substring(name.LastIndexOf(" — ") + 3);   // trim / discord / …
+            if (own == null && name.Contains(" — ")) title += " · " + name.Substring(name.LastIndexOf(" — ") + 3);   // trim / discord / …
 
             string duration = null;
             double sec = ClipIndex.Duration(f);
@@ -91,11 +92,14 @@ namespace DeviceGuard
             double mb = f.Length / 1048576.0;
             string size = mb >= 1024 ? (mb / 1024).ToString("0.0") + L.T(" GB", " ГБ") : mb.ToString("0") + L.T(" MB", " МБ");
 
+            string at = date + ", " + when.ToString("HH:mm");
             return new ClipVm
             {
                 Path = f.FullName,
                 Title = title,
-                Sub = date + ", " + when.ToString("HH:mm") + " · " + size,
+                // a named clip moved its game out of the title: it goes below, unless the clips are inside that game already
+                Sub = (own != null && game != NoGame.Folder ? Covers.Title(game) + " · " : "") + at + " · " + size,
+                Named = own != null, Source = true, WhenText = at, SizeText = size,
                 Duration = duration,
                 Seconds = sec,
                 NewVis = string.Equals(f.FullName, lastClip, StringComparison.OrdinalIgnoreCase) ? Visibility.Visible : Visibility.Collapsed,

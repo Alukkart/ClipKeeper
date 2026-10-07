@@ -99,6 +99,7 @@ namespace DeviceGuard
             clipsList.AddHandler(Button.ClickEvent, new RoutedEventHandler(OnClipButton));
             InitScrub();
             InitFind();
+            InitRename();
             gamesList.AddHandler(Button.ClickEvent, new RoutedEventHandler(OnGameButton));
             F<Button>("BtnClipsBack").Click += (s, e) => GoBack();
             F<Button>("BtnClipsRefresh").Click += (s, e) => LoadClips(true);
@@ -596,6 +597,7 @@ namespace DeviceGuard
         // inside a game its name on every card is redundant: the title is when it was recorded, below — the size
         public static void GameViewTitle(ClipVm vm)
         {
+            if (vm.Named) { vm.Sub = EventVm.Cap(vm.WhenText) + " · " + vm.SizeText; return; }   // the name stays, the game is the page
             int dot = vm.Sub.LastIndexOf(" · ");
             if (dot < 0) return;
             string when = EventVm.Cap(vm.Sub.Substring(0, dot));
@@ -609,10 +611,22 @@ namespace DeviceGuard
         {
             var vm = ClipScanner.Describe(f, f.DirectoryName, null);
             var mt = MetaOf(f);
-            vm.Title = !string.IsNullOrEmpty(mt.Item2) ? mt.Item2 : Path.GetFileNameWithoutExtension(f.Name);
+            vm.Named = false;
+            vm.Source = false;
+            vm.Title = OwnTitle(Path.GetFileNameWithoutExtension(f.Name), mt.Item2);
             if (mt.Item1 != null)
                 vm.Sub = Covers.Title(mt.Item1.Game) + L.T(" · clip from ", " · клип от ") + mt.Item1.Recorded.ToString("dd.MM HH:mm") + " · " + vm.Sub.Substring(vm.Sub.LastIndexOf('·') + 2);
             return vm;
+        }
+
+        // a trim's title is in its data and its file name (plus " — trim" or " (discord)"); a file renamed later has its own name
+        static string OwnTitle(string file, string saved)
+        {
+            if (string.IsNullOrEmpty(saved)) return file;
+            string safe = Trimmer.SafeName(saved);
+            if (!file.StartsWith(safe, StringComparison.OrdinalIgnoreCase)) return file;
+            string rest = file.Substring(safe.Length);
+            return rest.Length == 0 || rest.StartsWith(" — ") || rest.StartsWith(" (") ? saved : file;
         }
 
         void ShowClips(List<ClipVm> list, bool more)

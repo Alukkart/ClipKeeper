@@ -216,6 +216,18 @@ namespace DeviceGuard
         public string Group { get; set; }   // the day (or the folder in a search over all folders) it is listed under
         public double Seconds;
 
+        // its own name (ClipNames): a source is named in its file name, when and how big it is goes below
+        public bool Named, Source;
+        public string WhenText, SizeText;
+        public string TitleTip { get { return Path + L.T("\nF2 or a double click — rename", "\nF2 или двойной клик — переименовать"); } }
+        bool editing;
+        string editText = "";
+        public bool Editing { get { return editing; } set { editing = value; Notify("EditVis", "TitleVis", "NewFileName"); } }
+        public Visibility EditVis { get { return editing ? Visibility.Visible : Visibility.Collapsed; } }
+        public Visibility TitleVis { get { return editing ? Visibility.Collapsed : Visibility.Visible; } }
+        public string EditText { get { return editText; } set { editText = value ?? ""; Notify("EditText", "NewFileName"); } }
+        public string NewFileName { get { return editing ? ClipNames.NameFor(Path, editText, Source) ?? L.T("type a name", "введи название") : null; } }
+
         // frames under the mouse (MainWindowScrub.cs): the current frame and a progress line of the thumbnail width
         Brush scrub;
         double scrubWidth = -1;

@@ -105,8 +105,18 @@
                         </Button>
                     </Grid>
                     <StackPanel Margin="12,10,12,2">
-                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Path}"/>
-                        <TextBlock Text="{Binding Sub}" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                        <!-- F2 or a double click on the title: rename in place (MainWindowRename.cs); the file name it gets is shown under it -->
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding TitleTip}"
+                                   Tag="title" Background="Transparent" Visibility="{Binding TitleVis}"/>
+                        <TextBox Tag="rename" Style="{StaticResource Field}" Visibility="{Binding EditVis}" Padding="6,2" Margin="-7,-3,-7,0"
+                                 FontWeight="SemiBold" BorderBrush="{StaticResource Sub}" MaxLength="120"
+                                 Text="{Binding EditText, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Text="{Binding Sub}" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"
+                                   Visibility="{Binding TitleVis}"/>
+                        <TextBlock Text="{Binding NewFileName}" ToolTip="{Binding NewFileName}" FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                   Foreground="{StaticResource Sub}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="{Binding EditVis}"/>
+                        <TextBlock Text="Enter — save · Esc — cancel¦Enter — сохранить · Esc — отмена" Foreground="{StaticResource Muted}" FontSize="11"
+                                   Margin="0,3,0,0" Visibility="{Binding EditVis}"/>
                     </StackPanel>
                     <!-- actions show on hover: a grid of cards stays calm -->
                     <Grid x:Name="actions" Margin="5,4,5,6" Opacity="0">

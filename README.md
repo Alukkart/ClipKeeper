@@ -213,7 +213,10 @@ Clips come from three folders, following a clip's path:
   2026-10-05 19-56-05.mp4`), a ready clip is its name. The star, the statistics and the last clip follow the file.
 - **Several at once:** Ctrl+click or the circle on a card selects it, Shift+click a range, Ctrl+A everything shown,
   Esc none. A bar at the bottom shows how many, how long and how big and offers favorites, copy (Discord takes them as
-  several attachments), to the collection for ready clips, and the Recycle Bin (press twice).
+  several attachments), to the collection for ready clips, the Recycle Bin (press twice) and **Join**.
+- **Join:** two or more selected clips become one, in the order they were selected (drag a clip to move it), back to
+  back or with a 0.3 s fade. Kept at frame-exact quality or fitted for Discord / Nitro / Telegram, saved to Ready and
+  checked like a trim. Clips of another size or frame rate are brought to the first one's; each gives its common mix.
 - **Go through new clips:** when clips from the last two weeks wait without a star, a trim or a look, Sources show
   **Go through N new clips**. They play one after another and a key decides each: **F** keeps it with a star, **X** —
   trim later, **Delete** — for the Recycle Bin, **→** — skip, **Z** — undo, **Space** — pause. Nothing is deleted on the
@@ -279,7 +282,8 @@ Ctrl+Z undoes the last cut, Esc drops an unfinished one. Cut parts are skipped w
 |---|---|
 | **Lossless** | Copy without re-encoding: all tracks, almost instant; the start snaps to a keyframe. |
 | **Frame-exact** | Video re-encoded on the GPU at the same quality, audio copied. |
-| **Share** | H.264, one track — exactly what you hear. Discord (10 MB), Nitro (500 MB), **your own size in MB**, or Telegram (2 GB). Small sizes lower the resolution. |
+| **Share** | H.264, one track — exactly what you hear. Discord (10 MB), Nitro (500 MB), **your own size in MB**, or Telegram (2 GB). Small sizes lower the resolution. **Even loudness** (off by default) brings it to −14 LUFS, as YouTube plays it; the editor shows how loud it is now. |
+| **GIF** | An animation without sound for chats where a video does not play by itself: GIF or WebP (several times smaller), 360 / 480 / 720 px wide, 10 / 15 / 24 frames per second, with a size estimate and a warning when the range is long. |
 
 - With cuts the remaining pieces are joined frame-exactly (video re-encoded at frame-exact quality, a 10 ms
   crossfade at audio joints); the join's length and audio are checked before the usual check.
@@ -451,7 +455,8 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
 | `--preview-settings <folder> [--lang en\|ru]` | the settings tabs and the Recording page with default settings, no folders needed. The Build workflow run by hand with **screenshots** commits `docs/screenshots/<lang>/settings.png` |
 | `--playtest <clip> <report>` | run the editor player muted and offscreen: seeks, a track change, closing |
 | `--keytest <clip> <report>` | press every editor key in an offscreen editor and check the result |
-| `--trimtest <clip> <folder> <report>` | save in every mode, with cuts and a mix rebuild, and check the files |
+| `--trimtest <clip> <folder> <report>` | save in every mode (even loudness, GIF and WebP too), with cuts and a mix rebuild, and check the files |
+| `--mergetest <clip> <clip> <folder> <report>` | join two clips with a fade and for Discord, and check the files |
 | `--probe [file]` | check that the OBS WebSocket answers (no password sent) |
 
 **Files**

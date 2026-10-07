@@ -5,6 +5,7 @@
 #   ClipKeeper.exe           — for an update: replace the file next to the old one, settings stay;
 #   SHA256SUMS.txt           — checksums.
 # A tag with a hyphen (v1.2.0-beta.1) is published as a pre-release.
+# The release notes start with the version's section of CHANGELOG.md: no section — no release (see "Changes from CHANGELOG.md").
 name: Release
 
 on:
@@ -49,6 +50,26 @@ jobs:
           Set-Content $f $t -Encoding UTF8 -NoNewline
           "VERSION=$ver" >> $env:GITHUB_ENV
           "PRERELEASE=$(if ($Matches[4]) { 'true' } else { 'false' })" >> $env:GITHUB_ENV
+
+      # the release notes start with this version's section of CHANGELOG.md ("## [1.2.3] - date" up to the next "## [").
+      # A release without one stops here, before anything is built; a pre-release may use "## [Unreleased]" instead
+      - name: Changes from CHANGELOG.md
+        shell: pwsh
+        run: |
+          $log = Get-Content CHANGELOG.md -Raw -Encoding UTF8
+          function Section($name) {
+            $m = [regex]::Match($log, "(?ms)^## \[$([regex]::Escape($name))\][^\r\n]*\r?\n(.*?)(?=^## \[|^\[[^\]]+\]:|\z)")
+            if ($m.Success) { $m.Groups[1].Value.Trim() } else { '' }
+          }
+          $changes = Section $env:VERSION
+          if (-not $changes -and $env:PRERELEASE -eq 'true') { $changes = Section 'Unreleased' }
+          if (-not $changes) {
+            throw "CHANGELOG.md has no section for $($env:VERSION). Rename '## [Unreleased]' to '## [$($env:VERSION)] - $(Get-Date -Format yyyy-MM-dd)', commit, move the tag and push it again"
+          }
+          # a release shows every line break, so an item wrapped onto indented lines becomes one line again
+          $changes = $changes -replace '\r?\n[ \t]+(?=\S)', ' '
+          Set-Content changes.md $changes -Encoding UTF8
+          $changes
 
       - name: Build
         shell: cmd
@@ -115,7 +136,7 @@ jobs:
         run: |
           $pkg = "dist\ClipKeeper"
           New-Item -ItemType Directory -Force "$pkg\ffmpeg" | Out-Null
-          Copy-Item ClipKeeper.exe, README.md, README.ru.md, LICENSE $pkg
+          Copy-Item ClipKeeper.exe, README.md, README.ru.md, CHANGELOG.md, LICENSE $pkg
           Copy-Item docs $pkg -Recurse   # the README pictures
           Copy-Item "$env:FFMPEG_ROOT\bin\ffmpeg.exe", "$env:FFMPEG_ROOT\bin\ffprobe.exe", "$env:FFMPEG_ROOT\LICENSE.txt" "$pkg\ffmpeg"
           Compress-Archive "$pkg" "dist\ClipKeeper-$env:VERSION.zip"
@@ -168,6 +189,8 @@ jobs:
 
           $env:VT_NOTE
           "@
+          # what changed (CHANGELOG.md, the "Changes" step) first, then how to install
+          $notes = (Get-Content changes.md -Raw -Encoding UTF8).Trim() + "`n`n---`n`n" + $notes
           Set-Content notes.md $notes -Encoding UTF8
           $flags = @('--title', "ClipKeeper $env:VERSION", '--notes-file', 'notes.md', '--generate-notes')
           if ($env:PRERELEASE -eq 'true') { $flags += '--prerelease' }

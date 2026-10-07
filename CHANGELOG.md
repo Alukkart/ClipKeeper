@@ -1,0 +1,59 @@
+# Changelog
+
+What changed in each version of ClipKeeper, for the people who use it. The newest is on top.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
+[Semantic Versioning](https://semver.org/). The release workflow copies a version's section into its GitHub release.
+
+## [Unreleased]
+
+### Added
+- Built-in sounds: four for the alarm (Fall, Motif, Monitor, Bell) and four for "Clip saved" (Marimba, Glass,
+  Shutter, Drop), picked with a click that also plays them.
+- Your own alarm or "Clip saved" sound from any audio file — MP3, OGG, M4A, WAV… (the first 10 seconds are kept).
+  Right click on it to delete it.
+
+### Changed
+- Settings are now 15 small sections in six groups (Basics, OBS, Monitoring, Clips, Library, Editor) instead of seven
+  long tabs. On the settings page the sidebar turns into the list of sections, with the search on top; each section
+  opens with a short description. The arrow on top or Esc goes back to the page you came from.
+- The Favorites and All clips cards in the library show the frames of up to six latest clips, fanned out.
+- If you never changed the alarm or "Clip saved" sound, it switches from the Windows sound to the new built-in one.
+  A sound you chose stays.
+- Release notes link a VirusTotal scan of `ClipKeeper.exe`.
+
+### Fixed
+- Editor: in Russian, the hint next to "Send in one click" was drawn over the caption.
+
+## [1.0.1] - 2026-10-06
+
+### Fixed
+- Share → Telegram could make a file larger than Telegram accepts. It now keeps to 2 GB, Telegram's upload limit:
+  the quality is as good as before, and only a range too long for 2 GB is squeezed under the limit.
+
+### Changed
+- `ClipKeeper.exe` names its author and license in the file properties.
+
+## [1.0.0] - 2026-10-05
+
+The first public release.
+
+### Added
+- Recording guard over obs-websocket: keeps OBS sources on the right audio devices and monitors after driver or
+  audio software updates, restarts a crashed replay buffer and OBS itself, notices audio that never reaches OBS and
+  a black or frozen picture, restores mixer tracks, watches dropped frames, disk space and graphics driver failures,
+  backs up the OBS settings daily.
+- An alarm over the game that doesn't steal focus, with a sound, and a green window when things fixed themselves.
+- A check of every saved clip (length, tracks, dropped frames) and a "Clip saved" card with Open, Trim, Copy and
+  Folder; the press of the OBS save key is confirmed at once.
+- Sorting clips into game folders, with no OBS script.
+- A library by game with covers from Steam and Wikipedia, favorites, Ready and Collection folders, cleanup of old clips.
+- A trim editor with Premiere keys (remappable): cuts from the middle, per-track volume and solo, lossless,
+  frame-exact and share (Discord 10 MB / Nitro / Telegram / your own size) saving, and a check of every saved file.
+- Hotkeys in game for the last clip: trim, favorite, copy, show its card again.
+- Statistics by month and game, and a month recap to share as a picture.
+- First-run setup, starting together with OBS, updates from GitHub releases, English and Russian interface.
+
+[Unreleased]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/Alukkart/ClipKeeper/releases/tag/v1.0.0

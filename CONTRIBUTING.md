@@ -81,6 +81,8 @@ Every file starts with a comment saying what it is for — read that first.
 2. `build.cmd` and `--selftest` pass.
 3. For a visible change, add a screenshot (both languages if you can, `--preview` renders them).
 4. If the change affects what the user does or sees, update `README.md` and `README.ru.md`.
+5. Add a line to `## [Unreleased]` in [`CHANGELOG.md`](CHANGELOG.md), in English, written for the user: what they get or
+   what was broken — not which files changed. The release notes are made from it.
 
 Releases are made from `v*` tags by GitHub Actions; contributors don't need to do anything for that.
 

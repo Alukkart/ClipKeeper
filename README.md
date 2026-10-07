@@ -412,7 +412,9 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
     approval (up to an hour) and comes back signed before the self-test and the checksums. The SignPath project uses
     [`.signpath/artifact-configuration.xml`](.signpath/artifact-configuration.xml). Without them the exe stays unsigned
     and SmartScreen warns on first start.
-- **Release a version:**
+- **Release a version:** in [`CHANGELOG.md`](CHANGELOG.md) rename `## [Unreleased]` to `## [1.1.0] - <date>`, start a
+  new empty `## [Unreleased]` above it, fix the links at the bottom and commit — the release notes are made from that
+  section, and a tag without one is not released. Then:
 
   ```bash
   git tag v1.1.0

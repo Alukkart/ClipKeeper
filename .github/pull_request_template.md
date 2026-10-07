@@ -15,3 +15,4 @@
 - [ ] Screenshot attached · Скриншот приложен
 - [ ] Every new string is in both languages: `L.T("…", "…")` / `"…¦…"` · Каждая новая строка на двух языках
 - [ ] `README.md` and `README.ru.md` updated, if the user sees or does something new · обновлены, если пользователь видит или делает что-то новое
+- [ ] A line in `CHANGELOG.md` → `## [Unreleased]`, in English · Строка в `CHANGELOG.md`, на английском

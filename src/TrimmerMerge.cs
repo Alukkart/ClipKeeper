@@ -45,8 +45,33 @@ namespace DeviceGuard
             return durations.Sum() - (fade ? FadeSec * Math.Max(0, durations.Count - 1) : 0);
         }
 
-        // the filter graph that joins the inputs 0..n-1
-        public static string MergeGraph(IList<Ffmpeg.MediaInfo> infos, MergeShape sh, int mixIndex, bool fade)
+        // which audio track of each clip goes into the join (-1 — the clip has none, silence takes its place):
+        // a trim names its common mix; an OBS clip has it where the current OBS layout has it; a single track is the one;
+        // otherwise the loudest track — the common mix carries everything, so it is the loudest on average
+        public static int[] AudioPicks(IList<Ffmpeg.MediaInfo> infos, IList<string> files, int mixIndex, Action<TrimStep> step, CancellationToken cancel)
+        {
+            var picks = new int[infos.Count];
+            for (int i = 0; i < infos.Count; i++)
+            {
+                int na = infos[i].Audio.Count;
+                var meta = ReadMeta(infos[i]);
+                if (na == 0) picks[i] = -1;
+                else if (meta != null && meta.Mix >= 0 && meta.Mix < na) picks[i] = meta.Mix;
+                else if (meta == null && mixIndex >= 0 && mixIndex < na) picks[i] = mixIndex;
+                else if (na == 1) picks[i] = 0;
+                else
+                {
+                    int k = i;
+                    picks[i] = Enumerable.Range(0, na).OrderByDescending(t => Ffmpeg.MeanDb(files[k], t, cancel)).First();
+                    step(new TrimStep { State = 3, Text = "«" + Path.GetFileNameWithoutExtension(files[i]) + L.T("»: the file does not say which track is the common mix — the loudest one is taken (track ",
+                                                                                                              "»: в файле не записано, какая дорожка — общий микс; взята самая громкая (дорожка ") + (picks[i] + 1) + ")" });
+                }
+            }
+            return picks;
+        }
+
+        // the filter graph that joins the inputs 0..n-1, each with its audio track from AudioPicks
+        public static string MergeGraph(IList<Ffmpeg.MediaInfo> infos, MergeShape sh, int[] picks, bool fade)
         {
             var g = new StringBuilder();
             string fps = sh.Fps.ToString("0.###", Inv);
@@ -54,9 +79,8 @@ namespace DeviceGuard
             {
                 g.Append("[" + i + ":v:0]scale=" + sh.W + ":" + sh.H + ":force_original_aspect_ratio=decrease,pad=" + sh.W + ":" + sh.H +
                          ":(ow-iw)/2:(oh-ih)/2,setsar=1,fps=" + fps + ",format=yuv420p,settb=AVTB[v" + i + "];");
-                int na = infos[i].Audio.Count;
-                if (na == 0) g.Append("anullsrc=r=48000:cl=stereo,atrim=duration=" + Ffmpeg.T(infos[i].Duration) + "[a" + i + "];");
-                else g.Append("[" + i + ":a:" + (mixIndex >= 0 && mixIndex < na ? mixIndex : 0) + "]aresample=48000,aformat=channel_layouts=stereo,asetpts=PTS-STARTPTS[a" + i + "];");
+                if (picks[i] < 0) g.Append("anullsrc=r=48000:cl=stereo,atrim=duration=" + Ffmpeg.T(infos[i].Duration) + "[a" + i + "];");
+                else g.Append("[" + i + ":a:" + picks[i] + "]aresample=48000,aformat=channel_layouts=stereo,asetpts=PTS-STARTPTS[a" + i + "];");
             }
             int n = infos.Count;
             if (!fade)
@@ -98,7 +122,8 @@ namespace DeviceGuard
             string tmp = Path.Combine(dir, "merged_" + Guid.NewGuid().ToString("N") + ".mp4");
             try
             {
-                string args = string.Join(" ", m.Clips.Select(c => "-i " + Q(c))) + " -filter_complex \"" + MergeGraph(infos, sh, m.MixIndex, m.Fade) + "\" -map \"[vout]\" -map \"[aout]\"";
+                var picks = AudioPicks(infos, m.Clips, m.MixIndex, step, cancel);
+                string args = string.Join(" ", m.Clips.Select(c => "-i " + Q(c))) + " -filter_complex \"" + MergeGraph(infos, sh, picks, m.Fade) + "\" -map \"[vout]\" -map \"[aout]\"";
                 string codec = infos[0].Streams.Where(x => x.Type == "video").Select(x => x.Codec).FirstOrDefault() ?? "hevc";
                 var r = EncodeQuality(args, codec, 18, " -c:a aac -b:a 320k", tmp, t => progress(Math.Min(0.5, 0.5 * t / Math.Max(0.1, total))), cancel);
                 if (r.Code != 0 || !File.Exists(tmp))
@@ -154,10 +179,16 @@ namespace DeviceGuard
                 return i;
             };
             var two = new List<Ffmpeg.MediaInfo> { clip(10, 4), clip(5, 1), clip(8, 0) };
+            var trim = clip(6, 3);
+            trim.Tags["description"] = MetaTag + "|game=Hunt|recorded=2026-10-05T19:56:05|source=a.mp4|mix=2";   // a trim that names its mix
+            two.Add(trim);
+            var picks = AudioPicks(two, new[] { "a", "b", "c", "d" }, 3, s => { }, CancellationToken.None);
+            check(string.Join(",", picks) == "3,0,-1,2", "merge: the OBS mix, a single track, silence, the mix a trim names (" + string.Join(",", picks) + ")");
+            two.RemoveAt(3);
             var sh = ShapeOf(two[0]);
-            string flat = MergeGraph(two, sh, 3, false), faded = MergeGraph(two, sh, 3, true);
+            string flat = MergeGraph(two, sh, new[] { 3, 0, -1 }, false), faded = MergeGraph(two, sh, new[] { 3, 0, -1 }, true);
             check(sh.W == 2560 && flat.Contains("[0:a:3]") && flat.Contains("[1:a:0]") && flat.Contains("anullsrc") && flat.EndsWith("concat=n=3:v=1:a=1[vout][aout]"),
-                  "merge: the mix of each clip (or its only track, or silence), back to back");
+                  "merge: each clip's track (or silence), back to back");
             check(faded.Contains("offset=9.7[vx1]") && faded.Contains("offset=14.4[vout]") && faded.Contains("acrossfade=d=0.3[aout]") && !faded.EndsWith(";"),
                   "merge: fades start 0.3 s before each clip ends");
             check(Math.Abs(MergedLength(new[] { 10.0, 5, 8 }, true) - 22.4) < 1e-9, "merge: the length with fades");

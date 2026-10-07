@@ -73,7 +73,9 @@ namespace DeviceGuard
             ((FrameworkElement)F<Border>("TriageProgress").Parent).SizeChanged += (s, e) => TriageStats();
             W.PreviewKeyDown += (s, e) =>
             {
-                if (!triageOn || Keyboard.FocusedElement is TextBox || Keyboard.Modifiers == ModifierKeys.Alt) return;
+                // a decision is a bare key: Ctrl+F out of habit must not star a clip; Ctrl+Z undoes like Z
+                var mods = Keyboard.Modifiers;
+                if (!triageOn || Keyboard.FocusedElement is TextBox || (mods != ModifierKeys.None && !(e.Key == Key.Z && mods == ModifierKeys.Control))) return;
                 bool review = F<Border>("TriageStage").Visibility == Visibility.Visible;
                 switch (e.Key)
                 {
@@ -92,12 +94,12 @@ namespace DeviceGuard
         }
 
         // which clips wait to be gone through: saved in the last two weeks, without a star, not trimmed, not looked at yet
-        static List<string> FreshClips(IEnumerable<FileInfo> files, Func<HashSet<string>> trimmed)
+        static List<string> FreshClips(IEnumerable<FileInfo> files, Func<DateTime, HashSet<string>> trimmedSince)
         {
             var edge = DateTime.Now.AddDays(-14);
             var fresh = files.Where(f => f.LastWriteTime > edge && !Favorites.Has(f.FullName) && !Reviewed.Has(f.Name)).ToList();
             if (fresh.Count == 0) return new List<string>();
-            var cut = trimmed();
+            var cut = trimmedSince(edge);   // only trims of these two weeks can be made from these clips
             return fresh.Where(f => !cut.Contains(f.Name)).OrderBy(f => f.LastWriteTime).Select(f => f.FullName).ToList();   // in the order they were played
         }
 
@@ -117,7 +119,9 @@ namespace DeviceGuard
                 };
                 var files = new List<FileInfo> { make("Replay 2026-10-05 18-00-00.mp4", 1), make("Replay 2026-10-04 18-00-00.mp4", 2),
                                                  make("Replay 2026-09-01 18-00-00.mp4", 30), make("Replay 2026-10-03 18-00-00.mp4", 3) };
-                var fresh = FreshClips(files, () => new HashSet<string>(new[] { "Replay 2026-10-03 18-00-00.mp4" }, StringComparer.OrdinalIgnoreCase));
+                DateTime asked = DateTime.MaxValue;
+                var fresh = FreshClips(files, since => { asked = since; return new HashSet<string>(new[] { "Replay 2026-10-03 18-00-00.mp4" }, StringComparer.OrdinalIgnoreCase); });
+                check(Math.Abs((DateTime.Now.AddDays(-14) - asked).TotalMinutes) < 1, "going through: only trims of the last two weeks are read");
                 check(fresh.Count == 2 && Path.GetFileName(fresh[0]) == "Replay 2026-10-04 18-00-00.mp4",
                       "going through: new = the last two weeks, not trimmed, oldest first (" + string.Join(", ", fresh.Select(Path.GetFileName)) + ")");
             }
@@ -188,6 +192,13 @@ namespace DeviceGuard
         {
             if (i < 0 || triage.Count == 0) return;
             if (i >= triage.Count) { FinishTriage(); return; }
+            if (!File.Exists(triage[i].Path))   // deleted or moved meanwhile: nothing to decide, on to the next one
+            {
+                triage[i].Decision = TriageVm.Skip;
+                int after = NextUndecided(i);
+                ShowTriage(after >= 0 ? after : triage.Count);
+                return;
+            }
             triageAt = i;
             for (int k = 0; k < triage.Count; k++) triage[k].Current = k == i;
             F<Border>("TriageDone").Visibility = Visibility.Collapsed;
@@ -249,11 +260,16 @@ namespace DeviceGuard
             if (what != TriageVm.Delete) Reviewed.Mark(vm.Path, true);   // a clip for the bin counts once it is gone
             triageDone.Push(triageAt);
             triagePaused = false;
-            // the next one nobody decided about yet: after this one, then the ones skipped by clicking ahead in the queue
-            int next = -1;
-            for (int k = triageAt + 1; k < triage.Count && next < 0; k++) if (triage[k].Decision == TriageVm.None) next = k;
-            for (int k = 0; k < triageAt && next < 0; k++) if (triage[k].Decision == TriageVm.None) next = k;
+            int next = NextUndecided(triageAt);
             ShowTriage(next >= 0 ? next : triage.Count);
+        }
+
+        // the next clip nobody decided about yet: after this one, then the ones skipped by clicking ahead in the queue; -1 — none
+        int NextUndecided(int after)
+        {
+            for (int k = after + 1; k < triage.Count; k++) if (triage[k].Decision == TriageVm.None) return k;
+            for (int k = 0; k < after && k < triage.Count; k++) if (triage[k].Decision == TriageVm.None) return k;
+            return -1;
         }
 
         // what a decision did to a clip is undone (the star it put, "looked at")

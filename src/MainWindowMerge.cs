@@ -275,32 +275,22 @@ namespace DeviceGuard
             var fill = new Border { CornerRadius = new CornerRadius(2), Background = Wpf.Res<Brush>("Brand"), HorizontalAlignment = HorizontalAlignment.Left, Width = 0 };
             bar.Children.Add(fill);
             p.Children.Add(bar);
-            var list = new StackPanel();
-            p.Children.Add(list);
+            // the same step list as the editor's result (EventVm.Of): a step that changes replaces its line
+            var steps = new System.Collections.ObjectModel.ObservableCollection<EventVm>();
+            p.Children.Add(new ItemsControl { ItemsSource = steps, ItemTemplate = (DataTemplate)W.FindResource("EventTpl") });
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
             p.Children.Add(buttons);
             var stop = Btn(null, L.T("Stop", "Остановить"), "BtnGhost");
             stop.Click += (s, e) => { if (mergeCts != null) mergeCts.Cancel(); };
             buttons.Children.Add(stop);
-            var rows = new Dictionary<TrimStep, TextBlock[]>();
+            var shown = new Dictionary<TrimStep, EventVm>();
             Action<TrimStep> show = st =>
             {
-                TextBlock[] r;
-                if (!rows.TryGetValue(st, out r))
-                {
-                    var g = new Grid { Margin = new Thickness(0, 3, 0, 3) };
-                    g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(24) });
-                    g.ColumnDefinitions.Add(new ColumnDefinition());
-                    r = new[] { new TextBlock { Style = S("Icon"), FontSize = 12, Margin = new Thickness(0, 2, 0, 0) }, new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Wpf.Br("#D4D4D8") } };
-                    Grid.SetColumn(r[1], 1);
-                    g.Children.Add(r[0]);
-                    g.Children.Add(r[1]);
-                    list.Children.Add(g);
-                    rows[st] = r;
-                }
-                r[0].Text = st.State == 1 ? "" : st.State == 2 ? "" : st.State == 3 ? "" : "";
-                r[0].Foreground = Wpf.Br(st.State == 1 ? Wpf.Ok : st.State == 2 ? Wpf.Bad : Wpf.Grey, 255);
-                r[1].Text = st.Text;
+                var vm = EventVm.Of(st);
+                EventVm old;
+                if (shown.TryGetValue(st, out old)) steps[steps.IndexOf(old)] = vm;
+                else steps.Add(vm);
+                shown[st] = vm;
             };
             mergeCts = new CancellationTokenSource();
             var token = mergeCts.Token;

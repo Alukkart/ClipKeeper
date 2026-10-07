@@ -113,7 +113,7 @@ namespace DeviceGuard
         {
             if (busy || info == null) return;
             var job = BuildJob();
-            if (!job.Tracks.Any(t => t.On) && info.Audio.Count > 0)
+            if (!job.Gif && !job.Tracks.Any(t => t.On) && info.Audio.Count > 0)   // an animation has no sound to need a track
             {
                 audioStatus.Text = L.T("enable at least one track", "включи хотя бы одну дорожку");
                 audioStatus.Foreground = Wpf.Br(Wpf.Bad, 255);
@@ -187,12 +187,7 @@ namespace DeviceGuard
             delSrcText.Text = L.T("Delete the source", "Удалить исходник");
         }
 
-        static EventVm StepVm(TrimStep s)
-        {
-            var c = s.State == 1 ? Wpf.Ok : s.State == 2 ? Wpf.Bad : s.State == 3 ? Wpf.Grey : Wpf.Accent;
-            string g = s.State == 1 ? "" : s.State == 2 ? "" : s.State == 3 ? "" : "";
-            return new EventVm { Text = s.Text, Glyph = g, GlyphBrush = Wpf.Br(c, 255) };
-        }
+        static EventVm StepVm(TrimStep s) { return EventVm.Of(s); }
 
         void DeleteSource()
         {

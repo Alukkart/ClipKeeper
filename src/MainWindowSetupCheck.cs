@@ -32,6 +32,17 @@ namespace DeviceGuard
             }
         }
 
+        // the "Set…" key being pressed: it listens to the whole window, so leaving the step (or the setup) must stop it,
+        // or the next key typed anywhere would become the OBS save key
+        KeyEventHandler setupKeyGrab;
+
+        void StopKeyGrab()
+        {
+            if (setupKeyGrab == null) return;
+            W.PreviewKeyDown -= setupKeyGrab;
+            setupKeyGrab = null;
+        }
+
         CheckRow AddCheckRow(StackPanel p, Action fix)
         {
             var r = new CheckRow { Box = new Grid { Margin = new Thickness(0, 0, 0, 0) } };
@@ -88,13 +99,13 @@ namespace DeviceGuard
                 {
                     capture = L.T("Press the key…  (Esc — cancel)", "Нажми клавишу…  (Esc — отмена)");
                     refresh();
-                    KeyEventHandler grab = null;
-                    grab = (s, e) =>
+                    StopKeyGrab();
+                    setupKeyGrab = (s, e) =>
                     {
                         var k = e.Key == Key.System ? e.SystemKey : e.Key;
                         if (k == Key.LeftCtrl || k == Key.RightCtrl || k == Key.LeftShift || k == Key.RightShift || k == Key.LeftAlt || k == Key.RightAlt || k == Key.LWin || k == Key.RWin) return;
                         e.Handled = true;
-                        W.PreviewKeyDown -= grab;
+                        StopKeyGrab();
                         capture = null;
                         if (k == Key.Escape) { refresh(); return; }
                         string name = ObsFix.ObsKeyName(KeyInterop.VirtualKeyFromKey(k));
@@ -102,7 +113,7 @@ namespace DeviceGuard
                         var m = Keyboard.Modifiers;
                         fixDone("key", ObsFix.SetSaveKey(st, name, (m & ModifierKeys.Control) != 0, (m & ModifierKeys.Shift) != 0, (m & ModifierKeys.Alt) != 0));
                     };
-                    W.PreviewKeyDown += grab;
+                    W.PreviewKeyDown += setupKeyGrab;
                 });
             }
             CheckRow devRow = cfg.GuardEnabled ? AddCheckRow(rows, () => { }) : null;

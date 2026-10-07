@@ -389,6 +389,7 @@ namespace DeviceGuard
                          .Concat(s.Pending.Select((m, i) => Linked(EventVm.Problem(m, false), KeyAt(s.PendingKeys, i))))
                          .Concat(s.Notes.Select((m, i) => Linked(new EventVm { Text = EventVm.Cap(m), Glyph = "\uE946", GlyphBrush = Wpf.Br(Wpf.Warn, 255) }, KeyAt(s.NotesKeys, i))))
                          .ToList();
+            probs.AddRange(ReadinessProblems(s));   // what OBS needs for clips (MainWindowSetupCheck.cs)
             problemsList.ItemsSource = probs;
             problemsCard.Visibility = probs.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 

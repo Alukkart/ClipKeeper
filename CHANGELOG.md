@@ -20,6 +20,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   or for the Recycle Bin. Nothing is deleted until the end.
 - The first-run setup checks what OBS needs for clips — the WebSocket server, the replay buffer, a Save Replay key — and
   fixes what is missing; it ends with a test clip.
+- The Recording page says when OBS later loses what clips need (the replay buffer turned off, no Save Replay key, a fix
+  waiting for OBS to close), with a link to fix it.
 - Join selected clips into one: in the order they were selected (drag a card or press its ‹ › to move it), each whole
   or only a part of it, back to back or with a short fade, at full quality or fitted for Discord, Nitro or Telegram,
   saved to Ready, next to the first clip or a folder you choose.

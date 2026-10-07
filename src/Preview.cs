@@ -27,6 +27,9 @@ namespace DeviceGuard
             mw.Update(Fake(refs, 0));
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "1-record.png"));
             Render((FrameworkElement)mw.W.Content, 1078, 1700, Path.Combine(dir, "1-record-full.png"));
+            mw.PreviewReadiness();   // OBS lost its save key: the Recording page says so
+            mw.Update(Fake(refs, 0));
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "1-record-readiness.png"));
             mw.ShowPage(MainWindow.PageSettings);
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "2-settings.png"));
             foreach (var tab in mw.SettingsTabKeys)

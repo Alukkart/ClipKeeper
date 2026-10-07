@@ -25,7 +25,15 @@ namespace DeviceGuard
 
         static string ObsDir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "obs-studio"); } }
 
+        // null — the files could not be read right now (OBS rewrites its profile while it closes and starts): keep what was known
         public static Status Read()
+        {
+            try { return ReadNow(); }
+            catch (IOException) { return null; }
+            catch (UnauthorizedAccessException) { return null; }
+        }
+
+        static Status ReadNow()
         {
             var s = new Status();
             var f = ObsFind.Read();
@@ -111,19 +119,21 @@ namespace DeviceGuard
         // ── the fixes ──
         static readonly List<Tuple<string, Func<string>>> pending = new List<Tuple<string, Func<string>>>();
         public static bool Pending { get { lock (pending) return pending.Count > 0; } }
+        public const string FixWebSocket = "websocket", FixReplayBuffer = "replay buffer", FixSaveKey = "save key";
+        public static bool IsPending(string what) { lock (pending) return pending.Any(p => p.Item1 == what); }
 
         public static string EnableWebSocket(Status s)
         {
             if (s.WsFile == null) return L.T("OBS settings were not found — start OBS once", "Настройки OBS не найдены — запусти OBS один раз");
             string file = s.WsFile;
-            return Fix("websocket", () => file.EndsWith(".json", StringComparison.OrdinalIgnoreCase) ? EditJson(file) : Edit(file, "OBSWebSocket", "ServerEnabled", "true"));
+            return Fix(FixWebSocket, () => file.EndsWith(".json", StringComparison.OrdinalIgnoreCase) ? EditJson(file) : Edit(file, "OBSWebSocket", "ServerEnabled", "true"));
         }
 
         public static string EnableReplayBuffer(Status s)
         {
             if (s.ProfileIni == null) return L.T("The OBS profile was not found — start OBS once", "Профиль OBS не найден — запусти OBS один раз");
             string file = s.ProfileIni;
-            return Fix("replay buffer", () => Edit(file, OutSection(File.ReadAllLines(file, Encoding.UTF8)), "RecRB", "true"));
+            return Fix(FixReplayBuffer, () => Edit(file, OutSection(File.ReadAllLines(file, Encoding.UTF8)), "RecRB", "true"));
         }
 
         // obsKey: "OBS_KEY_F8"; the start and stop keys of the buffer stay as they were
@@ -131,7 +141,7 @@ namespace DeviceGuard
         {
             if (s.ProfileIni == null) return L.T("The OBS profile was not found — start OBS once", "Профиль OBS не найден — запусти OBS один раз");
             string file = s.ProfileIni;
-            return Fix("save key", () =>
+            return Fix(FixSaveKey, () =>
             {
                 var ini = File.ReadAllLines(file, Encoding.UTF8);
                 string old = Get(ini, "Hotkeys", "ReplayBuffer");

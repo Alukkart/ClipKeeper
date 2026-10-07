@@ -48,6 +48,26 @@ namespace DeviceGuard
 
         public static T Res<T>(string key) { return (T)Application.Current.FindResource(key); }
 
+        // a turning arc: something is going on that takes a while (OBS restarting)
+        public static FrameworkElement Spinner(double size)
+        {
+            double thick = 2, around = Math.PI * (size - thick) / thick;   // the dash pattern counts in stroke widths
+            var track = new System.Windows.Shapes.Ellipse { Width = size, Height = size, Stroke = Res<Brush>("LineHi"), StrokeThickness = thick };
+            var arc = new System.Windows.Shapes.Ellipse
+            {
+                Width = size, Height = size, Stroke = Res<Brush>("Text"), StrokeThickness = thick, StrokeDashCap = PenLineCap.Round,
+                StrokeDashArray = new DoubleCollection { around * 0.28, around }, RenderTransformOrigin = new Point(0.5, 0.5),
+            };
+            var turn = new RotateTransform();
+            arc.RenderTransform = turn;
+            turn.BeginAnimation(RotateTransform.AngleProperty,
+                new System.Windows.Media.Animation.DoubleAnimation(0, 360, TimeSpan.FromSeconds(0.9)) { RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever });
+            var g = new Grid { Width = size, Height = size };
+            g.Children.Add(track);
+            g.Children.Add(arc);
+            return g;
+        }
+
         // status colors
         public static readonly Color Ok = C("#3FB950"), Warn = C("#D29922"), Bad = C("#F85149"),
                                      Grey = C("#6E7681"), Accent = C("#A1A1AA"), Text = C("#EDEDEF"),

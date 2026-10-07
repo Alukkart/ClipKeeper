@@ -1,10 +1,10 @@
-# Build and self-test on every push to main and every pull request.
+# Build and self-test on every push to main or develop and every pull request.
 # The built ClipKeeper.exe is in the run artifacts (Actions tab); it does not go into a release.
 name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     paths-ignore: ['**.md']
   pull_request:
   workflow_dispatch:

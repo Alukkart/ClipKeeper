@@ -432,16 +432,20 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
     approval (up to an hour) and comes back signed before the self-test and the checksums. The SignPath project uses
     [`.signpath/artifact-configuration.xml`](.signpath/artifact-configuration.xml). Without them the exe stays unsigned
     and SmartScreen warns on first start.
-- **Release a version:** in [`CHANGELOG.md`](CHANGELOG.md) rename `## [Unreleased]` to `## [1.1.0] - <date>`, start a
-  new empty `## [Unreleased]` above it, fix the links at the bottom and commit — the release notes are made from that
-  section, and a tag without one is not released. Then:
+- **Branches** follow git flow: `main` holds released versions only, `develop` the next one; work goes in
+  `feature/…` and `fix/…` branches from `develop` and back into it, urgent fixes in `hotfix/…` from `main`
+  (details in [`CLAUDE.md`](CLAUDE.md)).
+- **Release a version:** make `release/1.1.0` from `develop`; in [`CHANGELOG.md`](CHANGELOG.md) rename
+  `## [Unreleased]` to `## [1.1.0] - <date>`, start a new empty `## [Unreleased]` above it, fix the links at the bottom
+  and commit — the release notes are made from that section, and a tag without one is not released. Merge the branch
+  into `main` and `develop` (`--no-ff`), then tag `main` and push:
 
   ```bash
   git tag v1.1.0
   ```
 
   ```bash
-  git push origin v1.1.0
+  git push origin main develop v1.1.0
   ```
 
 **Command line**

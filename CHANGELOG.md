@@ -7,6 +7,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- A search in the library by name, game or date ("bridge", "yesterday", "5 october"; Ctrl+F). From the library's home,
+  or with "Search all folders" from a game, it looks through Sources, Ready and the collection at once.
+- Filters above the clips — Favorites, Not trimmed, Older than a month — and the order: newest, oldest, longest, largest.
+- Clips sorted by date fall into days: Today, Yesterday, 5 October…
+- Name a clip right on its card: F2 or a double click on the title. The name goes into the file name, so Discord and
+  Telegram show it too; a source keeps its game and time around it.
+- Select several clips (Ctrl+click, Shift+click, Ctrl+A) and add them to favorites, copy them, move ready clips to the
+  collection or send them to the Recycle Bin at once.
+- "Go through new clips": the clips of the last two weeks play one by one, and a key keeps each, marks it to trim later
+  or for the Recycle Bin. Nothing is deleted until the end.
+- The first-run setup checks what OBS needs for clips — the WebSocket server, the replay buffer, a Save Replay key — and
+  fixes what is missing; it ends with a test clip.
+
 ## [1.0.2] - 2026-10-07
 
 ### Added

@@ -79,7 +79,9 @@ ClipKeeper's own windows are hidden from OBS capture and screenshots, so they ne
    protects (Program Files) it works too, keeping its data in `%LOCALAPPDATA%\ClipKeeper`, but can't update itself.
 2. In OBS: **Tools → WebSocket Server Settings** — enable the server. The password is not needed: **Find OBS** in the setup
    takes it from the OBS settings on this computer.
-3. Run `ClipKeeper.exe`. A short setup walks through language and features, the OBS connection, devices and folders.
+3. Run `ClipKeeper.exe`. A short setup walks through language and features, the OBS connection, a check of what OBS
+   needs for clips (the WebSocket server, the replay buffer, a Save Replay key — each fixed with a button), devices and
+   folders, and ends with a test clip: press your key and see the card a clip gets.
 
 <details>
 <summary><b>Windows says "Windows protected your PC", or an antivirus complains</b></summary>
@@ -95,7 +97,7 @@ Some antivirus heuristics dislike what a clip tool has to do. Here is all of it,
 |---|---|---|
 | Reads whether one key is pressed (`GetAsyncKeyState`), the way OBS itself does | Confirms a clip at the press of the OBS "Save Replay" key | Only that key, read from your OBS profile; nothing is stored or sent. Off: Settings → Clip saved → "Confirm the press at once" |
 | Global hotkeys (`RegisterHotKey`) | Trim / favorite / copy the last clip from the game | Only if you set them; none by default |
-| Changes OBS files | Adds the "start ClipKeeper with OBS" script | Only if you turn it on; OBS closed; copies first |
+| Changes OBS files | Adds the "start ClipKeeper with OBS" script; in the setup check turns on the WebSocket server or the replay buffer, sets the Save Replay key | Only if you turn it on or press "Fix"; OBS closed; copies to `backups\` first |
 | Downloads and replaces its own exe | Updates | Only from this repository's releases, checked against `SHA256SUMS.txt`, on your click |
 | Starts and closes OBS | Restarting OBS after a crash, the restart button | Settings → OBS program |
 
@@ -202,6 +204,20 @@ Clips come from three folders, following a clip's path:
 - Each folder opens with cards: Favorites, All clips and games — cover, clip count, total length and size.
   Favorites and All clips show frames of their latest clips fanned out over a blurred copy of the newest one.
   With a single group (e.g. ready clips without game data) the clips are shown right away.
+- **Search, filters and order** above the clips: a search by name, game or date — "bridge", "yesterday", "5 october",
+  "05.10" (Ctrl+F); filters *Favorites*, *Not trimmed* and *Older than a month*; the order newest, oldest, longest or
+  largest. Clips by date fall into days (Today, Yesterday, 5 October…). From the library's home — or with **Search all
+  folders** from a game — the search goes through Sources, Ready and the collection at once, grouped by folder.
+- **Names:** F2 over a card or a double click on its title, then Enter. The name goes into the file name, so it shows the
+  same in Explorer, Discord and Telegram: a source keeps its game and time around it (`Hunt Showdown - Bridge duel -
+  2026-10-05 19-56-05.mp4`), a ready clip is its name. The star, the statistics and the last clip follow the file.
+- **Several at once:** Ctrl+click or the circle on a card selects it, Shift+click a range, Ctrl+A everything shown,
+  Esc none. A bar at the bottom shows how many, how long and how big and offers favorites, copy (Discord takes them as
+  several attachments), to the collection for ready clips, and the Recycle Bin (press twice).
+- **Go through new clips:** when clips from the last two weeks wait without a star, a trim or a look, Sources show
+  **Go through N new clips**. They play one after another and a key decides each: **F** keeps it with a star, **X** —
+  trim later, **Delete** — for the Recycle Bin, **→** — skip, **Z** — undo, **Space** — pause. Nothing is deleted on the
+  way: at the end the marked clips go to the bin with one press and the ones to trim open in the editor together.
 - **Covers** come from Steam, or from Wikipedia for non-Steam games (only an article about the game itself), and are
   kept in `covers\`. Hover a card to set your own cover. Turn online covers off in Settings → Games and covers — then only your
   own pictures and clip frames are used.
@@ -447,6 +463,6 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
 | `src/AssemblyInfo.cs` | the version (set by the release from the tag) |
 | `settings.json`, `devices.json` | settings (password encrypted) and the device reference — next to the exe, not in git |
 | `ClipKeeper.log` | the log |
-| `covers\`, `favorites.json`, `clipcache.json`, `clipstats.json` | covers and banners (`custom\` — your own), favorites, clip cache, statistics history |
+| `covers\`, `favorites.json`, `reviewed.json`, `clipcache.json`, `clipstats.json` | covers and banners (`custom\` — your own), favorites, clips already gone through, clip cache, statistics history |
 
 </details>

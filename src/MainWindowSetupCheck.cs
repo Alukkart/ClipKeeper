@@ -234,6 +234,57 @@ namespace DeviceGuard
             refresh();
         }
 
+        // ── the same check after the setup: the Recording page says when OBS lost what clips need ──
+        // (someone turned the replay buffer off, the save key is gone, a fix still waits for OBS to close).
+        // The profile is read every 30 s; "Fix" opens the setup on its "Check OBS" step, with its buttons and the restart.
+        ObsFix.Status readiness;
+        DateTime readinessAt = DateTime.MinValue;
+
+        List<EventVm> ReadinessProblems(Snapshot s)
+        {
+            var list = new List<EventVm>();
+            if (!cfg.GuardEnabled || !cfg.UseReplayBuffer || !cfg.SetupDone || s == null || !s.Connected || setup != null) return list;
+            if ((DateTime.Now - readinessAt).TotalSeconds > 30)
+            {
+                var fresh = ObsFix.Read();   // null while OBS rewrites the profile: keep the last one
+                if (fresh != null) readiness = fresh;
+                readinessAt = DateTime.Now;
+            }
+            Func<string, EventVm> problem = text => new EventVm
+            {
+                Text = text, Glyph = "", GlyphBrush = Wpf.Br(Wpf.Warn, 255), LinkText = L.T("Fix", "Исправить"), Link = () => ShowSetupAt(StepCheck),
+            };
+            if (ObsFix.Pending)
+                list.Add(problem(L.T("A fix of OBS settings waits for OBS to close — or restart OBS", "Исправление настроек OBS ждёт, пока OBS закроется, — или перезапусти OBS")));
+            else if (readiness != null && readiness.ProfileIni != null)
+            {
+                if (!readiness.RbOn && s.RbState != 1)
+                    list.Add(problem(L.T("The replay buffer is off in the OBS profile — the save key has nothing to save", "Буфер повтора выключен в профиле OBS — клавише нечего сохранять")));
+                if (readiness.Key == null && (app == null || app.Guard.SaveKeyText == null))
+                    list.Add(problem(L.T("OBS has no \"Save Replay\" key — clips can't be saved by a key", "В OBS нет клавиши «Сохранить повтор» — клипы не сохранить клавишей")));
+            }
+            return list;
+        }
+
+        // for previews: OBS without a save key, as the Recording page shows it
+        public void PreviewReadiness()
+        {
+            readiness = new ObsFix.Status { ProfileIni = "basic.ini", RbOn = true };
+            readinessAt = DateTime.Now;
+            cfg.SetupDone = true;
+        }
+
+        // the setup opened right on one of its steps
+        public void ShowSetupAt(Action<StackPanel> step)
+        {
+            ShowSetup();
+            int i = SetupSteps().IndexOf(step);
+            if (i < 0) return;
+            setupStep = i;
+            readinessAt = DateTime.MinValue;   // read again once the setup is closed
+            ShowSetupStep();
+        }
+
         // ── "Save a test clip": the last step when clips are saved with the replay buffer ──
         Action<bool, ClipInfo> setupClip;   // the step that waits for a clip: pressed (false) or saved (true)
 

@@ -48,17 +48,53 @@ namespace DeviceGuard
         public Visibility BackdropVis { get { return backdrop != null && Glyph == null ? Visibility.Visible : Visibility.Collapsed; } }
         static readonly Brush InitialsDim = Wpf.Br("#3A3C44"), InitialsLight = Wpf.Br("#E4E4E7");
         public Brush InitialsBrush { get { return backdrop != null ? InitialsLight : InitialsDim; } }
-        // Favorites, All clips and folders without a game: frames of the latest clips one above another
+        // Favorites, All clips and folders without a game: frames of the latest clips fanned out over the whole card,
+        // the newest in front, on its own blurred copy
+        public const int FanSize = 6;
         Brush[] mosaic;
-        public Brush[] Mosaic { get { return mosaic; } set { Set(ref mosaic, value); Notify("MosaicVis", "Frame0", "Frame1", "Frame2", "Frame0Vis", "Frame1Vis", "Frame2Vis"); } }
+        public Brush[] Mosaic
+        {
+            get { return mosaic; }
+            set
+            {
+                Set(ref mosaic, value);
+                Notify("MosaicVis", "NoMosaicVis", "Frame0", "Frame1", "Frame2", "Frame3", "Frame4", "Frame5",
+                       "Frame0Vis", "Frame1Vis", "Frame2Vis", "Frame3Vis", "Frame4Vis", "Frame5Vis",
+                       "Top0", "Top1", "Top2", "Top3", "Top4", "Top5");
+            }
+        }
         public Visibility MosaicVis { get { return mosaic != null && mosaic.Length > 0 ? Visibility.Visible : Visibility.Collapsed; } }
+        // no frames yet (or none could be read): the icon alone, large, in the middle
+        public Visibility NoMosaicVis { get { return MosaicVis == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible; } }
         Brush FrameAt(int i) { return mosaic != null && mosaic.Length > i ? mosaic[i] : null; }
+        Visibility FrameVis(int i) { return FrameAt(i) != null ? Visibility.Visible : Visibility.Collapsed; }
         public Brush Frame0 { get { return FrameAt(0); } }
         public Brush Frame1 { get { return FrameAt(1); } }
         public Brush Frame2 { get { return FrameAt(2); } }
-        public Visibility Frame0Vis { get { return FrameAt(0) != null ? Visibility.Visible : Visibility.Collapsed; } }
-        public Visibility Frame1Vis { get { return FrameAt(1) != null ? Visibility.Visible : Visibility.Collapsed; } }
-        public Visibility Frame2Vis { get { return FrameAt(2) != null ? Visibility.Visible : Visibility.Collapsed; } }
+        public Brush Frame3 { get { return FrameAt(3); } }
+        public Brush Frame4 { get { return FrameAt(4); } }
+        public Brush Frame5 { get { return FrameAt(5); } }
+        public Visibility Frame0Vis { get { return FrameVis(0); } }
+        public Visibility Frame1Vis { get { return FrameVis(1); } }
+        public Visibility Frame2Vis { get { return FrameVis(2); } }
+        public Visibility Frame3Vis { get { return FrameVis(3); } }
+        public Visibility Frame4Vis { get { return FrameVis(4); } }
+        public Visibility Frame5Vis { get { return FrameVis(5); } }
+        // where each frame of the fan stands: however many there are, they spread over the card and stay in its middle
+        // (the card is 246 high, a frame 72; the count and the icon take the bottom)
+        double FanTop(int i)
+        {
+            int n = mosaic != null ? Math.Max(1, mosaic.Length) : 1;
+            double gap = n > 1 ? Math.Min(40, (196.0 - 72) / (n - 1)) : 0;
+            double start = 6 + (196 - ((n - 1) * gap + 72)) / 2;
+            return start + (n - 1 - i) * gap;
+        }
+        public double Top0 { get { return FanTop(0); } }
+        public double Top1 { get { return FanTop(1); } }
+        public double Top2 { get { return FanTop(2); } }
+        public double Top3 { get { return FanTop(3); } }
+        public double Top4 { get { return FanTop(4); } }
+        public double Top5 { get { return FanTop(5); } }
         // a wide picture lies on its own blurred copy, not on a clip frame
         public bool OwnBackdrop;
 

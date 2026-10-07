@@ -170,19 +170,57 @@
                         <Border Background="#990B0C0E" Visibility="{Binding BackdropVis}"/>
                         <TextBlock Text="{Binding InitialsText}" Visibility="{Binding InitialsVis}" FontFamily="{StaticResource DisplayFont}"
                                    FontSize="42" FontWeight="SemiBold" Foreground="{Binding InitialsBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        <!-- Favorites, All clips, Desktop: the latest clips as a stack of whole 16:9 frames, the newest in front, the icon under it -->
-                        <StackPanel Visibility="{Binding GlyphVis}" VerticalAlignment="Center" Margin="0,0,0,24">
-                            <Grid Height="107" Visibility="{Binding MosaicVis}">
-                                <Border Width="120" Height="68" CornerRadius="6" Background="{Binding Frame2}" Visibility="{Binding Frame2Vis}"
-                                        VerticalAlignment="Top" Opacity="0.35"/>
-                                <Border Width="134" Height="75" CornerRadius="6" Background="{Binding Frame1}" Visibility="{Binding Frame1Vis}"
-                                        VerticalAlignment="Top" Margin="0,12,0,0" Opacity="0.6"/>
-                                <Border Width="148" Height="83" CornerRadius="6" Background="{Binding Frame0}" Visibility="{Binding Frame0Vis}"
-                                        VerticalAlignment="Top" Margin="0,24,0,0" BorderBrush="#26FFFFFF" BorderThickness="1"/>
-                            </Grid>
-                            <TextBlock Style="{StaticResource Icon}" Text="{Binding GlyphText}" FontSize="24" Foreground="{Binding GlyphBrush}"
-                                       HorizontalAlignment="Center" Margin="0,22,0,0"/>
-                        </StackPanel>
+                        <!-- Favorites, All clips, Desktop: the latest clips fanned out over the whole card, the newest in front, all opaque,
+                             on its own blurred copy; the icon sits in the corner opposite the count -->
+                        <Grid Visibility="{Binding GlyphVis}">
+                            <Border Background="{Binding Frame0}" RenderTransformOrigin="0.5,0.5" Visibility="{Binding MosaicVis}">
+                                <Border.Effect>
+                                    <BlurEffect Radius="18"/>
+                                </Border.Effect>
+                                <Border.RenderTransform>
+                                    <ScaleTransform ScaleX="1.25" ScaleY="1.25"/>
+                                </Border.RenderTransform>
+                            </Border>
+                            <Border Background="#8C0B0C0E"/>
+                            <Canvas Visibility="{Binding MosaicVis}">
+                                <Border Canvas.Left="26" Canvas.Top="{Binding Top5}" Width="128" Height="72" CornerRadius="6" Background="{Binding Frame5}"
+                                        Visibility="{Binding Frame5Vis}" BorderBrush="#26FFFFFF" BorderThickness="1"
+                                        RenderTransformOrigin="0.5,0.5">
+                                    <Border.RenderTransform><RotateTransform Angle="-9"/></Border.RenderTransform>
+                                </Border>
+                                <Border Canvas.Left="10" Canvas.Top="{Binding Top4}" Width="128" Height="72" CornerRadius="6" Background="{Binding Frame4}"
+                                        Visibility="{Binding Frame4Vis}" BorderBrush="#26FFFFFF" BorderThickness="1"
+                                        RenderTransformOrigin="0.5,0.5">
+                                    <Border.RenderTransform><RotateTransform Angle="7"/></Border.RenderTransform>
+                                </Border>
+                                <Border Canvas.Left="24" Canvas.Top="{Binding Top3}" Width="128" Height="72" CornerRadius="6" Background="{Binding Frame3}"
+                                        Visibility="{Binding Frame3Vis}" BorderBrush="#26FFFFFF" BorderThickness="1"
+                                        RenderTransformOrigin="0.5,0.5">
+                                    <Border.RenderTransform><RotateTransform Angle="-6"/></Border.RenderTransform>
+                                </Border>
+                                <Border Canvas.Left="8" Canvas.Top="{Binding Top2}" Width="128" Height="72" CornerRadius="6" Background="{Binding Frame2}"
+                                        Visibility="{Binding Frame2Vis}" BorderBrush="#26FFFFFF" BorderThickness="1"
+                                        RenderTransformOrigin="0.5,0.5">
+                                    <Border.RenderTransform><RotateTransform Angle="6"/></Border.RenderTransform>
+                                </Border>
+                                <Border Canvas.Left="22" Canvas.Top="{Binding Top1}" Width="128" Height="72" CornerRadius="6" Background="{Binding Frame1}"
+                                        Visibility="{Binding Frame1Vis}" BorderBrush="#26FFFFFF" BorderThickness="1"
+                                        RenderTransformOrigin="0.5,0.5">
+                                    <Border.RenderTransform><RotateTransform Angle="-4"/></Border.RenderTransform>
+                                </Border>
+                                <Border Canvas.Left="18" Canvas.Top="{Binding Top0}" Width="128" Height="72" CornerRadius="6" Background="{Binding Frame0}"
+                                        Visibility="{Binding Frame0Vis}" BorderBrush="#40FFFFFF" BorderThickness="1"
+                                        RenderTransformOrigin="0.5,0.5">
+                                    <Border.RenderTransform><RotateTransform Angle="0"/></Border.RenderTransform>
+                                </Border>
+                            </Canvas>
+                            <TextBlock Style="{StaticResource Icon}" Text="{Binding GlyphText}" FontSize="26" Foreground="{Binding GlyphBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding NoMosaicVis}"/>
+                            <Border CornerRadius="5" Background="#CC0B0C0E" Padding="6,3" Margin="8" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                    Visibility="{Binding MosaicVis}">
+                                <TextBlock Style="{StaticResource Icon}" Text="{Binding GlyphText}" FontSize="12" Foreground="{Binding GlyphBrush}"/>
+                            </Border>
+                        </Grid>
                         <Border Background="{Binding Cover}"/>
                         <!-- a dark logo on a transparent background: drawn white, it reads on the dark card -->
                         <Border Background="White" OpacityMask="{Binding CoverMask}" Visibility="{Binding CoverMaskVis}"/>

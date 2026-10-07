@@ -288,7 +288,7 @@ namespace DeviceGuard
             return new GameCardVm
             {
                 Key = key, Name = name, Count = files.Count, Glyph = glyph, GlyphBrush = glyphBrush,
-                Recent = files.OrderByDescending(f => f.LastWriteTime).Take(3).Select(f => f.FullName).ToList(),
+                Recent = files.OrderByDescending(f => f.LastWriteTime).Take(glyph != null ? GameCardVm.FanSize : 1).Select(f => f.FullName).ToList(),
                 Stats = (dur > 0 ? Fmt.Duration(dur) + " · " : "") + Fmt.Size(files.Sum(f => f.Length)),
                 Tip = L.N(files.Count, "clip", "clips", "клип", "клипа", "клипов") + L.T(", latest ", ", последний — ") + latest.ToString("dd.MM.yyyy HH:mm"),
             };

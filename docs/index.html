@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClipKeeper — a tray companion for OBS</title>
+<meta name="description" content="Keeps your OBS recording from breaking and keeps your clips: recording guard, clip library by game, frame-exact trim editor, statistics. Free and open source, for Windows.">
+<meta name="theme-color" content="#0B0C0E">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ClipKeeper — a tray companion for OBS">
+<meta property="og:description" content="Keeps your OBS recording from breaking and keeps your clips. Free · open source · Windows.">
+<meta property="og:image" content="https://alukkart.github.io/ClipKeeper/media/social-preview.png">
+<meta property="og:url" content="https://alukkart.github.io/ClipKeeper/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0C0E;
+    --bg-2: #0F1012;
+    --surface: #131417;
+    --surface-2: #17181B;
+    --surface-3: #1C1D21;
+    --line: #222328;
+    --line-2: #2E3036;
+    --text: #EDEDEF;
+    --muted: #A1A1AA;
+    --dim: #71717A;
+    --green: #3FB950;
+    --red: #F85149;
+    --yellow: #D29922;
+    --radius: 14px;
+    --font: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
+    --display: "Segoe UI Variable Display", "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
+    --mono: "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 var(--font);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  img, video { display: block; max-width: 100%; height: auto; }
+  section, [id] { scroll-margin-top: 72px; }
+  a { color: inherit; text-decoration: none; }
+  code, .mono { font-family: var(--mono); font-size: .9em; }
+  code { background: var(--surface-3); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+  .wrap { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+  @media (max-width: 600px) { .wrap { padding: 0 16px; } }
+
+  /* language switching: elements carry both, the html attribute picks one */
+  html[data-lang="en"] [lang="ru"], html[data-lang="ru"] [lang="en"] { display: none !important; }
+
+  /* ---------- nav ---------- */
+  .nav {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(11, 12, 14, .78);
+    backdrop-filter: saturate(140%) blur(14px);
+    -webkit-backdrop-filter: saturate(140%) blur(14px);
+    border-bottom: 1px solid transparent;
+    transition: border-color .2s;
+  }
+  .nav.scrolled { border-bottom-color: var(--line); }
+  .nav .wrap { display: flex; align-items: center; gap: 28px; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font: 600 17px var(--display); letter-spacing: -.01em; }
+  .brand img { width: 28px; height: 28px; border-radius: 7px; }
+  .nav-links { display: flex; gap: 22px; margin-left: 12px; }
+  .nav-links a { color: var(--muted); font-size: 14.5px; transition: color .15s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .lang { display: flex; border: 1px solid var(--line-2); border-radius: 9px; padding: 2px; }
+  .lang button {
+    all: unset; cursor: pointer; font: 500 12.5px var(--font); color: var(--dim);
+    padding: 4px 9px; border-radius: 7px; transition: color .15s, background .15s;
+  }
+  .lang button[aria-pressed="true"] { background: var(--surface-3); color: var(--text); }
+  .lang button:focus-visible { outline: 2px solid var(--muted); }
+  @media (max-width: 860px) { .nav-links { display: none; } }
+  @media (max-width: 420px) { .nav .btn-sm .label-long { display: none; } }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    height: 48px; padding: 0 22px; border-radius: 11px;
+    font: 600 15.5px var(--font); white-space: nowrap;
+    transition: transform .15s, background .15s, border-color .15s, box-shadow .15s;
+  }
+  .btn svg { width: 18px; height: 18px; flex: none; }
+  .btn-primary { background: var(--text); color: #0B0C0E; box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 8px 30px -8px rgba(237,237,239,.35); }
+  .btn-primary:hover { background: #fff; transform: translateY(-1px); }
+  .btn-ghost { border: 1px solid var(--line-2); color: var(--text); background: rgba(255,255,255,.02); }
+  .btn-ghost:hover { border-color: #4A4C54; background: rgba(255,255,255,.05); }
+  .btn-sm { height: 36px; padding: 0 14px; font-size: 14px; border-radius: 9px; gap: 8px; }
+  .btn-sm svg { width: 15px; height: 15px; }
+  .btn .ver { font: 500 12px var(--mono); opacity: .55; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; padding: 88px 0 40px; text-align: center; }
+  .hero::before {
+    content: ""; position: absolute; inset: -64px 0 auto; height: 760px; z-index: -1;
+    background:
+      radial-gradient(60% 50% at 50% 0%, rgba(237,237,239,.07), transparent 70%),
+      linear-gradient(to bottom, transparent 60%, var(--bg)),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 1px, transparent 1px 64px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 64px);
+    -webkit-mask-image: radial-gradient(70% 60% at 50% 20%, #000 30%, transparent 80%);
+            mask-image: radial-gradient(70% 60% at 50% 20%, #000 30%, transparent 80%);
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--line-2); background: var(--surface);
+    border-radius: 999px; padding: 5px 14px 5px 10px;
+    font-size: 13.5px; color: var(--muted);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(63,185,80,.18); flex: none; }
+  .hero h1 {
+    font: 700 clamp(38px, 6.4vw, 72px)/1.04 var(--display);
+    letter-spacing: -.035em; margin: 26px auto 22px; max-width: 900px;
+    text-wrap: balance;
+  }
+  .hero h1 .soft { color: var(--dim); }
+  .hero .lead { font-size: clamp(17px, 2vw, 19.5px); color: var(--muted); max-width: 680px; margin: 0 auto; text-wrap: pretty; }
+  .cta { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
+  .meta { margin-top: 18px; color: var(--dim); font-size: 13.5px; display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 18px; }
+  .meta span { display: inline-flex; align-items: center; gap: 6px; }
+  .meta svg { width: 14px; height: 14px; }
+
+  /* app window mockup */
+  .stage { position: relative; margin: 64px auto 0; max-width: 1060px; }
+  .window {
+    border-radius: 14px; overflow: hidden; background: var(--bg);
+    border: 1px solid var(--line-2);
+    box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 40px 120px -20px rgba(0,0,0,.9), 0 0 120px -30px rgba(237,237,239,.12);
+  }
+  .window img { width: 100%; height: auto; }
+  .stage .float-alarm {
+    position: absolute; left: -5%; bottom: -8%; width: 42%;
+    border-radius: 10px; box-shadow: 0 30px 80px -10px rgba(0,0,0,.9), 0 0 60px -10px rgba(248,81,73,.35);
+    animation: rise .8s .5s both cubic-bezier(.2,.7,.2,1);
+  }
+  .stage .float-tray {
+    position: absolute; right: -4%; top: 14%; width: 20%;
+    border-radius: 10px; box-shadow: 0 30px 80px -10px rgba(0,0,0,.9), 0 0 0 1px var(--line-2);
+    animation: rise .8s .7s both cubic-bezier(.2,.7,.2,1);
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  @media (max-width: 720px) {
+    .stage .float-tray { display: none; }
+    .stage .float-alarm { left: 4%; width: 76%; bottom: -16%; }
+    .stage { margin-bottom: 40px; }
+  }
+
+  /* ---------- sections ---------- */
+  section { padding: 110px 0 0; }
+  .eyebrow { font: 500 13px var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
+  .h2 { font: 700 clamp(30px, 4.2vw, 46px)/1.1 var(--display); letter-spacing: -.03em; margin: 12px 0 16px; text-wrap: balance; }
+  .sub { color: var(--muted); font-size: 18px; max-width: 640px; margin: 0; text-wrap: pretty; }
+  .head-c { text-align: center; }
+  .head-c .sub { margin: 0 auto; }
+
+  /* problem → fix */
+  .versus { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: stretch; margin-top: 56px; }
+  .vcard { border-radius: var(--radius); padding: 26px; border: 1px solid; position: relative; overflow: hidden; }
+  .vcard h3 { font: 700 22px var(--display); margin: 0 0 18px; letter-spacing: -.02em; }
+  .vcard.bad { border-color: rgba(248,81,73,.28); background: linear-gradient(180deg, rgba(248,81,73,.08), rgba(248,81,73,.02)); }
+  .vcard.good { border-color: rgba(63,185,80,.28); background: linear-gradient(180deg, rgba(63,185,80,.08), rgba(63,185,80,.02)); }
+  .vcard.bad h3 { color: #FF7B72; }
+  .vcard.good h3 { color: #56D364; }
+  .vrow {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px;
+    background: rgba(11,12,14,.55); border: 1px solid var(--line); font-size: 15px; margin-top: 10px;
+  }
+  .vrow .ic { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .vrow .ic svg { width: 12px; height: 12px; }
+  .bad .ic { background: rgba(248,81,73,.18); color: var(--red); }
+  .good .ic { background: rgba(63,185,80,.18); color: var(--green); }
+  .vrow .tag { margin-left: auto; font: 500 12.5px var(--mono); color: var(--green); white-space: nowrap; }
+  .arrow { display: grid; place-items: center; color: var(--dim); }
+  .arrow svg { width: 28px; height: 28px; }
+  .vnote { margin-top: 16px; font-size: 14px; color: var(--muted); }
+  @media (max-width: 860px) {
+    .versus { grid-template-columns: 1fr; }
+    .arrow { transform: rotate(90deg); height: 28px; }
+  }
+  @media (max-width: 480px) { .vrow { flex-wrap: wrap; } .vrow .tag { margin-left: 34px; } }
+
+  /* the log, as on the Recording page */
+  .logrow { display: grid; grid-template-columns: 5fr 7fr; gap: 56px; align-items: center; margin-top: 72px; }
+  .logrow h3 { font: 700 clamp(24px, 2.6vw, 30px)/1.15 var(--display); letter-spacing: -.025em; margin: 0 0 12px; }
+  .logrow p { color: var(--muted); margin: 0; }
+  .log { background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; box-shadow: 0 30px 80px -30px rgba(0,0,0,.9); }
+  .log-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--dim); }
+  .log-head .st { display: flex; align-items: center; gap: 8px; color: var(--text); }
+  .log ol { list-style: none; margin: 0; padding: 14px 0; font: 13px/1.55 var(--mono); }
+  .log li { display: grid; grid-template-columns: 74px 18px 1fr; padding: 3px 16px; }
+  .log li .t { color: #4A4C54; }
+  .log li .m { color: #B4B4BC; }
+  .log li.w .i { color: var(--yellow); }
+  .log li.ok .i { color: var(--green); }
+  .log li.ok .m { color: var(--text); }
+  .log li.dim .m { color: var(--dim); }
+  .log .cap { padding: 10px 16px 14px; font-size: 12.5px; color: #4A4C54; border-top: 1px solid var(--line); }
+  body:not(.no-js) .log li { opacity: 0; transform: translateY(3px); transition: opacity .35s, transform .35s; }
+  body:not(.no-js) .log li.on { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { body:not(.no-js) .log li { opacity: 1; transform: none; transition: none; } }
+  @media (max-width: 860px) { .logrow { grid-template-columns: 1fr; gap: 24px; margin-top: 56px; } }
+  @media (max-width: 520px) { .log li { grid-template-columns: 62px 16px 1fr; padding: 3px 12px; font-size: 12px; } }
+
+  /* star button */
+  .star-count { font: 500 12.5px var(--mono); color: var(--muted); padding-left: 10px; margin-left: 2px; border-left: 1px solid var(--line-2); }
+  .star-count:empty { display: none; }
+  .btn-sm .star-count { padding-left: 8px; }
+
+  /* two halves */
+  .halves { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 56px; }
+  .half {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+    padding: 32px; display: flex; flex-direction: column;
+  }
+  .half-ic {
+    width: 44px; height: 44px; border-radius: 11px; display: grid; place-items: center;
+    background: var(--surface-3); border: 1px solid var(--line-2); margin-bottom: 20px;
+  }
+  .half-ic svg { width: 22px; height: 22px; }
+  .half h3 { font: 700 24px var(--display); margin: 0 0 8px; letter-spacing: -.02em; }
+  .half > p { color: var(--muted); margin: 0 0 22px; }
+  .checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+  .checks li { display: grid; grid-template-columns: 20px 1fr; gap: 10px; font-size: 15px; color: #D4D4D8; }
+  .checks li svg { width: 16px; height: 16px; margin-top: 4px; color: var(--dim); }
+  .half .shot { margin-top: auto; padding-top: 28px; }
+  .half .shot img { border-radius: 10px; border: 1px solid var(--line-2); cursor: zoom-in; }
+  @media (max-width: 860px) { .halves { grid-template-columns: 1fr; } .half { padding: 24px; } }
+
+  /* feature rows */
+  .rows { display: grid; gap: 120px; margin-top: 72px; }
+  .row { display: grid; grid-template-columns: 5fr 7fr; gap: 64px; align-items: center; }
+  .row.flip { grid-template-columns: 7fr 5fr; }
+  .row.flip .row-text { order: 2; }
+  .row h3 { font: 700 clamp(26px, 3vw, 34px)/1.15 var(--display); letter-spacing: -.025em; margin: 10px 0 14px; text-wrap: balance; }
+  .row p { color: var(--muted); margin: 0 0 22px; }
+  .row-media { position: relative; }
+  .row-media > img {
+    border-radius: 12px; border: 1px solid var(--line-2); cursor: zoom-in;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,.9);
+  }
+  .row-media .float {
+    position: absolute; right: -20px; bottom: -32px; width: 22%;
+    border-radius: 10px; border: 1px solid var(--line-2); cursor: zoom-in;
+    box-shadow: 0 24px 60px -10px rgba(0,0,0,.9);
+  }
+  .kbd-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  kbd {
+    font: 500 12.5px var(--mono); color: var(--text); min-width: 28px; text-align: center;
+    padding: 4px 8px; border-radius: 7px; background: var(--surface-3);
+    border: 1px solid var(--line-2); border-bottom-width: 2px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-size: 13.5px; color: var(--muted); padding: 5px 12px; border-radius: 999px;
+    border: 1px solid var(--line-2); background: var(--surface);
+  }
+  @media (max-width: 860px) {
+    .row, .row.flip { grid-template-columns: 1fr; gap: 32px; }
+    .row.flip .row-text { order: 0; }
+    .rows { gap: 88px; }
+    .row-media .float { right: 8px; bottom: -20px; width: 30%; }
+  }
+
+  /* video */
+  .video-block {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 40px;
+  }
+  .video-frame { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--line-2); aspect-ratio: 1; background: #000; }
+  .video-frame video { width: 100%; height: 100%; object-fit: cover; }
+  @media (max-width: 860px) { .video-block { grid-template-columns: 1fr; padding: 20px; gap: 28px; } }
+
+  /* gallery */
+  .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 48px; }
+  .gallery figure { margin: 0; }
+  .gallery img {
+    width: 100%; aspect-ratio: 1347/947; object-fit: cover; object-position: top left;
+    border-radius: 10px; border: 1px solid var(--line-2); cursor: zoom-in;
+    transition: transform .2s, border-color .2s;
+  }
+  .gallery img:hover { transform: translateY(-3px); border-color: #4A4C54; }
+  .gallery figcaption { font-size: 14px; color: var(--muted); margin-top: 10px; }
+  @media (max-width: 860px) { .gallery { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .gallery { grid-template-columns: 1fr; } }
+
+  /* install */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; counter-reset: s; }
+  .step { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; }
+  .step::before {
+    counter-increment: s; content: counter(s);
+    display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px;
+    font: 600 14px var(--mono); background: var(--surface-3); border: 1px solid var(--line-2); margin-bottom: 18px;
+  }
+  .step h3 { font: 600 18px var(--display); margin: 0 0 8px; }
+  .step p { margin: 0; color: var(--muted); font-size: 15px; }
+  .note {
+    margin-top: 20px; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px 22px; display: flex; gap: 14px; align-items: flex-start; color: var(--muted); font-size: 14.5px;
+    background: var(--bg-2);
+  }
+  .note svg { width: 18px; height: 18px; flex: none; margin-top: 3px; color: var(--yellow); }
+  .note b { color: var(--text); font-weight: 600; }
+  .note a { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  @media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
+
+  /* privacy */
+  .trust { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 56px; }
+  .trust div { border-top: 1px solid var(--line-2); padding-top: 20px; }
+  .trust h3 { font: 600 17px var(--display); margin: 0 0 6px; }
+  .trust p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  @media (max-width: 860px) { .trust { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .trust { grid-template-columns: 1fr; } }
+
+  /* final cta */
+  .final { text-align: center; padding: 140px 0 120px; }
+  .final img { width: 72px; height: 72px; border-radius: 18px; margin: 0 auto 28px; box-shadow: 0 0 0 1px var(--line-2), 0 20px 60px -10px rgba(237,237,239,.18); }
+
+  footer { border-top: 1px solid var(--line); padding: 32px 0 40px; color: var(--dim); font-size: 14px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; }
+  footer .links { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-left: auto; }
+  footer a:hover { color: var(--text); }
+
+  /* lightbox */
+  dialog.lb {
+    border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 94vh; overflow: visible;
+  }
+  dialog.lb::backdrop { background: rgba(5,5,6,.88); backdrop-filter: blur(6px); }
+  dialog.lb img { max-width: 96vw; max-height: 90vh; width: auto; height: auto; border-radius: 10px; border: 1px solid var(--line-2); }
+  dialog.lb figcaption { text-align: center; color: var(--muted); font-size: 14px; margin-top: 10px; }
+  dialog.lb figure { margin: 0; }
+
+  /* reveal on scroll */
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .stage .float-alarm, .stage .float-tray { animation: none; }
+  }
+  .no-js .reveal { opacity: 1; transform: none; }
+</style>
+</head>
+<body class="no-js">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.62 1.59.23 2.76.11 3.05.74.8 1.18 1.83 1.18 3.08 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16"/><path d="m14 6 6 6-6 6"/></symbol>
+  <symbol id="i-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.3 2.3 4.7-4.8"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6L12 3Z"/><path d="m10 9 5 3-5 3V9Z"/></symbol>
+  <symbol id="i-film" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></symbol>
+  <symbol id="i-windows" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.3 10.4 4.3v7.2H3V5.3Zm8.4-1.1L21 3v8.5h-9.6V4.2ZM3 12.5h7.4v7.2L3 18.7v-6.2Zm8.4 0H21V21l-9.6-1.3v-7.2Z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m12 3.2 2.7 5.5 6 .9-4.35 4.25 1.03 6-5.38-2.83-5.38 2.83 1.03-6L3.3 9.6l6-.9L12 3.2Z"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+</svg>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="logo.png" alt="">ClipKeeper</a>
+    <nav class="nav-links">
+      <a href="#guard"><span lang="en">Features</span><span lang="ru">Возможности</span></a>
+      <a href="#screens"><span lang="en">Screenshots</span><span lang="ru">Скриншоты</span></a>
+      <a href="#install"><span lang="en">Install</span><span lang="ru">Установка</span></a>
+      <a href="#privacy"><span lang="en">Privacy</span><span lang="ru">Приватность</span></a>
+    </nav>
+    <div class="nav-right">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-set-lang="ru" aria-pressed="false">RU</button>
+      </div>
+      <a class="btn btn-ghost btn-sm" href="https://github.com/Alukkart/ClipKeeper" aria-label="GitHub"><svg><use href="#i-github"/></svg><span class="label-long">GitHub</span></a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ============ HERO ============ -->
+<div class="hero">
+  <div class="wrap">
+    <span class="pill"><span class="dot"></span>
+      <span lang="en">Free · open source · for OBS on Windows</span>
+      <span lang="ru">Бесплатно · открытый код · для OBS на Windows</span>
+    </span>
+    <h1>
+      <span lang="en">Recording that doesn't break. <span class="soft">Clips that don't get lost.</span></span>
+      <span lang="ru">Запись, которая не ломается. <span class="soft">Клипы, которые не теряются.</span></span>
+    </h1>
+    <p class="lead">
+      <span lang="en">ClipKeeper sits in the tray next to OBS, watches the replay buffer from the outside and fixes what breaks by itself — then helps you find, trim and share the clip.</span>
+      <span lang="ru">ClipKeeper живёт в трее рядом с OBS, следит за буфером повтора снаружи и сам чинит то, что ломается, — а потом помогает найти, обрезать и отправить клип.</span>
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" data-download href="https://github.com/Alukkart/ClipKeeper/releases/latest">
+        <svg><use href="#i-download"/></svg>
+        <span lang="en">Download for Windows</span><span lang="ru">Скачать для Windows</span>
+        <span class="ver" data-version></span>
+      </a>
+      <a class="btn btn-ghost" href="https://github.com/Alukkart/ClipKeeper">
+        <svg><use href="#i-star"/></svg>
+        <span lang="en">Star us on GitHub</span><span lang="ru">Звезда на GitHub</span>
+        <span class="star-count" data-stars></span>
+      </a>
+    </div>
+    <div class="meta">
+      <span><svg><use href="#i-windows"/></svg>Windows 10 / 11</span>
+      <span>OBS 28+</span>
+      <span lang="en">English · Russian</span><span lang="ru">Русский · English</span>
+      <span lang="en">MIT license</span><span lang="ru">Лицензия MIT</span>
+    </div>
+
+    <div class="stage">
+      <div class="window">
+        <img data-shot="library.jpg" src="screenshots/en/library.jpg" width="1347" height="947" alt="ClipKeeper library: clips grouped by game with covers">
+      </div>
+      <img class="float-alarm" data-base="media" data-shot="alarm.png" src="media/en/alarm.png" width="675" height="265" alt="Alarm over the game">
+      <img class="float-tray" data-base="media" data-shot="tray.png" src="media/en/tray.png" width="354" height="429" alt="Tray menu">
+    </div>
+  </div>
+</div>
+
+<!-- ============ PROBLEM → FIX ============ -->
+<section id="why">
+  <div class="wrap">
+    <div class="head-c reveal">
+      <div class="eyebrow"><span lang="en">Why</span><span lang="ru">Зачем</span></div>
+      <h2 class="h2">
+        <span lang="en">You press "Save Replay". The clip should actually be there.</span>
+        <span lang="ru">Ты жмёшь «Сохранить повтор». Клип должен действительно получиться.</span>
+      </h2>
+      <p class="sub">
+        <span lang="en">With the right devices, all audio tracks and a live picture — not four seconds of silence found a week later.</span>
+        <span lang="ru">С нужными устройствами, всеми дорожками и живой картинкой — а не четыре секунды тишины, которые найдутся через неделю.</span>
+      </p>
+    </div>
+
+    <div class="versus">
+      <div class="vcard bad reveal">
+        <h3><span lang="en">OBS fails silently</span><span lang="ru">OBS ломается молча</span></h3>
+        <div class="vrow"><span class="ic"><svg><use href="#i-x"/></svg></span>
+          <span lang="en">Mic switched device after a driver update</span>
+          <span lang="ru">Микрофон сменил устройство после обновления драйвера</span></div>
+        <div class="vrow"><span class="ic"><svg><use href="#i-x"/></svg></span>
+          <span lang="en">Replay buffer crashed — NVENC error</span>
+          <span lang="ru">Буфер повтора упал — ошибка NVENC</span></div>
+        <div class="vrow"><span class="ic"><svg><use href="#i-x"/></svg></span>
+          <span lang="en">Game capture went black</span>
+          <span lang="ru">Захват игры стал чёрным</span></div>
+        <div class="vrow"><span class="ic"><svg><use href="#i-x"/></svg></span>
+          <span lang="en">Audio plays in Windows, OBS meter stays at zero</span>
+          <span lang="ru">Windows звук играет, а индикатор OBS на нуле</span></div>
+      </div>
+      <div class="arrow" aria-hidden="true"><svg><use href="#i-arrow"/></svg></div>
+      <div class="vcard good reveal">
+        <h3><span lang="en">ClipKeeper fixes it</span><span lang="ru">ClipKeeper чинит</span></h3>
+        <div class="vrow"><span class="ic"><svg><use href="#i-check"/></svg></span>
+          <span lang="en">Mic switched device</span><span lang="ru">Микрофон сменил устройство</span>
+          <span class="tag"><span lang="en">re-found by name</span><span lang="ru">найден по имени</span></span></div>
+        <div class="vrow"><span class="ic"><svg><use href="#i-check"/></svg></span>
+          <span lang="en">Replay buffer crashed</span><span lang="ru">Буфер повтора упал</span>
+          <span class="tag"><span lang="en">restarted</span><span lang="ru">перезапущен</span></span></div>
+        <div class="vrow"><span class="ic"><svg><use href="#i-check"/></svg></span>
+          <span lang="en">Game capture went black</span><span lang="ru">Захват стал чёрным</span>
+          <span class="tag"><span lang="en">capture restarted</span><span lang="ru">захват перезапущен</span></span></div>
+        <div class="vrow"><span class="ic"><svg><use href="#i-check"/></svg></span>
+          <span lang="en">Silent source</span><span lang="ru">Источник замолчал</span>
+          <span class="tag"><span lang="en">source restarted</span><span lang="ru">источник перезапущен</span></span></div>
+        <p class="vnote">
+          <span lang="en">Can't be fixed? A red window over the game — it never steals focus — and a sound until you press <b>Got it</b>.</span>
+          <span lang="ru">Не чинится? Красное окно поверх игры — фокус не забирает — и звук, пока не нажмёшь <b>«Понял»</b>.</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LOG ============ -->
+<section id="log" style="padding-top:0">
+  <div class="wrap">
+    <div class="logrow">
+      <div class="reveal">
+        <h3><span lang="en">Nothing is fixed quietly</span><span lang="ru">Ничего не чинится втихую</span></h3>
+        <p>
+          <span lang="en">Whatever ClipKeeper noticed and whatever it did goes to the log on the Recording page — with the time, the source and the device.</span>
+          <span lang="ru">Всё, что ClipKeeper заметил и сделал, попадает в журнал на странице «Запись» — со временем, источником и устройством.</span>
+        </p>
+      </div>
+      <div class="log reveal" aria-label="Example log">
+        <div class="log-head">
+          <span class="st"><span class="dot"></span><span lang="en">All good</span><span lang="ru">Всё в порядке</span></span>
+          <span lang="en">Recording · log</span><span lang="ru">Запись · журнал</span>
+        </div>
+        <ol>
+          <li class="dim"><span class="t">19:02:11</span><span class="i"></span><span class="m"><span lang="en">connected to OBS</span><span lang="ru">подключено к OBS</span></span></li>
+          <li class="dim"><span class="t">19:02:11</span><span class="i"></span><span class="m"><span lang="en">OBS settings backup: backups\2026-10-07</span><span lang="ru">резервная копия настроек OBS: backups\2026-10-07</span></span></li>
+          <li class="w"><span class="t">20:14:37</span><span class="i">⚠</span><span class="m"><span lang="en">micro: "SteelSeries Sonar - Microphone" is not in the system</span><span lang="ru">micro: «SteelSeries Sonar - Microphone» не найдено в системе</span></span></li>
+          <li class="ok"><span class="t">20:14:38</span><span class="i">✓</span><span class="m"><span lang="en">micro: restored "SteelSeries Sonar - Microphone" (by name)</span><span lang="ru">micro: вернул «SteelSeries Sonar - Microphone» (по имени)</span></span></li>
+          <li class="w"><span class="t">21:40:02</span><span class="i">⚠</span><span class="m"><span lang="en">the replay buffer stopped because of an error, restarting…</span><span lang="ru">буфер повтора остановился из-за ошибки, перезапускаю…</span></span></li>
+          <li class="w"><span class="t">22:03:51</span><span class="i">⚠</span><span class="m"><span lang="en">game: Windows has audio but OBS is not getting it — restarting the source</span><span lang="ru">game: в Windows звук есть, а OBS его не получает — перезапускаю источник</span></span></li>
+          <li class="ok"><span class="t">22:28:07</span><span class="i">✓</span><span class="m"><span lang="en">clip saved: 140 s · tracks: 4 · 1186 MB</span><span lang="ru">клип сохранён: 140 с · дорожек: 4 · 1186 МБ</span></span></li>
+          <li class="dim"><span class="t">22:28:07</span><span class="i"></span><span class="m">→ Hunt Showdown\2026-10\</span></li>
+        </ol>
+        <div class="cap"><span lang="en">An example evening, in the words of the Recording page.</span><span lang="ru">Пример вечера — так, как это пишет страница «Запись».</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TWO HALVES ============ -->
+<section id="guard">
+  <div class="wrap">
+    <div class="head-c reveal">
+      <div class="eyebrow"><span lang="en">Two halves</span><span lang="ru">Две половины</span></div>
+      <h2 class="h2">
+        <span lang="en">Guards the recording. Keeps the clips.</span>
+        <span lang="ru">Следит за записью. Хранит клипы.</span>
+      </h2>
+      <p class="sub">
+        <span lang="en">Both work on their own — turn off the one you don't need in Settings → General.</span>
+        <span lang="ru">Обе работают и по отдельности — ненужную можно выключить в «Настройки → Общие».</span>
+      </p>
+    </div>
+
+    <div class="halves">
+      <article class="half reveal">
+        <div class="half-ic"><svg><use href="#i-shield"/></svg></div>
+        <h3><span lang="en">Recording guard</span><span lang="ru">Наблюдение за записью</span></h3>
+        <p>
+          <span lang="en">Talks to OBS through obs-websocket, from the outside — no plugin, no script.</span>
+          <span lang="ru">Общается с OBS через obs-websocket, снаружи — без плагинов и скриптов.</span>
+        </p>
+        <ul class="checks">
+          <li><svg><use href="#i-tick"/></svg><span><span lang="en">Keeps sources on the right audio devices and monitors</span><span lang="ru">Держит источники на нужных звуковых устройствах и мониторах</span></span></li>
+          <li><svg><use href="#i-tick"/></svg><span><span lang="en">Restarts a crashed replay buffer — and OBS itself after a crash</span><span lang="ru">Перезапускает упавший буфер повтора — и сам OBS после падения</span></span></li>
+          <li><svg><use href="#i-tick"/></svg><span><span lang="en">Notices silent audio and a black or frozen picture</span><span lang="ru">Замечает пропавший звук и чёрную или застывшую картинку</span></span></li>
+          <li><svg><use href="#i-tick"/></svg><span><span lang="en">Checks every saved clip: length, tracks, dropped frames</span><span lang="ru">Проверяет каждый клип: длина, дорожки, потерянные кадры</span></span></li>
+          <li><svg><use href="#i-tick"/></svg><span><span lang="en">Low disk space, GPU driver failures, a daily OBS settings backup</span><span lang="ru">Мало места на диске, сбои драйвера, ежедневная копия настроек OBS</span></span></li>
+        </ul>
+        <div class="shot"><img data-shot="recording.png" src="screenshots/en/recording.png" width="1347" height="947" loading="lazy" alt="Recording page: status, tiles, sources" data-cap-en="Recording — status, tiles, sources" data-cap-ru="Запись — состояние, плитки, источники"></div>
+      </article>
+
+      <article class="half reveal">
+        <div class="half-ic"><svg><use href="#i-film"/></svg></div>
+        <h3><span lang="en">Clip library and editor</span><span lang="ru">Библиотека и редактор</span></h3>
+        <p>
+          <span lang="en">Sources → Ready → Collection: a clip's whole path, sorted by game.</span>
+          <span lang="ru">Исходники → Готовые → Коллекция: весь путь клипа, по играм.</span>
+        </p>
+        <ul class="checks">
+          <li><svg><use href="#i-tick"/></svg><span><span lang="en">Saved clips go into the game's folder, with covers from Steam</span><span lang="ru">Клипы сами попадают в папку игры, обложки из Steam</span></span></li>
+          <li><svg><use href="#i-tick"/></svg><span><span lang="en">Frame-exact trim editor with Premiere keys</span><span lang="ru">Точный по кадру редактор с клавишами как в Premiere</span></span></li>
+          <li><svg><use href="#i-tick"/></svg><span><span lang="en">Cut pieces from the middle, per-track volume and solo</span><span lang="ru">Вырезы из середины, громкость и соло по дорожкам</span></span></li>
+          <li><svg><use href="#i-tick"/></svg><span><span lang="en">One click for Discord 10 MB / Nitro / Telegram — already copied</span><span lang="ru">Один клик для Discord 10 МБ / Nitro / Telegram — и файл уже скопирован</span></span></li>
+          <li><svg><use href="#i-tick"/></svg><span><span lang="en">Statistics by month and game, a monthly recap to share</span><span lang="ru">Статистика по месяцам и играм, итоги месяца картинкой</span></span></li>
+        </ul>
+        <div class="shot"><img data-shot="game.jpg" src="screenshots/en/game.jpg" width="1347" height="947" loading="lazy" alt="A game's clips" data-cap-en="A game's clips" data-cap-ru="Клипы игры"></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURE ROWS ============ -->
+<section id="features">
+  <div class="wrap">
+    <div class="rows">
+
+      <div class="row">
+        <div class="row-text reveal">
+          <div class="eyebrow"><span lang="en">Trim editor</span><span lang="ru">Редактор</span></div>
+          <h3><span lang="en">Trim on the timeline you already know</span><span lang="ru">Обрезка на привычном таймлайне</span></h3>
+          <p>
+            <span lang="en">Filmstrip, waveform of what you actually hear, each track in its own lane. Cut pieces from the middle with <kbd>X</kbd>, save lossless, frame-exact on the GPU, or sized for sharing. Every saved file is checked: length, video, audio in each track.</span>
+            <span lang="ru">Раскадровка, волна того, что реально слышно, каждая дорожка на своей полосе. Вырезай куски из середины клавишей <kbd>X</kbd>, сохраняй без потерь, по кадру на видеокарте или под размер для отправки. Каждый файл проверяется: длина, видео, звук в каждой дорожке.</span>
+          </p>
+          <div class="kbd-row" aria-label="Keys">
+            <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>I</kbd><kbd>O</kbd><kbd>X</kbd><kbd>T</kbd><kbd>Ctrl Z</kbd><kbd>Ctrl S</kbd>
+          </div>
+        </div>
+        <div class="row-media reveal">
+          <img data-shot="editor.jpg" src="screenshots/en/editor.jpg" width="1750" height="1125" loading="lazy" alt="Trim editor with cuts and per-track lanes" data-cap-en="Trim editor — cuts, per-track lanes" data-cap-ru="Редактор — вырезы, дорожки по отдельности">
+          <img class="float" data-shot="check.png" src="screenshots/en/check.png" width="440" height="1044" loading="lazy" alt="Result check" data-cap-en="Every saved file is checked" data-cap-ru="Каждый сохранённый файл проверяется">
+        </div>
+      </div>
+
+      <div class="row flip">
+        <div class="row-text reveal">
+          <div class="eyebrow"><span lang="en">Library</span><span lang="ru">Библиотека</span></div>
+          <h3><span lang="en">Sorted by game the moment it's saved</span><span lang="ru">Разложено по играм в момент сохранения</span></h3>
+          <p>
+            <span lang="en">The game in front when you press the key gets the clip — Steam, Epic, GOG, Riot, Xbox or anything fullscreen. Takes over Smart Replay Mover's folders and names, no OBS script needed. Hover a clip and its frames scroll by.</span>
+            <span lang="ru">Клип получает игра, которая была на экране при нажатии, — Steam, Epic, GOG, Riot, Xbox или что угодно на весь экран. Подхватывает папки и названия Smart Replay Mover, скрипт в OBS не нужен. Наведи на клип — пробегут его кадры.</span>
+          </p>
+          <div class="chips">
+            <span class="chip"><span lang="en">Covers from Steam / Wikipedia</span><span lang="ru">Обложки из Steam / Википедии</span></span>
+            <span class="chip"><span lang="en">Favorites</span><span lang="ru">Избранное</span></span>
+            <span class="chip"><span lang="en">Cleanup of old clips</span><span lang="ru">Очистка старых клипов</span></span>
+            <span class="chip"><span lang="en">Hotkeys in game</span><span lang="ru">Клавиши в игре</span></span>
+          </div>
+        </div>
+        <div class="row-media reveal">
+          <img data-shot="library.jpg" src="screenshots/en/library.jpg" width="1347" height="947" loading="lazy" alt="Library by game" data-cap-en="Library by game" data-cap-ru="Библиотека по играм">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-text reveal">
+          <div class="eyebrow"><span lang="en">Statistics</span><span lang="ru">Статистика</span></div>
+          <h3><span lang="en">See what becomes of your clips</span><span lang="ru">Видно, что становится с клипами</span></h3>
+          <p>
+            <span lang="en">Clips recorded, trimmed, kept untrimmed and deleted — by month and by game, with the space they take. And a month recap to share as a picture.</span>
+            <span lang="ru">Сколько записано, обрезано, оставлено без обрезки и удалено — по месяцам и играм, с занятым местом. И итоги месяца картинкой, чтобы поделиться.</span>
+          </p>
+        </div>
+        <div class="row-media reveal">
+          <img data-shot="stats.png" src="screenshots/en/stats.png" width="1347" height="947" loading="lazy" alt="Statistics" data-cap-en="Statistics" data-cap-ru="Статистика">
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ VIDEO ============ -->
+<section id="video">
+  <div class="wrap">
+    <div class="video-block reveal">
+      <div>
+        <div class="eyebrow"><span lang="en">25 seconds</span><span lang="ru">25 секунд</span></div>
+        <h2 class="h2"><span lang="en">The whole idea, in one loop</span><span lang="ru">Вся идея — в одном ролике</span></h2>
+        <p class="sub">
+          <span lang="en">OBS fails silently. ClipKeeper notices, fixes it while you play, and keeps the clip — sorted, checked, ready to trim.</span>
+          <span lang="ru">OBS ломается молча. ClipKeeper замечает, чинит, пока ты играешь, и сохраняет клип — разложенным, проверенным, готовым к обрезке.</span>
+        </p>
+        <div class="cta" style="justify-content:flex-start">
+          <a class="btn btn-primary" data-download href="https://github.com/Alukkart/ClipKeeper/releases/latest">
+            <svg><use href="#i-download"/></svg><span lang="en">Download</span><span lang="ru">Скачать</span><span class="ver" data-version></span>
+          </a>
+        </div>
+      </div>
+      <div class="video-frame">
+        <video src="media/promo.mp4" poster="media/promo-poster.jpg" muted loop playsinline preload="none" controls aria-label="ClipKeeper promo video"></video>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GALLERY ============ -->
+<section id="screens">
+  <div class="wrap">
+    <div class="head-c reveal">
+      <div class="eyebrow"><span lang="en">Screenshots</span><span lang="ru">Скриншоты</span></div>
+      <h2 class="h2"><span lang="en">Graphite, quiet, out of the way</span><span lang="ru">Графитовый, тихий, не мешает</span></h2>
+      <p class="sub">
+        <span lang="en">ClipKeeper's own windows are hidden from OBS capture and screenshots, so they never end up in a clip.</span>
+        <span lang="ru">Окна ClipKeeper скрыты от захвата OBS и скриншотов, поэтому в клип они не попадают.</span>
+      </p>
+    </div>
+    <div class="gallery">
+      <figure class="reveal"><img data-shot="recording.png" src="screenshots/en/recording.png" loading="lazy" alt="" data-cap-en="Recording guard — status, tiles, sources" data-cap-ru="Наблюдение за записью — состояние, плитки, источники">
+        <figcaption><span lang="en">Recording guard</span><span lang="ru">Наблюдение за записью</span></figcaption></figure>
+      <figure class="reveal"><img data-shot="game.jpg" src="screenshots/en/game.jpg" loading="lazy" alt="" data-cap-en="A game's clips" data-cap-ru="Клипы игры">
+        <figcaption><span lang="en">A game's clips</span><span lang="ru">Клипы игры</span></figcaption></figure>
+      <figure class="reveal"><img data-shot="editor.jpg" src="screenshots/en/editor.jpg" loading="lazy" alt="" data-cap-en="Trim editor" data-cap-ru="Редактор">
+        <figcaption><span lang="en">Trim editor</span><span lang="ru">Редактор</span></figcaption></figure>
+      <figure class="reveal"><img data-shot="setup.png" src="screenshots/en/setup.png" loading="lazy" alt="" data-cap-en="First-run setup" data-cap-ru="Первая настройка">
+        <figcaption><span lang="en">First-run setup</span><span lang="ru">Первая настройка</span></figcaption></figure>
+      <figure class="reveal"><img data-shot="settings.png" src="screenshots/en/settings.png" loading="lazy" alt="" data-cap-en="Settings — tabs by topic, search (Ctrl+F)" data-cap-ru="Настройки — вкладки по темам, поиск (Ctrl+F)">
+        <figcaption><span lang="en">Settings with search</span><span lang="ru">Настройки с поиском</span></figcaption></figure>
+      <figure class="reveal"><img data-shot="keys.png" src="screenshots/en/keys.png" loading="lazy" alt="" data-cap-en="Editor keys — every key can be changed" data-cap-ru="Клавиши редактора — любую можно поменять">
+        <figcaption><span lang="en">Editor keys</span><span lang="ru">Клавиши редактора</span></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INSTALL ============ -->
+<section id="install">
+  <div class="wrap">
+    <div class="head-c reveal">
+      <div class="eyebrow"><span lang="en">Install</span><span lang="ru">Установка</span></div>
+      <h2 class="h2"><span lang="en">Running in a minute</span><span lang="ru">Работает через минуту</span></h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <h3><span lang="en">Download and unpack</span><span lang="ru">Скачай и распакуй</span></h3>
+        <p>
+          <span lang="en"><code>ClipKeeper-&lt;version&gt;.zip</code> from <a data-download href="https://github.com/Alukkart/ClipKeeper/releases/latest"><u>Releases</u></a> into a folder of your own. ffmpeg is already inside.</span>
+          <span lang="ru"><code>ClipKeeper-&lt;версия&gt;.zip</code> со страницы <a data-download href="https://github.com/Alukkart/ClipKeeper/releases/latest"><u>Releases</u></a> в свою папку. ffmpeg уже внутри.</span>
+        </p>
+      </div>
+      <div class="step reveal">
+        <h3><span lang="en">Enable WebSocket in OBS</span><span lang="ru">Включи WebSocket в OBS</span></h3>
+        <p>
+          <span lang="en">Tools → WebSocket Server Settings. No need to copy the password — the setup finds it.</span>
+          <span lang="ru">«Сервис → Настройки сервера WebSocket». Пароль копировать не нужно — настройка найдёт его сама.</span>
+        </p>
+      </div>
+      <div class="step reveal">
+        <h3><span lang="en">Run ClipKeeper.exe</span><span lang="ru">Запусти ClipKeeper.exe</span></h3>
+        <p>
+          <span lang="en">A short setup walks through language, features, the OBS connection, devices and folders. Updates itself from GitHub.</span>
+          <span lang="ru">Короткая настройка: язык, функции, подключение к OBS, устройства и папки. Обновляется сам с GitHub.</span>
+        </p>
+      </div>
+    </div>
+    <div class="note reveal">
+      <svg><use href="#i-warn"/></svg>
+      <div>
+        <span lang="en"><b>"Windows protected your PC"?</b> The exe is not code-signed yet, so SmartScreen doesn't know it — press <b>More info → Run anyway</b>. Every release is built by GitHub Actions from this repository; compare the file with <code>SHA256SUMS.txt</code> from the release or check it on <a href="https://www.virustotal.com">VirusTotal</a>.</span>
+        <span lang="ru"><b>«Система Windows защитила ваш компьютер»?</b> Exe пока не подписан, и SmartScreen его не знает — нажми <b>«Подробнее → Выполнить в любом случае»</b>. Каждый релиз собирает GitHub Actions из этого репозитория; сверь файл с <code>SHA256SUMS.txt</code> из релиза или проверь на <a href="https://www.virustotal.com">VirusTotal</a>.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRIVACY ============ -->
+<section id="privacy">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow"><span lang="en">Privacy</span><span lang="ru">Приватность</span></div>
+      <h2 class="h2"><span lang="en">Everything stays on your computer</span><span lang="ru">Всё остаётся на твоём компьютере</span></h2>
+    </div>
+    <div class="trust">
+      <div class="reveal">
+        <h3><span lang="en">No accounts</span><span lang="ru">Без аккаунтов</span></h3>
+        <p><span lang="en">No telemetry, no ads. Settings, cache and stats live next to the exe.</span><span lang="ru">Ни телеметрии, ни рекламы. Настройки, кэш и статистика лежат рядом с exe.</span></p>
+      </div>
+      <div class="reveal">
+        <h3><span lang="en">Encrypted password</span><span lang="ru">Пароль зашифрован</span></h3>
+        <p><span lang="en">The OBS WebSocket password is stored with Windows DPAPI — readable only by your account.</span><span lang="ru">Пароль WebSocket OBS хранится через DPAPI Windows — прочитать его может только твоя учётная запись.</span></p>
+      </div>
+      <div class="reveal">
+        <h3><span lang="en">Three connections</span><span lang="ru">Три подключения</span></h3>
+        <p><span lang="en">OBS on your PC; Steam and Wikipedia for covers; GitHub for updates. The last two can be turned off.</span><span lang="ru">OBS на твоём ПК; Steam и Википедия — обложки; GitHub — обновления. Последние два выключаются.</span></p>
+      </div>
+      <div class="reveal">
+        <h3><span lang="en">Open source, MIT</span><span lang="ru">Открытый код, MIT</span></h3>
+        <p><span lang="en">Read every line, build it with <code>build.cmd</code> — nothing to install.</span><span lang="ru">Каждая строка на виду, собирается <code>build.cmd</code> — ставить ничего не надо.</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL ============ -->
+<div class="final">
+  <div class="wrap reveal">
+    <img src="logo.png" alt="">
+    <h2 class="h2"><span lang="en">Next time it breaks, you'll know.</span><span lang="ru">В следующий раз, когда сломается, — ты узнаешь.</span></h2>
+    <p class="sub" style="margin:0 auto">
+      <span lang="en">Free and open source. Windows 10 / 11, OBS 28+.</span>
+      <span lang="ru">Бесплатно и с открытым кодом. Windows 10 / 11, OBS 28+.</span>
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" data-download href="https://github.com/Alukkart/ClipKeeper/releases/latest">
+        <svg><use href="#i-download"/></svg><span lang="en">Download ClipKeeper</span><span lang="ru">Скачать ClipKeeper</span><span class="ver" data-version></span>
+      </a>
+      <a class="btn btn-ghost" href="https://github.com/Alukkart/ClipKeeper">
+        <svg><use href="#i-star"/></svg><span lang="en">Star us on GitHub</span><span lang="ru">Поставить звезду на GitHub</span><span class="star-count" data-stars></span>
+      </a>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>ClipKeeper · <span lang="en">MIT license</span><span lang="ru">Лицензия MIT</span></span>
+    <div class="links">
+      <a data-readme href="https://github.com/Alukkart/ClipKeeper#readme">README</a>
+      <a href="https://github.com/Alukkart/ClipKeeper/releases"><span lang="en">Releases</span><span lang="ru">Релизы</span></a>
+      <a href="https://github.com/Alukkart/ClipKeeper/issues"><span lang="en">Report a problem</span><span lang="ru">Сообщить о проблеме</span></a>
+      <a href="https://github.com/Alukkart/ClipKeeper/blob/main/CONTRIBUTING.md"><span lang="en">Contributing</span><span lang="ru">Участие</span></a>
+    </div>
+  </div>
+</footer>
+
+<dialog class="lb" id="lb" aria-label="Screenshot">
+  <figure><img id="lb-img" alt=""><figcaption id="lb-cap"></figcaption></figure>
+</dialog>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  document.body.classList.remove('no-js');
+
+  // ---- language: ?lang= → saved choice → browser language ----
+  function stored() { try { return localStorage.getItem('ck-lang'); } catch (e) { return null; } }
+  function save(l) { try { localStorage.setItem('ck-lang', l); } catch (e) {} }
+  var q = new URLSearchParams(location.search).get('lang');
+  var lang = (q === 'en' || q === 'ru') ? q : stored();
+  if (lang !== 'en' && lang !== 'ru') {
+    var nav = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+    lang = /^(ru|uk|be|kk)\b/i.test(nav) ? 'ru' : 'en';
+  }
+
+  function setLang(l) {
+    lang = l;
+    root.setAttribute('data-lang', l);
+    root.setAttribute('lang', l);
+    document.querySelectorAll('[data-set-lang]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.setLang === l));
+    });
+    document.querySelectorAll('img[data-shot]').forEach(function (img) {
+      var src = (img.dataset.base || 'screenshots') + '/' + l + '/' + img.dataset.shot;
+      if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+    });
+    document.querySelectorAll('[data-readme]').forEach(function (a) {
+      a.href = 'https://github.com/Alukkart/ClipKeeper/blob/main/' + (l === 'ru' ? 'README.ru.md' : 'README.md');
+    });
+    document.title = l === 'ru' ? 'ClipKeeper — помощник OBS в трее' : 'ClipKeeper — a tray companion for OBS';
+  }
+  setLang(lang);
+  document.querySelectorAll('[data-set-lang]').forEach(function (b) {
+    b.addEventListener('click', function () { setLang(b.dataset.setLang); save(lang); });
+  });
+
+  // ---- latest release: version label and a direct link to the zip ----
+  fetch('https://api.github.com/repos/Alukkart/ClipKeeper/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (rel) {
+      if (!rel || !rel.tag_name) return;
+      document.querySelectorAll('[data-version]').forEach(function (s) { s.textContent = rel.tag_name; });
+      var zip = (rel.assets || []).filter(function (a) { return /^ClipKeeper-.*\.zip$/i.test(a.name); })[0];
+      if (zip) document.querySelectorAll('[data-download]').forEach(function (a) { a.href = zip.browser_download_url; });
+    })
+    .catch(function () {});
+
+  // ---- star count ----
+  fetch('https://api.github.com/repos/Alukkart/ClipKeeper', { headers: { Accept: 'application/vnd.github+json' } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (repo) {
+      // a small count works against the button, so it shows up from 10 stars
+      if (!repo || typeof repo.stargazers_count !== 'number' || repo.stargazers_count < 10) return;
+      var n = repo.stargazers_count;
+      var text = n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'k' : String(n);
+      document.querySelectorAll('[data-stars]').forEach(function (s) { s.textContent = '★ ' + text; });
+    })
+    .catch(function () {});
+
+  // ---- the log fills in line by line once it's on screen, the way it does in the app ----
+  var logEl = document.querySelector('.log');
+  function playLog() {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    logEl.querySelectorAll('li').forEach(function (li, i) {
+      setTimeout(function () { li.classList.add('on'); }, reduce ? 0 : 200 + i * 260);
+    });
+  }
+  if (logEl) {
+    if ('IntersectionObserver' in window) {
+      var logIo = new IntersectionObserver(function (es) {
+        if (es[0].isIntersecting) { playLog(); logIo.disconnect(); }
+      }, { threshold: .35 });
+      logIo.observe(logEl);
+    } else playLog();
+  }
+
+  // ---- sticky nav border ----
+  var navEl = document.getElementById('nav');
+  function onScroll() { navEl.classList.toggle('scrolled', window.scrollY > 8); }
+  window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
+  // ---- reveal on scroll; play the promo only while visible ----
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+
+    var video = document.querySelector('.video-frame video');
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (video && !reduce) {
+      new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (e.isIntersecting) { var p = video.play(); if (p && p.catch) p.catch(function () {}); }
+          else video.pause();
+        });
+      }, { threshold: .4 }).observe(video);
+    }
+  } else {
+    document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+  }
+
+  // ---- lightbox ----
+  var lb = document.getElementById('lb'), lbImg = document.getElementById('lb-img'), lbCap = document.getElementById('lb-cap');
+  document.querySelectorAll('main img[data-shot]').forEach(function (img) {
+    if (img.closest('.stage')) return;
+    img.addEventListener('click', function () {
+      if (!lb.showModal) { window.open(img.src, '_blank'); return; }
+      lbImg.src = img.src;
+      lbCap.textContent = img.dataset['cap' + (lang === 'ru' ? 'Ru' : 'En')] || '';
+      lb.showModal();
+    });
+  });
+  lb.addEventListener('click', function () { lb.close(); });
+})();
+</script>
+</body>
+</html>

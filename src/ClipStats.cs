@@ -49,6 +49,8 @@ namespace DeviceGuard
         static readonly Regex NameDate = new Regex(@"(\d{4})-(\d{2})-(\d{2})[ _](\d{2})-(\d{2})-(\d{2})", RegexOptions.Compiled);
         static readonly Regex NameGame = new Regex(@"^(.+?) - Replay", RegexOptions.Compiled);
         static readonly object Sync = new object();
+        // a clip renamed in the library: old file name → new one (lower case). Logs and trims still know the old name
+        static Dictionary<string, string> renamed = new Dictionary<string, string>();
 
         public static StatsResult Compute(string obsRoot, string readyRoot, string collRoot, Action<string> progress)
         {
@@ -105,7 +107,7 @@ namespace DeviceGuard
                         // only ClipKeeper writes source data — files older than the logs don't have it, so skip ffprobe
                         ClipMeta meta = null;
                         if (f.LastWriteTime >= trackedSince.AddDays(-1)) meta = ClipIndex.Meta(f).Item1;
-                        if (meta != null && !string.IsNullOrEmpty(meta.Source)) cutFrom.Add(meta.Source);
+                        if (meta != null && !string.IsNullOrEmpty(meta.Source)) cutFrom.Add(Current(meta.Source));
                         if (hist.ContainsKey(f.Name.ToLowerInvariant())) present.Add(f.Name);   // the source was moved whole
                         string game = meta != null ? meta.Game : ClipScanner.GameOf(f, root);
                         if (game == NoGame.Folder) game = NoGame.Game;
@@ -128,6 +130,52 @@ namespace DeviceGuard
                 result.TrackedSince = trackedSince == DateTime.MaxValue ? now : trackedSince;
                 return result;
             }
+        }
+
+        // names of the sources a trim was made from (ClipKeeper writes the source into every trim) — the "not trimmed" filter
+        // since: only trims written from then on are read (ffprobe for a file not seen before) — a trim is always newer than its source
+        public static HashSet<string> TrimmedSources(string readyRoot, string collRoot, DateTime since)
+        {
+            var cut = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var root in new[] { readyRoot, collRoot })
+                if (root != null)
+                    foreach (var f in ClipScanner.Scan(root, int.MaxValue).Where(f => f.LastWriteTime >= since))
+                    {
+                        var m = ClipIndex.Meta(f).Item1;
+                        if (m != null && !string.IsNullOrEmpty(m.Source)) cut.Add(m.Source);
+                    }
+            ClipIndex.Save();
+            lock (Sync)
+            {
+                if (renamed.Count == 0) Load();
+                foreach (var old in cut.ToList()) cut.Add(Current(old));
+            }
+            return cut;
+        }
+
+        // a source got a name in the library: its history moves to the new file name
+        public static void Renamed(string from, string to)
+        {
+            lock (Sync)
+            {
+                var hist = Load();
+                string f = from.ToLowerInvariant(), t = to.ToLowerInvariant();
+                if (f == t) return;
+                StatClip c;
+                if (hist.TryGetValue(f, out c)) { hist.Remove(f); c.Name = to; hist[t] = c; }
+                foreach (var k in renamed.Keys.ToList()) if (renamed[k] == f) renamed[k] = t;   // renamed twice: the first name leads to the last
+                renamed[f] = t;
+                renamed.Remove(t);
+                Save(hist);
+            }
+        }
+
+        // the name a clip has now, following its renames
+        static string Current(string name)
+        {
+            string n = name.ToLowerInvariant(), to;
+            for (int i = 0; i < 20 && renamed.TryGetValue(n, out to); i++) n = to;
+            return n;
         }
 
         // the log may be open for writing by the program — read with shared access
@@ -169,16 +217,20 @@ namespace DeviceGuard
         static StatClip Get(Dictionary<string, StatClip> hist, string name)
         {
             StatClip c;
-            if (!hist.TryGetValue(name.ToLowerInvariant(), out c)) hist[name.ToLowerInvariant()] = c = new StatClip { Name = name };
+            string key = Current(name);
+            if (!hist.TryGetValue(key, out c)) hist[key] = c = new StatClip { Name = key == name.ToLowerInvariant() ? name : key };   // a renamed clip: under its new name
             return c;
         }
 
         static Dictionary<string, StatClip> Load()
         {
             var hist = new Dictionary<string, StatClip>();
+            renamed = new Dictionary<string, string>();
             try
             {
                 var d = Json.Obj(Json.Parse(File.ReadAllText(FilePath, Encoding.UTF8)));
+                var rn = Json.Obj(d.ContainsKey("renamed") ? d["renamed"] : null);
+                if (rn != null) foreach (var kv in rn) renamed[kv.Key.ToLowerInvariant()] = Convert.ToString(kv.Value).ToLowerInvariant();
                 foreach (var o in Json.GetArr(d, "clips"))
                 {
                     var x = Json.Obj(o);
@@ -207,7 +259,7 @@ namespace DeviceGuard
                     "name", c.Name, "game", c.Game, "rec", c.Recorded.ToString("yyyy-MM-ddTHH:mm:ss", Inv),
                     "dur", c.Duration.ToString("0.#", Inv), "size", c.Size.ToString(Inv),
                     "gone", c.GoneAt.HasValue ? c.GoneAt.Value.ToString("yyyy-MM-ddTHH:mm:ss", Inv) : null)).ToList();
-                Json.WriteFile(FilePath, Json.D("clips", list));
+                Json.WriteFile(FilePath, Json.D("clips", list, "renamed", renamed));
             }
             catch (Exception ex) { Log.Write("clipstats: " + ex.Message); }
         }

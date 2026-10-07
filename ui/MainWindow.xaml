@@ -92,10 +92,20 @@
                                 Visibility="{Binding DurationVis}">
                             <TextBlock Text="{Binding Duration}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="White"/>
                         </Border>
-                        <Border CornerRadius="5" Background="{StaticResource Brand}" Padding="7,1" Margin="7" HorizontalAlignment="Left" VerticalAlignment="Top"
-                                Visibility="{Binding NewVis}">
-                            <TextBlock Text="latest¦последний" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource OnBrand}"/>
-                        </Border>
+                        <!-- the circle that selects the clip (MainWindowSelect.cs): on hover, and on every card while some are selected -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5">
+                            <Button x:Name="check" Style="{StaticResource BtnBare}" Tag="select" Opacity="{Binding CheckOpacity}" Margin="0,0,4,0"
+                                    ToolTip="Select (Ctrl+click, Shift+click — a range)¦Выбрать (Ctrl+клик, Shift+клик — несколько подряд)">
+                                <Border Width="22" Height="22" CornerRadius="11" BorderThickness="1.5" BorderBrush="{Binding CheckRing}" Background="{Binding CheckFill}">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE73E;" FontSize="11" Foreground="{Binding CheckMark}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </Button>
+                            <Border CornerRadius="5" Background="{StaticResource Brand}" Padding="7,1" Margin="0,2,0,0" VerticalAlignment="Top"
+                                    Visibility="{Binding NewVis}">
+                                <TextBlock Text="latest¦последний" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource OnBrand}"/>
+                            </Border>
+                        </StackPanel>
                         <Button x:Name="star" Style="{StaticResource BtnBare}" Tag="fav" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top"
                                 Opacity="{Binding StarOpacity}" ToolTip="{Binding StarTip}">
                             <Border CornerRadius="6" Background="#CC0B0C0E" Width="28" Height="26">
@@ -105,8 +115,18 @@
                         </Button>
                     </Grid>
                     <StackPanel Margin="12,10,12,2">
-                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Path}"/>
-                        <TextBlock Text="{Binding Sub}" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                        <!-- F2 or a double click on the title: rename in place (MainWindowRename.cs); the file name it gets is shown under it -->
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding TitleTip}"
+                                   Tag="title" Background="Transparent" Visibility="{Binding TitleVis}"/>
+                        <TextBox Tag="rename" Style="{StaticResource Field}" Visibility="{Binding EditVis}" Padding="6,2" Margin="-7,-3,-7,0"
+                                 FontWeight="SemiBold" BorderBrush="{StaticResource Sub}" MaxLength="120"
+                                 Text="{Binding EditText, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Text="{Binding Sub}" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"
+                                   Visibility="{Binding TitleVis}"/>
+                        <TextBlock Text="{Binding NewFileName}" ToolTip="{Binding NewFileName}" FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                   Foreground="{StaticResource Sub}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="{Binding EditVis}"/>
+                        <TextBlock Text="Enter — save · Esc — cancel¦Enter — сохранить · Esc — отмена" Foreground="{StaticResource Muted}" FontSize="11"
+                                   Margin="0,3,0,0" Visibility="{Binding EditVis}"/>
                     </StackPanel>
                     <!-- actions show on hover: a grid of cards stays calm -->
                     <Grid x:Name="actions" Margin="5,4,5,6" Opacity="0">
@@ -141,12 +161,32 @@
                 <Trigger SourceName="card" Property="IsMouseOver" Value="True">
                     <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource LineHi}"/>
                     <Setter TargetName="star" Property="Opacity" Value="1"/>
+                    <Setter TargetName="check" Property="Opacity" Value="1"/>
                     <Setter TargetName="actions" Property="Opacity" Value="1"/>
                 </Trigger>
                 <Trigger SourceName="card" Property="IsKeyboardFocusWithin" Value="True">
                     <Setter TargetName="actions" Property="Opacity" Value="1"/>
                 </Trigger>
+                <DataTrigger Binding="{Binding Selected}" Value="True">
+                    <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource Text}"/>
+                </DataTrigger>
             </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- a clip in the queue of "Go through new clips": its frame, what was decided, the current one outlined -->
+        <DataTemplate x:Key="TriageTpl">
+            <Button Style="{StaticResource BtnBare}" Tag="triage" Margin="0,0,6,0" ToolTip="{Binding Tip}">
+                <Border Width="68" Height="38" CornerRadius="6" BorderThickness="2" BorderBrush="{Binding Ring}" Padding="0">
+                    <Grid Opacity="{Binding Dim}">
+                        <Border CornerRadius="4" Background="#1A1B1F"/>
+                        <Border CornerRadius="4" Background="{Binding Thumb}"/>
+                        <Border CornerRadius="3" Background="#D90B0C0E" Padding="3,1" Margin="2" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                Visibility="{Binding MarkVis}">
+                            <TextBlock Style="{StaticResource Icon}" Text="{Binding Mark}" FontSize="10" Foreground="{Binding MarkBrush}"/>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Button>
         </DataTemplate>
 
         <!-- game card in the library: 2:3 cover, name, clip count and total length -->
@@ -551,6 +591,8 @@
                                         <TextBlock Text="All to collection¦Всё в коллекцию"/>
                                     </StackPanel>
                                 </Button>
+                                <Button x:Name="BtnTriage" Style="{StaticResource BtnGhost}" Visibility="Collapsed" Margin="0,0,6,0"
+                                        ToolTip="New clips one by one: keep, trim later or to the Recycle Bin — one key each¦Новые клипы по одному: оставить, обрезать потом или в корзину — по одной клавише"/>
                                 <Button x:Name="BtnClipsRefresh" Style="{StaticResource BtnIcon}" Content="&#xE72C;" Margin="0,0,6,0" ToolTip="Refresh¦Обновить"/>
                                 <Button x:Name="BtnClipsFolder" Style="{StaticResource BtnIcon}" Content="&#xE838;" ToolTip="{Binding Text, ElementName=ClipsFolder}"/>
                             </StackPanel>
@@ -558,6 +600,18 @@
                         <Grid Margin="0,0,12,16">
                             <StackPanel x:Name="ClipSource" Orientation="Horizontal"/>
                             <TextBlock x:Name="ClipsStats" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource Muted}" FontSize="12.5"/>
+                        </Grid>
+                        <!-- the search, filters and the order of clips (MainWindowFind.cs); filters wrap in a narrow window -->
+                        <Grid x:Name="ClipsTools" Margin="0,0,12,14" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="ClipsSearchHost" Width="220" VerticalAlignment="Top"/>
+                            <WrapPanel x:Name="ClipsFilters" Grid.Column="1" Margin="10,3,0,-6" VerticalAlignment="Top"/>
+                            <Button x:Name="BtnClipsSort" Grid.Column="2" Style="{StaticResource BtnLink}" VerticalAlignment="Top" Margin="8,4,0,0"
+                                    ToolTip="The order of clips¦Порядок клипов"/>
                         </Grid>
                         <Border x:Name="SortCard" Visibility="Collapsed" Style="{StaticResource CardBorder}" Margin="0,0,12,14">
                             <StackPanel>
@@ -590,10 +644,79 @@
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
                         <TextBlock x:Name="ClipsEmpty" Visibility="Collapsed" Style="{StaticResource SubText}" Text="No clips yet.¦Клипов пока нет."/>
+                        <Button x:Name="BtnSearchAll" Style="{StaticResource BtnGhost}" HorizontalAlignment="Left" Visibility="Collapsed" Margin="0,4,0,12"/>
                         <Button x:Name="BtnClipsMore" Style="{StaticResource BtnGhost}" HorizontalAlignment="Left" Visibility="Collapsed" Content="Show more¦Показать ещё"/>
                     </StackPanel>
                   </Grid>
                 </ScrollViewer>
+
+                <!-- several clips selected in the library: what to do with them (MainWindowSelect.cs) -->
+                <Border x:Name="SelBar" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,14,18"
+                        Background="{StaticResource Card2}" BorderBrush="{StaticResource LineHi}" BorderThickness="1" CornerRadius="12" Padding="16,7,8,7">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="30" ShadowDepth="8" Opacity="0.55" Color="Black"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="SelCount" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="SelMeta" Foreground="{StaticResource Muted}" FontSize="12.5" VerticalAlignment="Center" Margin="10,0,14,0"/>
+                        <StackPanel x:Name="SelActions" Orientation="Horizontal"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- "Go through new clips": one clip at a time, a key decides (MainWindowTriage.cs); takes the library's place -->
+                <Grid x:Name="TriagePage" Visibility="Collapsed" Margin="34,0,34,24">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="BtnTriageClose" Style="{StaticResource BtnIcon}" Content="&#xE711;" Margin="0,0,14,0" ToolTip="Finish (Esc)¦Закончить (Esc)"/>
+                        <TextBlock x:Name="TriageTitle" Grid.Column="1" Style="{StaticResource H1}" FontSize="21" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock x:Name="TriageStats" Grid.Column="2" Foreground="{StaticResource Muted}" FontSize="12.5" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </Grid>
+                    <Border Grid.Row="1" Height="3" CornerRadius="1.5" Background="{StaticResource Line}">
+                        <Border x:Name="TriageProgress" HorizontalAlignment="Left" CornerRadius="1.5" Background="{StaticResource Text}" Width="0"/>
+                    </Border>
+                    <Grid Grid.Row="2" Margin="0,14,0,0">
+                        <Border x:Name="TriageStage" Background="Black" CornerRadius="10" ClipToBounds="True">
+                            <Grid>
+                                <MediaElement x:Name="TriagePlayer" LoadedBehavior="Manual" UnloadedBehavior="Manual" ScrubbingEnabled="True" Stretch="Uniform"/>
+                                <TextBlock x:Name="TriageMsg" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Margin="40"/>
+                                <Border CornerRadius="5" Background="#CC0B0C0E" Padding="8,3" Margin="12" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                    <TextBlock x:Name="TriageInfo" Foreground="White" FontSize="12.5"/>
+                                </Border>
+                                <Border CornerRadius="5" Background="#CC0B0C0E" Padding="8,3" Margin="12,12,12,20" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                                    <TextBlock x:Name="TriageTime" Foreground="White" FontFamily="{StaticResource MonoFont}" FontSize="12"/>
+                                </Border>
+                                <!-- a click on the line jumps there -->
+                                <Grid x:Name="TriageSeek" Height="8" VerticalAlignment="Bottom" Background="#59000000" Cursor="Hand">
+                                    <Border x:Name="TriageSeekFill" HorizontalAlignment="Left" Background="{StaticResource Text}" Width="0"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                        <Border x:Name="TriageDone" Visibility="Collapsed" Style="{StaticResource CardBorder}" VerticalAlignment="Top">
+                            <StackPanel x:Name="TriageSummary"/>
+                        </Border>
+                    </Grid>
+                    <ScrollViewer x:Name="TriageQueueScroll" Grid.Row="3" Margin="0,14,0,0" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl x:Name="TriageQueue" ItemTemplate="{StaticResource TriageTpl}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    <UniformGrid x:Name="TriageKeys" Grid.Row="4" Rows="1" Columns="4" Margin="0,14,0,0"/>
+                </Grid>
 
                 <!-- Statistics: built in code (MainWindowStats.cs) -->
                 <ScrollViewer x:Name="PageStats" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

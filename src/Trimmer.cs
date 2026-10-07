@@ -9,7 +9,7 @@ using System.Threading;
 namespace DeviceGuard
 {
     enum TrimMode { Lossless, Precise, Share }
-    enum ShareTarget { Discord, Nitro, Telegram, Custom }
+    enum ShareTarget { Discord, Nitro, Telegram, Custom, Gif }
 
     // what to do with one audio track of the source
     class TrackPlan
@@ -25,6 +25,7 @@ namespace DeviceGuard
     {
         public string Game, Source;
         public DateTime Recorded;
+        public int Mix = -1;   // which audio track of a trim is the common mix (-1 — not written: trims before the join)
     }
 
     class TrimJob
@@ -46,6 +47,12 @@ namespace DeviceGuard
         public ClipMeta Meta;
         public Ffmpeg.MediaInfo SourceInfo;
         public List<double[]> Cuts;            // cut pieces [start, end] inside In..Out (null — no cuts)
+        public bool Loudness;                  // sharing: even loudness, -14 LUFS (two passes of loudnorm)
+        public string Norm;                    // the second loudnorm pass, measured right before encoding
+        public double LoudIn = double.NaN;     // what the first pass measured, LUFS
+        public string GifFormat = "gif";       // the GIF target: gif or webp, the width and the frame rate
+        public int GifWidth = 480, GifFps = 15;
+        public bool Gif { get { return Mode == TrimMode.Share && Target == ShareTarget.Gif; } }
 
         // what remains after the cuts — pieces in order
         public List<double[]> Kept { get { return Trimmer.KeptSegments(In, Out, Cuts); } }
@@ -61,7 +68,7 @@ namespace DeviceGuard
     }
 
     // Trimming plus a mandatory check of the result
-    static class Trimmer
+    static partial class Trimmer
     {
         static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         const double SilentDb = -60;        // quieter counts as silence
@@ -115,6 +122,7 @@ namespace DeviceGuard
                 string k = part.Substring(0, eq), v = part.Substring(eq + 1);
                 if (k == "game") m.Game = v;
                 else if (k == "source") m.Source = v;
+                else if (k == "mix") { int x; if (int.TryParse(v, out x)) m.Mix = x; }
                 else if (k == "recorded")
                 {
                     DateTime d;
@@ -130,8 +138,12 @@ namespace DeviceGuard
         {
             var m = j.Meta;
             if (m == null) return "";
+            // where the common mix ended up among the kept tracks: a join takes exactly that track
+            var plan = Plan(j);
+            int mix = j.MixIndex >= 0 ? plan.FindIndex(t => t.Source == j.MixIndex) : -1;
+            if (mix < 0 && plan.Count == 1) mix = 0;
             string data = MetaTag + "|game=" + Clean(m.Game) + "|recorded=" + m.Recorded.ToString("yyyy-MM-ddTHH:mm:ss", Inv) +
-                          "|source=" + Clean(m.Source);
+                          "|source=" + Clean(m.Source) + (mix >= 0 ? "|mix=" + mix : "");
             string human = Clean(NoGame.Text(m.Game)) + L.T(" · clip from ", " · клип от ") + m.Recorded.ToString("dd.MM.yyyy HH:mm", Inv);
             return " -metadata title=\"" + Clean(j.Title) + "\" -metadata genre=\"" + Clean(m.Game) + "\"" +
                    " -metadata comment=\"" + human + "\" -metadata description=\"" + data + "\"" +
@@ -158,17 +170,19 @@ namespace DeviceGuard
             string dir = !string.IsNullOrEmpty(j.OutputDir) ? j.OutputDir : Path.GetDirectoryName(j.Source);
             string name = SafeName(string.IsNullOrWhiteSpace(j.Title) ? Path.GetFileNameWithoutExtension(j.Source) + TrimSuffix : j.Title);
             if (name.Length == 0) name = L.T("Clip", "Клип");
-            if (j.Mode == TrimMode.Share)
+            string ext = j.Gif ? (j.GifFormat == "webp" ? ".webp" : ".gif") : ".mp4";
+            if (j.Mode == TrimMode.Share && !j.Gif)
                 name += j.Target == ShareTarget.Discord ? " (discord)" : j.Target == ShareTarget.Nitro ? " (nitro)"
                       : j.Target == ShareTarget.Custom ? " (" + j.CustomMb + " MB)" : " (telegram)";
-            string path = Path.Combine(dir, name + ".mp4");
-            for (int i = 2; File.Exists(path); i++) path = Path.Combine(dir, name + " " + i + ".mp4");
+            string path = Path.Combine(dir, name + ext);
+            for (int i = 2; File.Exists(path); i++) path = Path.Combine(dir, name + " " + i + ext);
             return path;
         }
 
         // ── tracks ──
         static List<TrackPlan> Plan(TrimJob j)
         {
+            if (j.Gif) return new List<TrackPlan>();   // an animation has no sound
             var audio = j.SourceInfo.Audio;
             var plan = j.Tracks ?? Enumerable.Range(0, audio.Count).Select(i => new TrackPlan { Source = i, Title = audio[i].Title }).ToList();
             if (j.Mode == TrimMode.Share)
@@ -207,8 +221,12 @@ namespace DeviceGuard
             string a = "";
             if (j.Mode == TrimMode.Share)
             {
-                string share = j.Tracks == null ? MixGraph(on, 0, "out") : FinalGraph(j, "out");
-                return share == null ? " -an" : " -filter_complex \"" + share + "\" -map \"[out]\" -c:a aac -b:a 128k -ac 2";
+                if (j.Gif) return " -an";
+                string share = ShareGraph(j, on);
+                if (share == null) return " -an";
+                if (j.Norm == null) return " -filter_complex \"" + share + "\" -map \"[out]\" -c:a aac -b:a 128k -ac 2";
+                // even loudness: the second loudnorm pass with what the first one measured; it works at 192 kHz — back to 48
+                return " -filter_complex \"" + share + ";[out]" + j.Norm + ",aresample=48000[outn]\" -map \"[outn]\" -c:a aac -b:a 128k -ac 2";
             }
             var mix = on.FirstOrDefault(t => Rebuilt(j, t));
             string graph = mix != null ? RebuildGraph(j, mix) : null;
@@ -226,6 +244,62 @@ namespace DeviceGuard
                     a += " -metadata:s:a:" + k + " handler_name=\"" + Clean(on[k].Title) + "\" -metadata:s:a:" + k + " title=\"" + Clean(on[k].Title) + "\"";
             }
             return a;
+        }
+
+        // the one track of a shared file: what is heard in the preview → [out]
+        static string ShareGraph(TrimJob j, List<TrackPlan> on)
+        {
+            return j.Tracks == null ? MixGraph(on, 0, "out") : FinalGraph(j, "out");
+        }
+
+        // ── even loudness ──
+        public const double LoudTarget = -14;   // LUFS, as YouTube and most chats play it
+
+        // the first loudnorm pass over what goes into the file: the second one needs these numbers to land exactly
+        static bool LoudnormPass(TrimJob j, string range, CancellationToken cancel)
+        {
+            string share = ShareGraph(j, Plan(j));
+            if (share == null) return false;
+            var r = Ffmpeg.Run("-nostats " + range + " -filter_complex \"" + share + ";[out]loudnorm=I=" + LoudTarget + ":TP=-1:LRA=11:print_format=json[o]\" -map \"[o]\" -vn -f null NUL", cancel);
+            int a = r.Err.LastIndexOf('{'), b = r.Err.LastIndexOf('}');
+            if (r.Code != 0 || a < 0 || b < a) return false;
+            var d = Json.Obj(Json.Parse(r.Err.Substring(a, b - a + 1)));
+            Func<string, string> v = k => Json.GetStr(d, k);
+            double i;
+            if (d == null || !double.TryParse(v("input_i"), NumberStyles.Float, Inv, out i) || double.IsInfinity(i)) return false;
+            j.LoudIn = i;
+            j.Norm = "loudnorm=I=" + LoudTarget + ":TP=-1:LRA=11:measured_I=" + v("input_i") + ":measured_TP=" + v("input_tp") + ":measured_LRA=" + v("input_lra") +
+                     ":measured_thresh=" + v("input_thresh") + ":offset=" + v("target_offset") + ":linear=true";
+            return true;
+        }
+
+        // for the editor: how loud the shared file would be now, LUFS (NaN — unknown)
+        public static double MeasureLoudness(TrimJob j, CancellationToken cancel)
+        {
+            if (j.SourceInfo == null || j.Gif) return double.NaN;
+            string share = ShareGraph(j, Plan(j));
+            if (share == null) return double.NaN;
+            var r = Ffmpeg.Run("-nostats -ss " + Ffmpeg.T(j.In) + " -to " + Ffmpeg.T(j.Out) + " -i " + Q(j.Source) + " -filter_complex \"" + share +
+                               ";[out]ebur128[o]\" -map \"[o]\" -vn -f null NUL", cancel);
+            return Ffmpeg.ParseLufs(r.Err);
+        }
+
+        // ── GIF and WebP: an animation for chats, no sound ──
+        // bytes per pixel and frame, measured on game footage: a GIF with a dithered palette, a lossy WebP at quality 70
+        public static double GifMb(TrimJob j)
+        {
+            double px = j.GifWidth * (j.GifWidth * 9.0 / 16) * j.GifFps * Math.Max(0, j.Length);
+            return px * (j.GifFormat == "webp" ? 0.09 : 0.6) / 1048576;
+        }
+
+        static Ffmpeg.Result EncodeGif(TrimJob j, string range, Action<double> prog, CancellationToken cancel)
+        {
+            string vf = "fps=" + j.GifFps + ",scale=" + j.GifWidth + ":-2:flags=lanczos";
+            if (j.GifFormat == "webp")
+                return Encode(range + " -map 0:v:0 -vf \"" + vf + "\" -c:v libwebp_anim -lossless 0 -q:v 70 -loop 0 -an", j.Output, prog, cancel);
+            // one palette for the whole animation, ordered dithering: it packs far better than error diffusion
+            return Encode(range + " -filter_complex \"[0:v]" + vf + ",split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle\" -an -loop 0",
+                          j.Output, prog, cancel);
         }
 
         public static string FinalGraph(TrimJob j, string label)
@@ -264,6 +338,7 @@ namespace DeviceGuard
             switch (j.Mode)
             {
                 case TrimMode.Share:
+                    if (j.Gif) return "≈ " + Size((long)(GifMb(j) * 1048576));
                     if (j.Target == ShareTarget.Telegram)
                     {
                         // constant quality, and only a range that won't fit is squeezed under the limit
@@ -410,8 +485,9 @@ namespace DeviceGuard
                     Source = tmp, SourceInfo = info, In = 0, Out = info.Duration,
                     OutputDir = !string.IsNullOrEmpty(j.OutputDir) ? j.OutputDir : Path.GetDirectoryName(j.Source),
                     Title = string.IsNullOrWhiteSpace(j.Title) ? Path.GetFileNameWithoutExtension(j.Source) + TrimSuffix : j.Title,
-                    Mode = j.Mode == TrimMode.Precise ? TrimMode.Lossless : j.Mode, Target = j.Target, ShareAudio = j.ShareAudio,
+                    Mode = j.Mode == TrimMode.Precise ? TrimMode.Lossless : j.Mode, Target = j.Target, ShareAudio = j.ShareAudio, CustomMb = j.CustomMb,
                     Tracks = j.Tracks, MixIndex = j.MixIndex, RebuildMix = j.RebuildMix, Meta = j.Meta,
+                    Loudness = j.Loudness, GifFormat = j.GifFormat, GifWidth = j.GifWidth, GifFps = j.GifFps,
                 };
                 bool ok = Run(j2, p => progress(0.5 + 0.5 * p), step, cancel);
                 j.Output = j2.Output;
@@ -430,6 +506,17 @@ namespace DeviceGuard
             j.Output = OutputPath(j);
             var on = Plan(j);
             string range = "-ss " + Ffmpeg.T(j.In) + " -to " + Ffmpeg.T(j.Out) + " -i " + Q(j.Source);
+            j.Norm = null;
+            if (j.Mode == TrimMode.Share && !j.Gif && j.Loudness)
+            {
+                var ls = new TrimStep { Text = L.T("Measuring the loudness…", "Измеряю громкость…") };
+                step(ls);
+                bool measured = LoudnormPass(j, range, cancel);
+                ls.Text = measured ? L.T("Loudness ", "Громкость ") + j.LoudIn.ToString("0.0", Inv) + " LUFS → " + LoudTarget.ToString("0", Inv) + " LUFS"
+                                   : L.T("The loudness could not be measured — the sound stays as it is", "Громкость измерить не вышло — звук останется как есть");
+                ls.State = measured ? 1 : 3;
+                step(ls);
+            }
             string audio = AudioArgs(j, on);
             string meta = " -map_metadata 0" + MetaArgs(j) + " -movflags +faststart";
             Action<double> prog = t => progress(Math.Min(1, t / Math.Max(0.1, j.Length)));
@@ -442,6 +529,7 @@ namespace DeviceGuard
                 r = Encode(range + " -map 0:v:0 -c:v copy" + audio + meta + " -avoid_negative_ts make_zero", j.Output, prog, cancel);
             else if (j.Mode == TrimMode.Precise)
                 r = EncodeQuality(range + " -map 0:v:0", codec, 18, audio + meta, j.Output, prog, cancel);
+            else if (j.Gif) r = EncodeGif(j, range, prog, cancel);
             else r = EncodeShare(j, range, audio + meta, prog, cancel);
 
             if (r.Code != 0 || !File.Exists(j.Output) || new FileInfo(j.Output).Length == 0)
@@ -485,22 +573,25 @@ namespace DeviceGuard
             for (double k = 0.93; k > 0.5; k -= 0.12)
             {
                 double totalKbps = limitMb * 8 * 1024 * k / Math.Max(1, j.Length);
-                double videoKbps = Math.Min(ShareMaxKbps, Math.Max(150, totalKbps - 128));
+                // a long range into a small limit (minutes into Discord's 10 MB): the sound gives up half, the picture goes to 480p
+                bool tight = totalKbps < 500;
+                string tryRest = tight ? rest.Replace("-b:a 128k", "-b:a 64k") : rest;
+                double videoKbps = Math.Min(ShareMaxKbps, Math.Max(90, totalKbps - (tight ? 64 : 128)));
                 // at a low bitrate 1080p60 turns to mush — reduce the frame size and rate
-                string vf = videoKbps < 1500 ? "scale=-2:720,fps=30" : videoKbps < 4500 ? "scale=-2:720" : null;
+                string vf = videoKbps < 600 ? "scale=-2:480,fps=30" : videoKbps < 1500 ? "scale=-2:720,fps=30" : videoKbps < 4500 ? "scale=-2:720" : null;
                 string rate = ((int)videoKbps) + "k", buf = ((int)videoKbps * 2) + "k";
                 string hw = Encoders.Bitrate(rate, buf), v = null;
                 r = null;
                 if (hw != null)
                 {
                     v = " -map 0:v:0 " + hw + " -pix_fmt yuv420p" + (vf != null ? " -vf " + vf : "");
-                    r = Encode(range + v + rest, j.Output, prog, cancel);
+                    r = Encode(range + v + tryRest, j.Output, prog, cancel);
                 }
                 if (r == null || r.Code != 0)
                 {
                     v = " -map 0:v:0 -c:v libx264 -preset veryfast -b:v " + rate + " -maxrate " + rate + " -bufsize " + buf + " -pix_fmt yuv420p" +
                         (vf != null ? " -vf " + vf : "");
-                    r = Encode(range + v + rest, j.Output, prog, cancel);
+                    r = Encode(range + v + tryRest, j.Output, prog, cancel);
                 }
                 if (r.Code != 0) return r;
                 if (new FileInfo(j.Output).Length <= limitMb * 1048576) return r;   // fits
@@ -516,6 +607,8 @@ namespace DeviceGuard
                 step(new TrimStep { Text = text, State = state });
                 if (state == 2) ok = false;
             };
+
+            if (j.Gif) return VerifyGif(j, size, add, cancel) && ok;
 
             Ffmpeg.MediaInfo dst;
             try { dst = Ffmpeg.Info(j.Output); }
@@ -560,6 +653,15 @@ namespace DeviceGuard
                 else add(name + L.T(": AUDIO LOST — the source has it (", ": ЗВУК ПРОПАЛ — в исходнике он есть (") + Db(srcDb) + ")", 2);
             }
 
+            // even loudness: where the file landed
+            if (j.Norm != null && dstAudio.Count > 0)
+            {
+                double lufs = Ffmpeg.Lufs(j.Output, 0, cancel);
+                bool near = Math.Abs(lufs - LoudTarget) <= 1.5;
+                add(L.T("Loudness of the file: ", "Громкость файла: ") + (double.IsNaN(lufs) ? "?" : lufs.ToString("0.0", Inv)) + " LUFS" +
+                    (near ? "" : L.T(" (the target is " + LoudTarget + ")", " (цель — " + LoudTarget + ")")), near ? 1 : 3);
+            }
+
             if (j.Mode == TrimMode.Share)
             {
                 double limit = j.LimitMb;
@@ -578,6 +680,26 @@ namespace DeviceGuard
                     ? L.T("Written to the file: \"" + NoGame.Text(m.Game) + "\", clip from ", "В файле записано: «" + NoGame.Text(m.Game) + "», клип от ") + m.Recorded.ToString("dd.MM.yyyy HH:mm", Inv)
                     : L.T("Metadata was not written — \"Sort by game\" will not recognize this file", "Метаданные не записались — «Разложить по играм» этот файл не узнает"), m != null ? 1 : 3);
             }
+            return ok;
+        }
+
+        // a GIF or a WebP: it reads to the end, its length (GIF; ffprobe does not tell a WebP's), the size
+        static bool VerifyGif(TrimJob j, long size, Action<string, int> add, CancellationToken cancel)
+        {
+            bool ok = true;
+            var r = Ffmpeg.Run("-v error -i " + Q(j.Output) + " -f null NUL", cancel);
+            bool reads = r.Code == 0 && string.IsNullOrWhiteSpace(r.Err);
+            add(reads ? L.T("The animation reads from start to end", "Анимация читается от начала до конца") : L.T("Animation error: ", "Ошибка в анимации: ") + Ffmpeg.LastLine(r.Err), reads ? 1 : 2);
+            ok &= reads;
+            if (j.GifFormat != "webp")
+            {
+                double len = 0;
+                try { len = Ffmpeg.Info(j.Output).Duration; } catch { }
+                bool good = Math.Abs(len - j.Length) < 0.5;
+                add(L.T("Length " + Dur(len) + " of " + Dur(j.Length), "Длина " + Dur(len) + " из " + Dur(j.Length)), good ? 1 : 2);
+                ok &= good;
+            }
+            add(L.T("Size ", "Размер ") + Size(size) + " · " + j.GifWidth + L.T(" px wide, ", " пикс. в ширину, ") + j.GifFps + L.T(" fps, no sound", " к/с, без звука"), 1);
             return ok;
         }
 

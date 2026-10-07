@@ -548,10 +548,13 @@ namespace DeviceGuard
         {
             string exe = ObsExe();
             if (exe == null) { Ev(L.T("⚠ obs64.exe not found — choose it in Settings → Connection", "⚠ не найден obs64.exe — укажите его в «Настройках → Подключение»")); return; }
+            // a process that was just ended takes a moment to disappear; OBS files are only touched once it has
+            for (int i = 0; i < 40 && ObsScript.ObsRunning(); i++) Thread.Sleep(250);
             // OBS is closed right now: the moment to add or remove the "start ClipKeeper with OBS" script (ObsScript)
             string scriptErr = ObsScript.Sync(Cfg.ObsStartScript);
             if (scriptErr != null && scriptErr != ObsScript.WaitObs) Log.Write("OBS start script before launch: " + scriptErr);
             app.Post(app.SyncObsScript);   // the settings row shows the new state
+            ObsFix.ApplyPending();         // what the first-run check fixed while OBS was open (WebSocket, replay buffer, save key)
             // --disable-shutdown-check: no "OBS crashed, start in safe mode?" question
             string args = (Cfg.UseReplayBuffer ? "--startreplaybuffer " : "") + "--disable-shutdown-check" + (Cfg.ObsMinimized ? " --minimize-to-tray" : "");
             try
@@ -580,7 +583,16 @@ namespace DeviceGuard
                     Ev(L.T("restarting OBS from the button", "перезапуск OBS по кнопке"));
                     bool asked = false;
                     try { asked = p.CloseMainWindow(); } catch { }
-                    if (!p.WaitForExit(asked ? 20000 : 3000))
+                    // OBS that hides to the tray, or waits on a question, ignores the close and keeps serving WebSocket;
+                    // one that really closes drops the connection at once — so after 4 s with the link still up, stop waiting
+                    var started = DateTime.Now;
+                    bool exited = false;
+                    while ((DateTime.Now - started).TotalSeconds < (asked ? 20 : 3))
+                    {
+                        if (p.WaitForExit(250)) { exited = true; break; }
+                        if ((DateTime.Now - started).TotalSeconds > 4 && obs != null && obs.IsOpen) break;
+                    }
+                    if (!exited)
                     {
                         Ev(L.T("OBS did not close by itself — ending the process", "OBS не закрылся сам — завершаю процесс"));
                         try { p.Kill(); p.WaitForExit(10000); } catch { }

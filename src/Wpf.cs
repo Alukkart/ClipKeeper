@@ -48,6 +48,26 @@ namespace DeviceGuard
 
         public static T Res<T>(string key) { return (T)Application.Current.FindResource(key); }
 
+        // a turning arc: something is going on that takes a while (OBS restarting)
+        public static FrameworkElement Spinner(double size)
+        {
+            double thick = 2, around = Math.PI * (size - thick) / thick;   // the dash pattern counts in stroke widths
+            var track = new System.Windows.Shapes.Ellipse { Width = size, Height = size, Stroke = Res<Brush>("LineHi"), StrokeThickness = thick };
+            var arc = new System.Windows.Shapes.Ellipse
+            {
+                Width = size, Height = size, Stroke = Res<Brush>("Text"), StrokeThickness = thick, StrokeDashCap = PenLineCap.Round,
+                StrokeDashArray = new DoubleCollection { around * 0.28, around }, RenderTransformOrigin = new Point(0.5, 0.5),
+            };
+            var turn = new RotateTransform();
+            arc.RenderTransform = turn;
+            turn.BeginAnimation(RotateTransform.AngleProperty,
+                new System.Windows.Media.Animation.DoubleAnimation(0, 360, TimeSpan.FromSeconds(0.9)) { RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever });
+            var g = new Grid { Width = size, Height = size };
+            g.Children.Add(track);
+            g.Children.Add(arc);
+            return g;
+        }
+
         // status colors
         public static readonly Color Ok = C("#3FB950"), Warn = C("#D29922"), Bad = C("#F85149"),
                                      Grey = C("#6E7681"), Accent = C("#A1A1AA"), Text = C("#EDEDEF"),
@@ -213,6 +233,41 @@ namespace DeviceGuard
         public Visibility DurationVis { get { return string.IsNullOrEmpty(Duration) ? Visibility.Collapsed : Visibility.Visible; } }
         public Visibility NewVis { get; set; }
         public Brush Thumb { get { return thumb; } set { Set(ref thumb, value); } }
+        public string Group { get; set; }   // the day (or the folder in a search over all folders) it is listed under
+        public double Seconds;
+
+        // selected in the library (MainWindowSelect.cs): while any clip is, every card shows its circle
+        bool selected, selecting;
+        static readonly Brush RingOff = Wpf.Br("#BFFFFFFF"), FillOff = Wpf.Br("#730B0C0E"), Clear = Brushes.Transparent;
+        public bool Selected
+        {
+            get { return selected; }
+            set
+            {
+                if (value && !selected) SelectedAt = ++selectClock;   // the order clips were selected in: the order they are joined in
+                selected = value;
+                Notify("Selected", "CheckOpacity", "CheckRing", "CheckFill", "CheckMark");
+            }
+        }
+        static long selectClock;
+        public long SelectedAt;
+        public bool Selecting { get { return selecting; } set { selecting = value; Notify("CheckOpacity"); } }
+        public double CheckOpacity { get { return selected || selecting ? 1 : 0; } }
+        public Brush CheckRing { get { return selected ? Wpf.Res<Brush>("Text") : RingOff; } }
+        public Brush CheckFill { get { return selected ? Wpf.Res<Brush>("Text") : FillOff; } }
+        public Brush CheckMark { get { return selected ? Wpf.Res<Brush>("Bg") : Clear; } }
+
+        // its own name (ClipNames): a source is named in its file name, when and how big it is goes below
+        public bool Named, Source;
+        public string WhenText, SizeText;
+        public string TitleTip { get { return Path + L.T("\nF2 or a double click — rename", "\nF2 или двойной клик — переименовать"); } }
+        bool editing;
+        string editText = "";
+        public bool Editing { get { return editing; } set { editing = value; Notify("EditVis", "TitleVis", "NewFileName"); } }
+        public Visibility EditVis { get { return editing ? Visibility.Visible : Visibility.Collapsed; } }
+        public Visibility TitleVis { get { return editing ? Visibility.Collapsed : Visibility.Visible; } }
+        public string EditText { get { return editText; } set { editText = value ?? ""; Notify("EditText", "NewFileName"); } }
+        public string NewFileName { get { return editing ? ClipNames.NameFor(Path, editText, Source) ?? L.T("type a name", "введи название") : null; } }
 
         // frames under the mouse (MainWindowScrub.cs): the current frame and a progress line of the thumbnail width
         Brush scrub;
@@ -283,6 +338,14 @@ namespace DeviceGuard
             if (string.IsNullOrEmpty(t)) return t;
             char c = t[0];
             return char.IsLower(c) ? char.ToUpper(c) + t.Substring(1) : t;
+        }
+
+        // a step of saving and checking (Trimmer): its state as an icon and a colour — the editor and the join show the same list
+        public static EventVm Of(TrimStep s)
+        {
+            var c = s.State == 1 ? Wpf.Ok : s.State == 2 ? Wpf.Bad : s.State == 3 ? Wpf.Grey : Wpf.Accent;
+            string g = s.State == 1 ? "" : s.State == 2 ? "" : s.State == 3 ? "" : "";
+            return new EventVm { Text = s.Text, Glyph = g, GlyphBrush = Wpf.Br(c, 255) };
         }
 
         public static EventVm Problem(string text, bool due)

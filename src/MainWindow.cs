@@ -147,6 +147,7 @@ namespace DeviceGuard
 
         public void ShowPage(int i)
         {
+            if (triageOn) CloseTriage(false);   // another page: the going through ends, nothing undecided is lost
             if (!PageOn(i)) i = PageOn(PageClips) ? PageClips : PageOn(PageRecord) ? PageRecord : PageSettings;
             for (int k = 0; k < pages.Length; k++)
             {
@@ -160,6 +161,7 @@ namespace DeviceGuard
             // on the settings page the sidebar is the list of its sections, with a way back
             F<FrameworkElement>("MainSide").Visibility = i == PageSettings ? Visibility.Collapsed : Visibility.Visible;
             F<FrameworkElement>("SettingsSide").Visibility = i == PageSettings ? Visibility.Visible : Visibility.Collapsed;
+            F<FrameworkElement>("SelBar").Visibility = i == PageClips && clips.Any(c => c.Selected) ? Visibility.Visible : Visibility.Collapsed;
             currentPage = i;
             if (navs[i].IsChecked != true) navs[i].IsChecked = true;
             if (i == PageClips) LoadClips(false);
@@ -387,6 +389,7 @@ namespace DeviceGuard
                          .Concat(s.Pending.Select((m, i) => Linked(EventVm.Problem(m, false), KeyAt(s.PendingKeys, i))))
                          .Concat(s.Notes.Select((m, i) => Linked(new EventVm { Text = EventVm.Cap(m), Glyph = "\uE946", GlyphBrush = Wpf.Br(Wpf.Warn, 255) }, KeyAt(s.NotesKeys, i))))
                          .ToList();
+            probs.AddRange(ReadinessProblems(s));   // what OBS needs for clips (MainWindowSetupCheck.cs)
             problemsList.ItemsSource = probs;
             problemsCard.Visibility = probs.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 

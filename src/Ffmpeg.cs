@@ -73,7 +73,7 @@ namespace DeviceGuard
         static string Q(string path) { return "\"" + path + "\""; }
 
         // ── file analysis ──
-        public class StreamInfo { public string Type, Codec, Title; public int Index; public double Fps; }
+        public class StreamInfo { public string Type, Codec, Title; public int Index, Width, Height; public double Fps; }
 
         public class MediaInfo
         {
@@ -89,7 +89,7 @@ namespace DeviceGuard
 
         public static MediaInfo Info(string file)
         {
-            var r = Run(Probe, "-v error -show_entries format=duration,size:format_tags:stream=index,codec_type,codec_name,avg_frame_rate:stream_tags=title,handler_name -of json " + Q(file),
+            var r = Run(Probe, "-v error -show_entries format=duration,size:format_tags:stream=index,codec_type,codec_name,avg_frame_rate,width,height:stream_tags=title,handler_name -of json " + Q(file),
                         null, CancellationToken.None);
             if (r.Code != 0) throw new IOException("ffprobe: " + LastLine(r.Err));
             var d = Json.Obj(Json.Parse(r.Out));
@@ -112,7 +112,7 @@ namespace DeviceGuard
                 info.Streams.Add(new StreamInfo
                 {
                     Index = Json.GetInt(s, "index", 0), Type = Json.GetStr(s, "codec_type"), Codec = Json.GetStr(s, "codec_name"), Title = title,
-                    Fps = Rate(Json.GetStr(s, "avg_frame_rate")),
+                    Fps = Rate(Json.GetStr(s, "avg_frame_rate")), Width = Json.GetInt(s, "width", 0), Height = Json.GetInt(s, "height", 0),
                 });
             }
             return info;
@@ -137,6 +137,30 @@ namespace DeviceGuard
             var m = Regex.Match(r.Err, @"max_volume:\s*(-?[\d.]+|-inf) dB");
             if (!m.Success) return double.NegativeInfinity;
             return m.Groups[1].Value == "-inf" ? double.NegativeInfinity : double.Parse(m.Groups[1].Value, Inv);
+        }
+
+        // the average level of an audio track over the whole file, dB (−∞ — silence or not read)
+        public static double MeanDb(string file, int audioIndex, CancellationToken cancel)
+        {
+            var r = Run("-nostats -i " + Q(file) + " -map 0:a:" + audioIndex + " -af volumedetect -vn -sn -dn -f null NUL", cancel);
+            var m = Regex.Match(r.Err, @"mean_volume:\s*(-?[\d.]+|-inf) dB");
+            return !m.Success || m.Groups[1].Value == "-inf" ? double.NegativeInfinity : double.Parse(m.Groups[1].Value, Inv);
+        }
+
+        // integrated loudness of an audio track, LUFS (EBU R128); NaN — not measured
+        public static double Lufs(string file, int audioIndex, CancellationToken cancel)
+        {
+            var r = Run("-nostats -i " + Q(file) + " -map 0:a:" + audioIndex + " -af ebur128 -vn -sn -dn -f null NUL", cancel);
+            return ParseLufs(r.Err);
+        }
+
+        // the summary ebur128 prints at the end: "Integrated loudness: I: -23.0 LUFS"
+        public static double ParseLufs(string err)
+        {
+            var all = Regex.Matches(err ?? "", @"I:\s+(-?[\d.]+|-inf) LUFS");
+            if (all.Count == 0) return double.NaN;
+            string v = all[all.Count - 1].Groups[1].Value;
+            return v == "-inf" ? double.NegativeInfinity : double.Parse(v, Inv);
         }
 
         // the video is readable: decode the start and end, decoder errors = a broken file

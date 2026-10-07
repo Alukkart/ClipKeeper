@@ -79,7 +79,9 @@ ClipKeeper's own windows are hidden from OBS capture and screenshots, so they ne
    protects (Program Files) it works too, keeping its data in `%LOCALAPPDATA%\ClipKeeper`, but can't update itself.
 2. In OBS: **Tools → WebSocket Server Settings** — enable the server. The password is not needed: **Find OBS** in the setup
    takes it from the OBS settings on this computer.
-3. Run `ClipKeeper.exe`. A short setup walks through language and features, the OBS connection, devices and folders.
+3. Run `ClipKeeper.exe`. A short setup walks through language and features, the OBS connection, a check of what OBS
+   needs for clips (the WebSocket server, the replay buffer, a Save Replay key — each fixed with a button), devices and
+   folders, and ends with a test clip: press your key and see the card a clip gets.
 
 <details>
 <summary><b>Windows says "Windows protected your PC", or an antivirus complains</b></summary>
@@ -95,7 +97,7 @@ Some antivirus heuristics dislike what a clip tool has to do. Here is all of it,
 |---|---|---|
 | Reads whether one key is pressed (`GetAsyncKeyState`), the way OBS itself does | Confirms a clip at the press of the OBS "Save Replay" key | Only that key, read from your OBS profile; nothing is stored or sent. Off: Settings → Clip saved → "Confirm the press at once" |
 | Global hotkeys (`RegisterHotKey`) | Trim / favorite / copy the last clip from the game | Only if you set them; none by default |
-| Changes OBS files | Adds the "start ClipKeeper with OBS" script | Only if you turn it on; OBS closed; copies first |
+| Changes OBS files | Adds the "start ClipKeeper with OBS" script; in the setup check turns on the WebSocket server or the replay buffer, sets the Save Replay key | Only if you turn it on or press "Fix"; OBS closed; copies to `backups\` first |
 | Downloads and replaces its own exe | Updates | Only from this repository's releases, checked against `SHA256SUMS.txt`, on your click |
 | Starts and closes OBS | Restarting OBS after a crash, the restart button | Settings → OBS program |
 
@@ -202,6 +204,24 @@ Clips come from three folders, following a clip's path:
 - Each folder opens with cards: Favorites, All clips and games — cover, clip count, total length and size.
   Favorites and All clips show frames of their latest clips fanned out over a blurred copy of the newest one.
   With a single group (e.g. ready clips without game data) the clips are shown right away.
+- **Search, filters and order** above the clips: a search by name, game or date — "bridge", "yesterday", "5 october",
+  "05.10" (Ctrl+F); filters *Favorites*, *Not trimmed* and *Older than a month*; the order newest, oldest, longest or
+  largest. Clips by date fall into days (Today, Yesterday, 5 October…). From the library's home — or with **Search all
+  folders** from a game — the search goes through Sources, Ready and the collection at once, grouped by folder.
+- **Names:** F2 over a card or a double click on its title, then Enter. The name goes into the file name, so it shows the
+  same in Explorer, Discord and Telegram: a source keeps its game and time around it (`Hunt Showdown - Bridge duel -
+  2026-10-05 19-56-05.mp4`), a ready clip is its name. The star, the statistics and the last clip follow the file.
+- **Several at once:** Ctrl+click or the circle on a card selects it, Shift+click a range, Ctrl+A everything shown,
+  Esc none. A bar at the bottom shows how many, how long and how big and offers favorites, copy (Discord takes them as
+  several attachments), to the collection for ready clips, the Recycle Bin (press twice) and **Join**.
+- **Join:** two or more selected clips become one, in the order they were selected (drag a card or press its ‹ › to
+  move it); a click on a card takes only a part of that clip, chosen with two handles on its frames. Back to back or
+  with a 0.3 s fade, kept at frame-exact quality or fitted for Discord / Nitro / Telegram, saved to Ready, next to the
+  first clip or a folder you choose, and checked like a trim. Clips of another size or frame rate are brought to the first one's; each gives its common mix.
+- **Go through new clips:** when clips from the last two weeks wait without a star, a trim or a look, Sources show
+  **Go through N new clips**. They play one after another and a key decides each: **F** keeps it with a star, **X** —
+  trim later, **Delete** — for the Recycle Bin, **→** — skip, **Z** — undo, **Space** — pause. Nothing is deleted on the
+  way: at the end the marked clips go to the bin with one press and the ones to trim open in the editor together.
 - **Covers** come from Steam, or from Wikipedia for non-Steam games (only an article about the game itself), and are
   kept in `covers\`. Hover a card to set your own cover. Turn online covers off in Settings → Games and covers — then only your
   own pictures and clip frames are used.
@@ -263,7 +283,8 @@ Ctrl+Z undoes the last cut, Esc drops an unfinished one. Cut parts are skipped w
 |---|---|
 | **Lossless** | Copy without re-encoding: all tracks, almost instant; the start snaps to a keyframe. |
 | **Frame-exact** | Video re-encoded on the GPU at the same quality, audio copied. |
-| **Share** | H.264, one track — exactly what you hear. Discord (10 MB), Nitro (500 MB), **your own size in MB**, or Telegram (2 GB). Small sizes lower the resolution. |
+| **Share** | H.264, one track — exactly what you hear. Discord (10 MB), Nitro (500 MB), **your own size in MB**, or Telegram (2 GB). Small sizes lower the resolution. **Even loudness** (off by default) brings it to −14 LUFS, as YouTube plays it; the editor shows how loud it is now. |
+| **GIF** | An animation without sound for chats where a video does not play by itself: GIF or WebP (several times smaller), 360 / 480 / 720 px wide, 10 / 15 / 24 frames per second, with a size estimate and a warning when the range is long. |
 
 - With cuts the remaining pieces are joined frame-exactly (video re-encoded at frame-exact quality, a 10 ms
   crossfade at audio joints); the join's length and audio are checked before the usual check.
@@ -412,16 +433,20 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
     approval (up to an hour) and comes back signed before the self-test and the checksums. The SignPath project uses
     [`.signpath/artifact-configuration.xml`](.signpath/artifact-configuration.xml). Without them the exe stays unsigned
     and SmartScreen warns on first start.
-- **Release a version:** in [`CHANGELOG.md`](CHANGELOG.md) rename `## [Unreleased]` to `## [1.1.0] - <date>`, start a
-  new empty `## [Unreleased]` above it, fix the links at the bottom and commit — the release notes are made from that
-  section, and a tag without one is not released. Then:
+- **Branches** follow git flow: `main` holds released versions only, `develop` the next one; work goes in
+  `feature/…` and `fix/…` branches from `develop` and back into it, urgent fixes in `hotfix/…` from `main`
+  (details in [`CLAUDE.md`](CLAUDE.md)).
+- **Release a version:** make `release/1.1.0` from `develop`; in [`CHANGELOG.md`](CHANGELOG.md) rename
+  `## [Unreleased]` to `## [1.1.0] - <date>`, start a new empty `## [Unreleased]` above it, fix the links at the bottom
+  and commit — the release notes are made from that section, and a tag without one is not released. Merge the branch
+  into `main` and `develop` (`--no-ff`), then tag `main` and push:
 
   ```bash
   git tag v1.1.0
   ```
 
   ```bash
-  git push origin v1.1.0
+  git push origin main develop v1.1.0
   ```
 
 **Command line**
@@ -435,7 +460,8 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
 | `--preview-settings <folder> [--lang en\|ru]` | the settings tabs and the Recording page with default settings, no folders needed. The Build workflow run by hand with **screenshots** commits `docs/screenshots/<lang>/settings.png` |
 | `--playtest <clip> <report>` | run the editor player muted and offscreen: seeks, a track change, closing |
 | `--keytest <clip> <report>` | press every editor key in an offscreen editor and check the result |
-| `--trimtest <clip> <folder> <report>` | save in every mode, with cuts and a mix rebuild, and check the files |
+| `--trimtest <clip> <folder> <report>` | save in every mode (even loudness, GIF and WebP too), with cuts and a mix rebuild, and check the files |
+| `--mergetest <clip> <clip> <folder> <report>` | join two clips with a fade and for Discord, and check the files |
 | `--probe [file]` | check that the OBS WebSocket answers (no password sent) |
 
 **Files**
@@ -447,6 +473,6 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
 | `src/AssemblyInfo.cs` | the version (set by the release from the tag) |
 | `settings.json`, `devices.json` | settings (password encrypted) and the device reference — next to the exe, not in git |
 | `ClipKeeper.log` | the log |
-| `covers\`, `favorites.json`, `clipcache.json`, `clipstats.json` | covers and banners (`custom\` — your own), favorites, clip cache, statistics history |
+| `covers\`, `favorites.json`, `reviewed.json`, `clipcache.json`, `clipstats.json` | covers and banners (`custom\` — your own), favorites, clips already gone through, clip cache, statistics history |
 
 </details>

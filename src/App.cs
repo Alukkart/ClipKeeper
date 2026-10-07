@@ -222,6 +222,7 @@ namespace DeviceGuard
             if (pressesWaiting == 0) pressedAt = DateTime.MinValue;
             if (!clip.Ok || Cfg.ClipToast) ClipCard.Pop(this, clip);
             if (clip.Ok && !confirmed) ClipSound();
+            if (main != null) main.SetupClipEvent(true, clip);   // the test clip of the first-run setup
         }
 
         // the OBS save key was pressed (SaveKey): the sound and a "Saving the clip…" card right away; the clip card replaces it
@@ -236,6 +237,7 @@ namespace DeviceGuard
             pressesWaiting++;
             ClipSound();
             if (Cfg.ClipToast) ClipCard.Saving(this);
+            if (main != null) main.SetupClipEvent(false, null);
             var wait = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
             wait.Tick += (s, e) =>
             {

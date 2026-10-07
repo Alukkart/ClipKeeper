@@ -26,7 +26,7 @@ namespace DeviceGuard
                 Directory.CreateDirectory(local);
                 if (!File.Exists(Path.Combine(local, "settings.json")))
                 {
-                    foreach (var name in new[] { "settings.json", "devices.json", "favorites.json", "clipstats.json", "clipcache.json" })
+                    foreach (var name in new[] { "settings.json", "devices.json", "favorites.json", "reviewed.json", "clipstats.json", "clipcache.json" })
                         if (File.Exists(Path.Combine(exeDir, name))) File.Copy(Path.Combine(exeDir, name), Path.Combine(local, name));
                     string covers = Path.Combine(exeDir, "covers");
                     if (Directory.Exists(covers))
@@ -103,6 +103,8 @@ namespace DeviceGuard
                 return RunWpf(() => Preview.Showcase(args.Length > 1 ? args[1] : Path.Combine(Dir, "preview", "showcase")));
             if (args.Length > 0 && args[0] == "--preview")
                 return RunWpf(() => Preview.Run(args.Length > 1 ? args[1] : Path.Combine(Dir, "preview")));
+            if (args.Length > 4 && args[0] == "--mergetest")
+                return SelfTest.MergeTest(new[] { args[1], args[2] }, args[3], args[4]);
             if (args.Length > 3 && args[0] == "--trimtest")
                 return SelfTest.TrimTest(args[1], args[2], args[3]);
             if (args.Length > 2 && args[0] == "--playtest")
@@ -619,6 +621,12 @@ namespace DeviceGuard
             }
             finally { try { File.Delete(obsIni); } catch { } }
 
+            MainWindow.TestFind(check);
+            ClipNames.Test(check);
+            MainWindow.TestTriage(check);
+            ObsFix.Test(check);
+            Trimmer.TestMerge(check);
+
             Windows(check);
 
             sb.AppendLine(fails == 0 ? "RESULT: ALL PASSED" : "RESULT: " + fails + " FAILED");
@@ -847,6 +855,32 @@ namespace DeviceGuard
             return 0;
         }
 
+        // --mergetest <clip1> <clip2> <folder> <report>: two clips joined with a fade (kept quality), then back to back for Discord
+        public static int MergeTest(string[] clips, string outDir, string report)
+        {
+            var sb = new StringBuilder();
+            Directory.CreateDirectory(outDir);
+            int fails = 0;
+            foreach (var m in new[]
+            {
+                new MergeJob { Clips = clips.ToList(), Fade = true, Mode = TrimMode.Precise, MixIndex = 3, OutputDir = outDir, Title = "Merge test fade" },
+                new MergeJob { Clips = clips.ToList(), Ranges = new List<double[]> { new[] { 10.0, 20.0 }, new[] { 5.0, 15.5 } }, Fade = true, Mode = TrimMode.Precise, MixIndex = 3,
+                               OutputDir = outDir, Title = "Merge test parts" },
+                new MergeJob { Clips = clips.ToList(), Fade = false, Mode = TrimMode.Share, Target = ShareTarget.Discord, MixIndex = 3, OutputDir = outDir, Title = "Merge test discord" },
+            })
+            {
+                sb.AppendLine("== merge, " + (m.Fade ? "fade" : "back to back") + ", " + m.Mode + (m.Mode == TrimMode.Share ? " " + m.Target : ""));
+                var sw = Stopwatch.StartNew();
+                bool ok = Trimmer.Merge(m, p => { }, st => sb.AppendLine("   [" + "…✓✗i"[st.State] + "] " + st.Text), CancellationToken.None);
+                sb.AppendLine("   result: " + (ok ? "VERIFIED" : "FAILED") + " in " + sw.Elapsed.TotalSeconds.ToString("0.0") + " s");
+                sb.AppendLine();
+                if (!ok) fails++;
+            }
+            sb.AppendLine(fails == 0 ? "RESULT: ALL PASSED" : "RESULT: " + fails + " FAILED");
+            File.WriteAllText(report, sb.ToString(), Encoding.UTF8);
+            return fails == 0 ? 0 : 1;
+        }
+
         public static int TrimTest(string src, string outDir, string report)
         {
             var sb = new StringBuilder();
@@ -860,6 +894,10 @@ namespace DeviceGuard
                 new TrimJob { Source = src, OutputDir = outDir, In = mid - 15, Out = mid + 15, Mode = TrimMode.Lossless },
                 new TrimJob { Source = src, OutputDir = outDir, In = mid - 5, Out = mid + 5, Mode = TrimMode.Precise },
                 new TrimJob { Source = src, OutputDir = outDir, In = mid - 10, Out = mid + 10, Mode = TrimMode.Share, Target = ShareTarget.Discord, ShareAudio = info.Audio.Count - 1 },
+                new TrimJob { Source = src, OutputDir = outDir, In = mid - 10, Out = mid + 10, Mode = TrimMode.Share, Target = ShareTarget.Discord, ShareAudio = info.Audio.Count - 1,
+                              Loudness = true, Title = "Loudness test" },
+                new TrimJob { Source = src, OutputDir = outDir, In = mid - 3, Out = mid + 3, Mode = TrimMode.Share, Target = ShareTarget.Gif, Title = "Gif test" },
+                new TrimJob { Source = src, OutputDir = outDir, In = mid - 3, Out = mid + 3, Mode = TrimMode.Share, Target = ShareTarget.Gif, GifFormat = "webp", Title = "Webp test" },
             };
             int fails = 0;
             foreach (var j in cases)

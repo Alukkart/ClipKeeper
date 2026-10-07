@@ -27,6 +27,9 @@ namespace DeviceGuard
             mw.Update(Fake(refs, 0));
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "1-record.png"));
             Render((FrameworkElement)mw.W.Content, 1078, 1700, Path.Combine(dir, "1-record-full.png"));
+            mw.PreviewReadiness();   // OBS lost its save key: the Recording page says so
+            mw.Update(Fake(refs, 0));
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "1-record-readiness.png"));
             mw.ShowPage(MainWindow.PageSettings);
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "2-settings.png"));
             foreach (var tab in mw.SettingsTabKeys)
@@ -36,10 +39,14 @@ namespace DeviceGuard
             }
             mw.ShowSettingsTab(MainWindow.TabGeneral);
             // the first-run setup, every step
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < mw.SetupStepCount; i++)
             {
                 mw.PreviewSetup(i);
                 Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "20-setup-" + (i + 1) + ".png"));
+                var tc = i == mw.SetupStepCount - 1 ? ClipScanner.Scan(@"D:\Sources\Hunt Showdown", 1).FirstOrDefault() : null;
+                if (tc == null) continue;
+                mw.PreviewTestClip(new ClipInfo { Path = tc.FullName, Game = "Hunt Showdown", Duration = 140, Tracks = 4, Bytes = tc.Length, Today = 3 });   // the test clip has come
+                Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "20-setup-" + (i + 1) + "-saved.png"));
             }
             mw.PreviewSetup(-1);
             // statistics over the real folders
@@ -88,6 +95,21 @@ namespace DeviceGuard
             }
             mw.PreviewClips(clipVms, clipsRoot, game);
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-clips.png"));
+            RenderAuto(mw.PreviewSortMenu(), Path.Combine(dir, "14-sort-menu.png"));
+            clipVms[0].EditText = L.T("Bridge duel", "Дуэль на мосту");   // renaming on the card
+            clipVms[0].Editing = true;
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-rename.png"));
+            clipVms[0].Editing = false;
+            mw.PreviewSelect(0, 1, 3);   // several clips selected, the bar at the bottom
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-select.png"));
+            mw.PreviewMerge(new List<ClipVm> { clipVms[3], clipVms[0], clipVms[1] }, 1);   // the second card shows its part   // the join card
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-merge.png"));
+            mw.PreviewMerge(null);
+            mw.PreviewSelect();
+            mw.PreviewFind("hunt", clipsRoot, Directory.Exists(cfg.TrimFolder) ? cfg.TrimFolder : null, cfg.CollectionFolder);
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-find.png"));
+            mw.PreviewTriage(clipVms.Select(v => v.Path).Take(8).ToList(), game);   // going through new clips
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-triage.png"));
 
             // source editor
             mw.ShowPage(MainWindow.PageRecord);
@@ -124,6 +146,10 @@ namespace DeviceGuard
                 Render((FrameworkElement)tw.W.Content, 1400, 900, Path.Combine(dir, "16-trim.png"));
                 tw.PreviewShare(true);
                 Render((FrameworkElement)tw.W.Content, 1400, 900, Path.Combine(dir, "16-trim-share.png"));
+                tw.PreviewShareTarget(false);   // even loudness on
+                Render((FrameworkElement)tw.W.Content, 1400, 900, Path.Combine(dir, "16-trim-loud.png"));
+                tw.PreviewShareTarget(true);    // the GIF target
+                Render((FrameworkElement)tw.W.Content, 1400, 900, Path.Combine(dir, "16-trim-gif.png"));
                 tw.PreviewShare(false);
                 tw.PreviewZoom(55, 80, 64.2);   // 5.6× zoom and the time label under the cursor
                 Render((FrameworkElement)tw.W.Content, 1400, 900, Path.Combine(dir, "16-trim-zoom.png"));

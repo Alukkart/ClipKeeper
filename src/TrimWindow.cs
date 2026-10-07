@@ -146,6 +146,7 @@ namespace DeviceGuard
             tgtNitro = F<ToggleButton>("TgtNitro");
             tgtTelegram = F<ToggleButton>("TgtTelegram");
             tgtCustom = F<ToggleButton>("TgtCustom");
+            tgtGif = F<ToggleButton>("TgtGif");
             var customMb = F<TextBox>("CustomMb");
             customMb.Text = cfg.ShareCustomMb.ToString();
             customMb.TextChanged += (s, e) =>
@@ -165,8 +166,9 @@ namespace DeviceGuard
             modeLossless.IsChecked = cfg.TrimMode != "precise" && cfg.TrimMode != "share";
             modePrecise.IsChecked = cfg.TrimMode == "precise";
             modeShare.IsChecked = cfg.TrimMode == "share";
-            tgtDiscord.IsChecked = cfg.TrimTarget != "nitro" && cfg.TrimTarget != "telegram" && cfg.TrimTarget != "custom";
+            tgtDiscord.IsChecked = cfg.TrimTarget != "nitro" && cfg.TrimTarget != "telegram" && cfg.TrimTarget != "custom" && cfg.TrimTarget != "gif";
             tgtCustom.IsChecked = cfg.TrimTarget == "custom";
+            tgtGif.IsChecked = cfg.TrimTarget == "gif";
             tgtNitro.IsChecked = cfg.TrimTarget == "nitro";
             tgtTelegram.IsChecked = cfg.TrimTarget == "telegram";
             // the toggles work as "one of"
@@ -176,12 +178,14 @@ namespace DeviceGuard
                 SaveCfg();
                 UpdateMode();
             });
-            Group(new[] { tgtDiscord, tgtNitro, tgtTelegram, tgtCustom }, () =>
+            Group(new[] { tgtDiscord, tgtNitro, tgtTelegram, tgtCustom, tgtGif }, () =>
             {
-                cfg.TrimTarget = Target == ShareTarget.Nitro ? "nitro" : Target == ShareTarget.Telegram ? "telegram" : Target == ShareTarget.Custom ? "custom" : "discord";
+                cfg.TrimTarget = Target == ShareTarget.Nitro ? "nitro" : Target == ShareTarget.Telegram ? "telegram" : Target == ShareTarget.Custom ? "custom"
+                               : Target == ShareTarget.Gif ? "gif" : "discord";
                 SaveCfg();
                 UpdateMode();
             });
+            InitShare();
             rebuildMix.Click += (s, e) => { rebuildTouched = true; AudioChanged(); };
 
             F<Button>("BtnMin").Click += (s, e) => W.WindowState = WindowState.Minimized;
@@ -312,7 +316,7 @@ namespace DeviceGuard
             {
                 if (busy || info == null) return;
                 foreach (var m in new[] { modeLossless, modePrecise, modeShare }) m.IsChecked = m == modeShare;
-                foreach (var t in new[] { tgtDiscord, tgtNitro, tgtTelegram, tgtCustom }) t.IsChecked = t == target;
+                foreach (var t in new[] { tgtDiscord, tgtNitro, tgtTelegram, tgtCustom, tgtGif }) t.IsChecked = t == target;
                 cfg.TrimMode = "share";
                 cfg.TrimTarget = Target == ShareTarget.Nitro ? "nitro" : Target == ShareTarget.Telegram ? "telegram" : "discord";
                 SaveCfg();

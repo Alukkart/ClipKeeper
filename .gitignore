@@ -2,6 +2,7 @@
 settings.json
 devices.json
 favorites.json
+reviewed.json
 
 # logs and caches the app creates itself
 *.log

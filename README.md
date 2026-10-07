@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/en/showcase.gif" width="860" alt="ClipKeeper in 15 seconds: a saved clip, the recording guard, the library, the trim editor, statistics">
+  <img src="docs/screenshots/en/showcase.gif" width="860" alt="ClipKeeper in 18 seconds: a saved clip, the recording guard, the library, the trim editor, statistics">
 </p>
 
 ---
@@ -43,16 +43,18 @@ Both halves work on their own — turn off the one you don't need in **Settings 
 | <img src="docs/screenshots/en/library.jpg" width="420"> | <img src="docs/screenshots/en/game.jpg" width="420"> |
 | **Trim editor** — cuts, per-track lanes | **Recording guard** — status, tiles, sources |
 | <img src="docs/screenshots/en/editor.jpg" width="420"> | <img src="docs/screenshots/en/recording.png" width="420"> |
-| **Statistics** | **First-run setup** |
-| <img src="docs/screenshots/en/stats.png" width="420"> | <img src="docs/screenshots/en/setup.png" width="420"> |
-| **Settings** — tabs by topic, search (Ctrl+F) | |
-| <img src="docs/screenshots/en/settings.png" width="420"> | |
+| **When something breaks** — what's wrong and a link to the fix | **Statistics** — the month recap and what becomes of clips |
+| <img src="docs/screenshots/en/recording-problem.png" width="420"> | <img src="docs/screenshots/en/stats.png" width="420"> |
+| **Settings** — sections in groups, search (Ctrl+F) | **First-run setup** |
+| <img src="docs/screenshots/en/settings.png" width="420"> | <img src="docs/screenshots/en/setup.png" width="420"> |
 
-<p align="center">
-  <img src="docs/screenshots/en/alarm.png" width="420" alt="Alarm over the game">
-  &nbsp;
-  <img src="docs/screenshots/en/tray.png" width="190" alt="Tray menu">
-</p>
+**Over the game** — the cards and the alarm don't take focus from the game, and none of these gets into the recording:
+
+| **"Clip saved"** — a frame, length, tracks; open, trim, copy | **Saved with a problem** — what's wrong and what to do |
+|:---:|:---:|
+| <img src="docs/screenshots/en/clip.png" width="400" alt="Clip saved card"> | <img src="docs/screenshots/en/clip-problem.png" width="400" alt="Clip saved with a problem"> |
+| **Alarm** — a sound until you press "Got it" | **Tray menu** — status and quick actions |
+| <img src="docs/screenshots/en/alarm.png" width="400" alt="Alarm over the game"> | <img src="docs/screenshots/en/tray.png" width="200" alt="Tray menu"> |
 
 ## Features at a glance
 
@@ -91,17 +93,17 @@ Some antivirus heuristics dislike what a clip tool has to do. Here is all of it,
 
 | What | Why | When |
 |---|---|---|
-| Reads whether one key is pressed (`GetAsyncKeyState`), the way OBS itself does | Confirms a clip at the press of the OBS "Save Replay" key | Only that key, read from your OBS profile; nothing is stored or sent. Off: Settings → Checks → "Clip saved" |
+| Reads whether one key is pressed (`GetAsyncKeyState`), the way OBS itself does | Confirms a clip at the press of the OBS "Save Replay" key | Only that key, read from your OBS profile; nothing is stored or sent. Off: Settings → Clip saved → "Confirm the press at once" |
 | Global hotkeys (`RegisterHotKey`) | Trim / favorite / copy the last clip from the game | Only if you set them; none by default |
 | Changes OBS files | Adds the "start ClipKeeper with OBS" script | Only if you turn it on; OBS closed; copies first |
 | Downloads and replaces its own exe | Updates | Only from this repository's releases, checked against `SHA256SUMS.txt`, on your click |
-| Starts and closes OBS | Restarting OBS after a crash, the restart button | Settings → OBS |
+| Starts and closes OBS | Restarting OBS after a crash, the restart button | Settings → OBS program |
 
 Every release is built by GitHub Actions from this repository (`.github/workflows/release.yml`) — nothing is added by hand.
 
 </details>
 
-**Update:** ClipKeeper checks GitHub once a day and says when a new version is out; **Settings → General → Update**
+**Update:** ClipKeeper checks GitHub once a day and says when a new version is out; **Settings → About → Update**
 downloads it, checks it against the release checksums, swaps the exe and restarts. By hand: close ClipKeeper in the tray
 and replace `ClipKeeper.exe` with the new one (it's attached to every release on its own). Settings, the device reference
 and covers stay either way.
@@ -110,19 +112,19 @@ and covers stay either way.
 <summary><b>Setting it up by hand</b> (if you skipped the setup)</summary>
 
 1. In OBS: Tools → WebSocket Server Settings — enable the server and set a password.
-2. In ClipKeeper: Settings → OBS — enter the password and press **Save and reconnect**.
+2. In ClipKeeper: Settings → Connection — enter the password and press **Save and reconnect**.
    The password is stored encrypted in `settings.json` (Windows DPAPI): only your Windows account can read it.
 3. Set up your audio and screen sources in OBS and press **Remember current devices**.
 4. Press **Test alarm**. The **Start with Windows** toggle turns on autostart.
 
-**OBS running but ClipKeeper not?** Turn on **Settings → OBS → Start ClipKeeper together with OBS**: however OBS is started
+**OBS running but ClipKeeper not?** Turn on **Settings → OBS program → Start ClipKeeper together with OBS**: however OBS is started
 (a shortcut, Steam, autostart), ClipKeeper starts too. It adds a small script to OBS — you see it in OBS → Tools → Scripts,
 with a description — and turning the setting off removes it. OBS files are changed only while OBS is closed (OBS writes
 them back on exit): if OBS is open, it is done the moment OBS closes, or press **Restart OBS now** right there. The scene
 collections are copied to `backups\` before the change. A ClipKeeper that already runs is left as it is.
 
 - ClipKeeper finds OBS by itself (registry or the standard install folder). If OBS lives elsewhere, choose `obs64.exe`
-  in Settings → OBS — it's needed to start OBS again after a crash.
+  in Settings → OBS program — it's needed to start OBS again after a crash.
 - The setup can be run again from Settings → General.
 
 </details>
@@ -145,11 +147,12 @@ collections are copied to `backups\` before the change. A ClipKeeper that alread
 | **Other** | Graphics driver failures (Windows event log), low disk space for clips, a daily OBS settings backup to `backups\` (the last 7 kept). |
 
 **Alarm:** a blinking red window over the game (doesn't steal focus), a sound every 15 s until you press **Got it**,
-and a Windows notification. When things are fixed, a green window shows for 7 seconds. Volume and sound file are in
-Settings → Alarm; the sound goes through the default Windows output device (for a virtual device such as SteelSeries
+and a Windows notification. When things are fixed, a green window shows for 7 seconds. Sound and volume are in
+Settings → Alarm: four built-in sounds or your own — any audio file (WAV, MP3, OGG, M4A…, the first 10 s; other than WAV
+needs ffmpeg, which comes in the zip). The sound goes through the default Windows output device (for a virtual device such as SteelSeries
 Sonar the alarm volume also depends on its channel there).
 
-**Recording only, no replay buffer?** Turn off "I record with the replay buffer" in Settings → OBS:
+**Recording only, no replay buffer?** Turn off "I record with the replay buffer" in Settings → Replay buffer:
 buffer checks stop and OBS is started without it.
 
 The monitor list comes from Windows, not from OBS: asking OBS for it blanks screen capture for 1–2 frames, so OBS
@@ -163,7 +166,7 @@ is asked only when a monitor really changed.
 <details>
 <summary><b>🗂 Sorting by game</b> — clips go into game folders, no OBS script needed</summary>
 
-Turn on **Settings → Sorting → Sort clips by game**. Every replay (and, if you want, recordings and screenshots)
+Turn on **Settings → Sorting by game → Sort clips by game**. Every replay (and, if you want, recordings and screenshots)
 moves from the OBS folder into the game's folder the moment it's saved: `Hunt Showdown\2026-10\Hunt Showdown - Replay ….mp4`.
 
 - **The game** is the window in front when you save. If it's Discord, a browser or the desktop, the last game you played
@@ -172,7 +175,7 @@ moves from the OBS folder into the game's folder the moment it's saved: `Hunt Sh
 - **The name** comes from the store (Steam, Epic, GOG), then from the exe's properties, then from the exe name made
   readable. A folder that already exists for the game is used as is
   (`HuntGame - Replay …` files in `Hunt Showdown` mean HuntGame goes there).
-- **Settings → Sorting**: the folder template (`{game}` `{type}` `{year}` `{month}` `{day}` `{date}`
+- **Settings → Sorting by game**: the folder template (`{game}` `{type}` `{year}` `{month}` `{day}` `{date}`
   `{yearmonth}`), the game name in front of the file name, the folder for "no game", and your own names:
   `HuntGame > Hunt`, `+call duty > Call of Duty` (all words), `*minecraft* > Minecraft` (anywhere in the
   exe name or window title). **Check** shows which game is detected right now.
@@ -191,19 +194,20 @@ Clips come from three folders, following a clip's path:
 
 | Folder | What's in it |
 |---|---|
-| **Sources** | OBS recordings, including game folders made by sorting. Subfolders count as games; if you sort clips another way (by date…), turn that off in Settings → Library and the game is taken from the file name. |
+| **Sources** | OBS recordings, including game folders made by sorting. Subfolders count as games; if you sort clips another way (by date…), turn that off in Settings → Games and covers and the game is taken from the file name. |
 | **Ready** | Trims waiting for a video — the folder the editor saves to. |
-| **Collection** | Clips that made it into a video. Optional — Settings → Library. |
+| **Collection** | Clips that made it into a video. Optional — Settings → Folders. |
 
 - Ready and Collection are chosen with the **+** button; right click it to change the folder.
 - Each folder opens with cards: Favorites, All clips and games — cover, clip count, total length and size.
+  Favorites and All clips show frames of their latest clips fanned out over a blurred copy of the newest one.
   With a single group (e.g. ready clips without game data) the clips are shown right away.
 - **Covers** come from Steam, or from Wikipedia for non-Steam games (only an article about the game itself), and are
-  kept in `covers\`. Hover a card to set your own cover. Turn online covers off in Settings → Library — then only your
+  kept in `covers\`. Hover a card to set your own cover. Turn online covers off in Settings → Games and covers — then only your
   own pictures and clip frames are used.
 - Inside a game: a banner on top (Steam art, or a blurred frame of the latest clip; can be replaced too).
   Back — the arrow, Backspace or the mouse back button.
-- **Cleanup of old clips** (Settings → Library, off by default) moves source clips older than N days to the Recycle Bin.
+- **Cleanup of old clips** (Settings → Cleanup, off by default) moves source clips older than N days to the Recycle Bin.
   **Check** shows how many and the full list first; **To the Recycle Bin** needs a second press. It never touches favorites,
   trims, sources you have already trimmed (a setting), the Ready and Collection folders, or anything copied into the folder
   less than N days ago. Only local disks; if Windows would delete a file for good instead of recycling it, it asks. Without
@@ -217,12 +221,14 @@ Clips come from three folders, following a clip's path:
 - **"Clip saved"** is a card in the top right corner: a frame of the clip, the game, length / tracks / size, how many clips
   are in that folder today and where it went, with **Open**, **Trim**, **Copy** (then Ctrl+V into Discord) and **Folder**.
   It stays while the mouse is over it and never takes focus from the game. A short sound of its own (not the alarm one)
-  plays with it — or alone, if the card is off; the file and volume are set in **Settings → Checks → "Clip saved"**,
-  like the alarm sound.
+  plays with it — or alone, if the card is off: four built-in ones (Marimba, Glass, Shutter, Drop) or your own file, and
+  its volume, in **Settings → Clip saved**. A clip with a problem gets an orange card that is always shown, and the alarm
+  sound.
 - **The press is confirmed at once.** OBS reports a clip only once the file is written (a second or more for a big
   buffer), so ClipKeeper also watches the OBS "Save Replay" key — read from the current OBS profile, polled like OBS does
   it, nothing taken from OBS: the sound and a "Saving the clip…" card come right at the press, the clip card replaces it
-  when the file is ready. If OBS reports nothing in 30 s, the card says so. Can be turned off in the same place.
+  when the file is ready. If OBS reports nothing in 30 s, the card says so. Can be turned off in the same place
+  ("Confirm the press at once").
 
 </details>
 
@@ -264,7 +270,7 @@ Ctrl+Z undoes the last cut, Esc drops an unfinished one. Cut parts are skipped w
 - **Every saved file is checked:** length, video readable start to end, track count and audio in each track
   (compared with the same range of the source).
 - **Video encoder:** NVIDIA NVENC, AMD AMF or Intel Quick Sync is found automatically, or chosen in
-  Settings → Editor; without one the CPU does the work.
+  Settings → Video encoder; without one the CPU does the work.
 - Trims go to Ready, or next to the source if no folder is chosen. **Delete the source** appears only after a
   successful check and moves the file to the Recycle Bin.
 - **Smooth preview:** heavy video (HEVC, high bitrate) lags in the player, so a light 720p copy is made in the
@@ -293,10 +299,10 @@ Ctrl+Z undoes the last cut, Esc drops an unfinished one. Cut parts are skipped w
 | Ctrl + Z / Ctrl + Shift + Z | undo / redo | Ctrl + S | save |
 | ? or F1 | key map | Ctrl + wheel | zoom at the cursor |
 
-Change any key in **Settings → Editor**: click a key in the list and press a new one; a key that is already
+Change any key in **Settings → Editor keys**: click a key in the list and press a new one; a key that is already
 taken swaps with it. Ctrl + Z / S, Ctrl + ← / → (previous / next clip), Esc and ? stay fixed. The map opens in the editor with `?`, F1 or the keyboard icon.
 
-**Hotkeys in game** (Settings → Library) work while the game is in front: trim the last clip, put it in favorites, copy it
+**Hotkeys in game** (Settings → Hotkeys in game) work while the game is in front: trim the last clip, put it in favorites, copy it
 for Discord, show its card again. None is set by default; a combination needs Ctrl, Alt, Shift or Win, and one that another
 program holds is reported instead of taken.
 
@@ -305,6 +311,8 @@ program holds is reported instead of taken.
 <details>
 <summary><b>📈 Statistics</b> — what becomes of your clips</summary>
 
+- **Month recap** on top: clips and hours, the game of the month with its cover, the best day, how many were trimmed,
+  the change from the month before. ‹ › go through months; **Copy picture** (then Ctrl+V into Discord) or **Save PNG**.
 - Tiles: clips recorded (hours, GB), trimmed, kept untrimmed (and the space they take), deleted.
 - Charts: **Clips by month**, **By game** (trimmed / kept / deleted) and **Ready clips by month**; exact numbers on hover.
 - *Trimmed* — a trim was made from the clip in ClipKeeper (trims from Premiere don't remember their source).
@@ -325,22 +333,32 @@ program holds is reported instead of taken.
 a problem; a dot next to Recording shows it (red — problem, yellow — attention).
 
 **Recording page:** the overall status and tiles (OBS fps and dropped frames, buffer, audio, screen, disk, last clip);
-below — the sources (the device reference): **Edit** changes device, tracks, volume and mute right in OBS and
+below — the sources (the device reference), folded to one line while all is fine and opened by itself on a problem: **Edit** changes device, tracks, volume and mute right in OBS and
 remembers them, so ClipKeeper won't roll them back; at the bottom — the log and actions. A problem has a link to what fixes it
 (its source card or the setting), and the OBS, buffer and disk tiles open their settings.
 
-**Settings** — tabs by topic and a search over every setting (Ctrl+F); changes apply right away (Save is only for the connection).
-Tabs of a turned-off feature disappear:
+**Settings:** on the settings page the sidebar turns into the list of its sections in six groups, with a search over
+every setting on top (Ctrl+F); the arrow at the top or Esc goes back to the page you came from. Each section opens with
+a banner saying what it is for. Changes apply right away (Save is only for the connection). Sections of a turned-off
+feature disappear:
 
-| Tab | What's there |
-|---|---|
-| General | Language · Язык, hide windows from capture, start with Windows; features (recording guard, library and editor), run the setup again; version, updates and log |
-| OBS | Connection status; WebSocket address, port, password; OBS program path, start ClipKeeper together with OBS, crash restart, OBS backup; replay buffer or regular recording and buffer options |
-| Checks | Audio, picture, monitors, mixer, dropped frames, driver failures; clip checks, disk space; "Clip saved" card and its sound (file, volume) |
-| Alarm | Wait before the alarm, "tell me when fixed"; window, sound, volume, sound file, repeat; test alarm |
-| Sorting | Sort clips by game; a warning about another sorting script; folder template, game name in the file name, folder when there is no game; replays, recordings, screenshots; your game names, "which game is it now" |
-| Library | Sources, Ready, Collection; hotkeys in game; "subfolders are games", online covers; cleanup of old clips |
-| Editor | Video encoder; the key map, every key can be changed |
+| Group | Section | What's there |
+|---|---|---|
+| Basics | General | Language · Язык, hide windows from capture, start with Windows; features (recording guard, library and editor), run the setup again |
+| | About | Version and updates, the log, report a problem, check for updates |
+| OBS | Connection | Connection status; WebSocket address, port, password |
+| | OBS program | Where OBS is installed, start ClipKeeper together with OBS, restart after a crash, daily OBS settings backup |
+| | Replay buffer | Replay buffer or regular recording; the buffer must always run, restart it after an error |
+| Monitoring | Checks | Audio, picture, monitors, mixer, dropped frames, driver failures; clip checks, disk space |
+| | Alarm | Wait before the alarm, "tell me when fixed"; window, sound (built-in or your own), volume, repeat; test alarm |
+| Clips | Clip saved | The card, its sound (built-in or your own) and volume, confirming the press at once |
+| | Hotkeys in game | Trim, favorite, copy the last clip; show its card again |
+| | Sorting by game | Sort clips by game; a warning about another sorting script; folder template, game name in the file name, folder when there is no game; replays, recordings, screenshots; your game names, "which game is it now" |
+| Library | Folders | Sources, Ready, Collection |
+| | Games and covers | "Subfolders are games", covers from the internet |
+| | Cleanup | Cleanup of old clips: how long to keep, check, to the Recycle Bin, once a day |
+| Editor | Video encoder | NVENC / AMF / Quick Sync or the CPU |
+| | Editor keys | The key map, every key can be changed |
 
 </details>
 
@@ -356,8 +374,8 @@ It connects to:
 | Where | What for | Turn off |
 |---|---|---|
 | OBS WebSocket (your own computer by default) | Everything about recording | — |
-| Steam, Wikipedia | Game covers and banners: the game name is searched | Settings → Library → Covers from the internet |
-| GitHub | Once a day: is there a new version | Settings → General → Check for updates |
+| Steam, Wikipedia | Game covers and banners: the game name is searched | Settings → Games and covers → Covers from the internet |
+| GitHub | Once a day: is there a new version | Settings → About → Check for updates |
 
 **Report a problem** only opens a GitHub form in your browser — you see everything before posting. The log has folder,
 game and device names: look it over before attaching it.
@@ -379,6 +397,10 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
 - **Build:** `build.cmd` — the C# compiler that ships with Windows (.NET Framework 4.8), nothing to install.
   `build.cmd ClipKeeper.test.exe` builds under another name without touching the working exe.
   A local build calls itself `0.0.0-dev`; the interface is WPF, also part of Windows.
+- **The GIF at the top:** `showcase.cmd` builds the test exe and renders `docs/screenshots/<lang>/showcase.gif` in both
+  languages from the current interface (about 20 s). It shows real things, like `--preview`: clips from `D:\Sources`,
+  covers, your settings — so it runs locally, not in Actions. The slides stay in `preview\showcase-<lang>\`;
+  the screens and captions are in `src/PreviewShowcase.cs`.
 - **ffmpeg** for running locally: `ffmpeg.exe` and `ffprobe.exe` from a [BtbN build](https://github.com/BtbN/FFmpeg-Builds/releases)
   (`ffmpeg-master-latest-win64-gpl.zip`, the `bin` folder) go into `ffmpeg\` next to the exe. They're not in git.
 - **GitHub Actions** (`.github/workflows/`):
@@ -407,6 +429,7 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
 | `ClipKeeper.exe --tray` | start minimized to the tray (used by autostart) |
 | `--selftest [file]` | self-test without OBS: the logic, and every window built off screen with default settings |
 | `--preview <folder> [--lang en\|ru]` | render every screen to PNG (design checks, these screenshots) |
+| `--showcase <folder> [--lang en\|ru]` | the README GIF: slides with captions and `showcase.gif` (`showcase.cmd` runs it for both languages) |
 | `--preview-settings <folder> [--lang en\|ru]` | the settings tabs and the Recording page with default settings, no folders needed. The Build workflow run by hand with **screenshots** commits `docs/screenshots/<lang>/settings.png` |
 | `--playtest <clip> <report>` | run the editor player muted and offscreen: seeks, a track change, closing |
 | `--keytest <clip> <report>` | press every editor key in an offscreen editor and check the result |

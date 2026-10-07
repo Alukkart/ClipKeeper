@@ -92,6 +92,7 @@ namespace DeviceGuard
             }
             mw.PreviewClips(clipVms, clipsRoot, game);
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-clips.png"));
+            RenderAuto(mw.PreviewSortMenu(), Path.Combine(dir, "14-sort-menu.png"));
             clipVms[0].EditText = L.T("Bridge duel", "Дуэль на мосту");   // renaming on the card
             clipVms[0].Editing = true;
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-rename.png"));

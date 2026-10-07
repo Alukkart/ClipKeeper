@@ -215,11 +215,13 @@
     </Style>
     <Style x:Key="DarkItem" TargetType="MenuItem">
         <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <!-- wide enough for a list of folders; a short menu (the order of clips) sets its own -->
+        <Setter Property="MinWidth" Value="220"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="MenuItem">
-                    <Border x:Name="bd" Background="Transparent" CornerRadius="5" Padding="10,6" MinWidth="220">
+                    <Border x:Name="bd" Background="Transparent" CornerRadius="5" Padding="10,6" MinWidth="{TemplateBinding MinWidth}">
                         <ContentPresenter ContentSource="Header" RecognizesAccessKey="False"/>
                     </Border>
                     <ControlTemplate.Triggers>

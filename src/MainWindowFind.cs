@@ -208,16 +208,26 @@ namespace DeviceGuard
 
         void SortMenu(Button anchor)
         {
-            var names = (string[])anchor.Tag;
+            var menu = BuildSortMenu((string[])anchor.Tag);
+            menu.PlacementTarget = anchor;
+            menu.Placement = PlacementMode.Bottom;
+            menu.IsOpen = true;
+        }
+
+        // for previews: the order menu as it opens
+        public ContextMenu PreviewSortMenu() { return BuildSortMenu((string[])F<Button>("BtnClipsSort").Tag); }
+
+        ContextMenu BuildSortMenu(string[] names)
+        {
             var menu = DarkMenu();
             for (int i = 0; i < names.Length; i++)
             {
                 int k = i;
-                menu.Items.Add(Item((k == clipsSort ? "✓  " : "     ") + names[k], () => { clipsSort = k; clipsLimit = 30; BuildFilters(); LoadClips(true); }));
+                var mi = Item((k == clipsSort ? "✓  " : "     ") + names[k], () => { clipsSort = k; clipsLimit = 30; BuildFilters(); LoadClips(true); });
+                mi.MinWidth = 0;   // as wide as its words, not as the menus of folders
+                menu.Items.Add(mi);
             }
-            menu.PlacementTarget = anchor;
-            menu.Placement = PlacementMode.Bottom;
-            menu.IsOpen = true;
+            return menu;
         }
 
         // a typed search: from the library's home it looks through every folder, inside a view it narrows the view

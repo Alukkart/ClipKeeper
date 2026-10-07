@@ -6,12 +6,16 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Shell;
 using Ellipse = System.Windows.Shapes.Ellipse;
+using SPath = System.Windows.Shapes.Path;
 
 namespace DeviceGuard
 {
-    // The first-run setup: a card over the main window that walks through language and features, the OBS link,
-    // devices and folders. It shows until finished or skipped (settings.json: SetupDone) and can be run again
+    // The first-run setup: it takes the whole window (the pages are hidden behind it) and walks through language and
+    // features, the OBS link, devices and folders, with the steps listed on the left. It shows until finished or skipped (settings.json: SetupDone) and can be run again
     // from Settings → Features.
     partial class MainWindow
     {
@@ -25,7 +29,9 @@ namespace DeviceGuard
         public void ShowSetup()
         {
             if (setup != null) return;
-            setup = new Grid { Background = Wpf.Br("#E60B0C0E"), Margin = new Thickness(0, 44, 0, 0) };
+            setup = new Grid { Background = Wpf.Res<Brush>("Bg") };
+            setup.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(228) });
+            setup.ColumnDefinitions.Add(new ColumnDefinition());
             Grid.SetColumnSpan(setup, 2);
             Panel.SetZIndex(setup, 50);
             F<Grid>("Root").Children.Add(setup);
@@ -73,44 +79,82 @@ namespace DeviceGuard
             setupClip = null;
             StopKeyGrab();
             setup.Children.Clear();
-
-            var card = new Border
-            {
-                Style = S("CardBorder"), Width = 640, Padding = new Thickness(34, 28, 34, 24),
-                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(24, 56, 24, 24),
-            };
-            var dock = new DockPanel();
-
-            // progress: one dot per step
-            var dots = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 18) };
-            for (int i = 0; i < setupSteps.Count; i++)
-                dots.Children.Add(new Border
-                {
-                    Width = i == setupStep ? 22 : 8, Height = 8, CornerRadius = new CornerRadius(4), Margin = new Thickness(0, 0, 6, 0),
-                    Background = i <= setupStep ? Wpf.Res<Brush>("Brand") : Wpf.Res<Brush>("Line"),
-                });
-            DockPanel.SetDock(dots, Dock.Top);
-            dock.Children.Add(dots);
-
-            // buttons: skip on the left, back / next on the right
-            var nav = new Grid { Margin = new Thickness(0, 24, 0, 0) };
-            nav.ColumnDefinitions.Add(new ColumnDefinition());
-            nav.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             bool lastStep = setupStep == setupSteps.Count - 1;
+
+            // ── the left column: the steps instead of the pages, as the settings do with their sections ──
+            var side = new DockPanel();
+            var logo = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(22, 20, 0, 18) };
+            var mark = new Grid { Width = 40, Height = 40 };
+            mark.Children.Add(new SPath { Data = Geometry.Parse("M20,2.5 L35,8.5 V19.5 C35,29 28.5,35 20,38 C11.5,35 5,29 5,19.5 V8.5 Z"), Fill = Wpf.Res<Brush>("Brand") });
+            mark.Children.Add(new SPath { Data = Geometry.Parse("M16.5,13.2 L27.2,19.8 L16.5,26.4 Z"), Fill = Wpf.Res<Brush>("OnBrand"), Stroke = Wpf.Res<Brush>("OnBrand"),
+                                          StrokeThickness = 1.6, StrokeLineJoin = PenLineJoin.Round });
+            logo.Children.Add(new Viewbox { Width = 26, Height = 26, Child = mark });
+            logo.Children.Add(new TextBlock { Text = "ClipKeeper", FontFamily = Wpf.Res<FontFamily>("DisplayFont"), FontSize = 15.5, FontWeight = FontWeights.SemiBold,
+                                              Margin = new Thickness(11, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
+            DockPanel.SetDock(logo, Dock.Top);
+            side.Children.Add(logo);
+            var caption = new TextBlock { Text = L.T("FIRST SETUP", "ПЕРВАЯ НАСТРОЙКА"), Style = S("Caption"), Margin = new Thickness(24, 0, 0, 8) };
+            DockPanel.SetDock(caption, Dock.Top);
+            side.Children.Add(caption);
             if (!lastStep)
             {
-                var skip = new Button { Style = S("BtnLink"), Content = L.T("Skip setup", "Пропустить настройку"), HorizontalAlignment = HorizontalAlignment.Left };
+                var skip = new Button { Style = S("BtnLink"), Content = L.T("Skip setup", "Пропустить настройку"), HorizontalAlignment = HorizontalAlignment.Left,
+                                        Margin = new Thickness(14, 0, 0, 16) };
                 skip.Click += (s, e) => CloseSetup(false);
-                nav.Children.Add(skip);
+                DockPanel.SetDock(skip, Dock.Bottom);
+                side.Children.Add(skip);
             }
-            var right = new StackPanel { Orientation = Orientation.Horizontal };
-            Grid.SetColumn(right, 1);
+            // passed steps have a check and open again with a click; the ones ahead are only listed
+            var list = new StackPanel();
+            for (int i = 0; i < setupSteps.Count; i++)
+            {
+                int k = i;
+                bool done = i < setupStep, ahead = i > setupStep;
+                var row = new StackPanel { Orientation = Orientation.Horizontal };
+                row.Children.Add(done ? new TextBlock { Style = S("Icon"), Text = "", FontSize = 13, Width = 28, Foreground = Wpf.Res<Brush>("Ok"), VerticalAlignment = VerticalAlignment.Center }
+                                      : new TextBlock { Text = (i + 1).ToString(), FontSize = 12.5, Width = 28, VerticalAlignment = VerticalAlignment.Center });
+                row.Children.Add(new TextBlock { Text = StepName(setupSteps[i]) });
+                var item = new RadioButton { Style = S("Nav"), GroupName = "setup", IsChecked = i == setupStep, Content = row };
+                if (ahead) { item.Foreground = Wpf.Res<Brush>("Muted"); item.IsHitTestVisible = false; }
+                item.Checked += (s, e) => W.Dispatcher.BeginInvoke(new Action(() => { if (setup == null) return; setupStep = k; ShowSetupStep(); }));
+                list.Children.Add(item);
+            }
+            side.Children.Add(list);
+            setup.Children.Add(new Border { Background = Wpf.Res<Brush>("Side"), BorderBrush = Wpf.Res<Brush>("Line"), BorderThickness = new Thickness(0, 0, 1, 0), Child = side });
+
+            // ── the step: the window buttons, the step itself, back / next at the bottom ──
+            var main = new Grid();
+            main.RowDefinitions.Add(new RowDefinition { Height = new GridLength(40) });
+            main.RowDefinitions.Add(new RowDefinition());
+            main.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetColumn(main, 1);
+
+            // the window's own buttons are under the setup: these stand in for them
+            var chrome = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top };
+            WindowChrome.SetIsHitTestVisibleInChrome(chrome, true);
+            foreach (var name in new[] { "BtnMin", "BtnMax", "BtnClose" })
+            {
+                var real = F<Button>(name);
+                var b = new Button { Style = S(name == "BtnClose" ? "ChromeClose" : "ChromeBtn") };
+                b.SetBinding(ContentControl.ContentProperty, new Binding("Content") { Source = real });
+                b.Click += (s, e) => real.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                chrome.Children.Add(b);
+            }
+            main.Children.Add(chrome);
+
+            var body = new StackPanel { MaxWidth = 600, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(48, 8, 48, 28) };
+            setupSteps[setupStep](body);
+            var scroll = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+            Grid.SetRow(scroll, 1);
+            main.Children.Add(scroll);
+
+            var nav = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
             if (setupStep > 0)
             {
                 var back = Btn(null, L.T("Back", "Назад"), "BtnGhost");
                 back.Margin = new Thickness(0, 0, 8, 0);
                 back.Click += (s, e) => { setupStep--; ShowSetupStep(); };
-                right.Children.Add(back);
+                nav.Children.Add(back);
             }
             var next = Btn(null, lastStep ? L.T("Finish", "Готово") : L.T("Next", "Далее"), "BtnPrimary");
             next.MinWidth = 110;
@@ -120,17 +164,27 @@ namespace DeviceGuard
                 setupStep++;
                 ShowSetupStep();
             };
-            right.Children.Add(next);
-            nav.Children.Add(right);
-            DockPanel.SetDock(nav, Dock.Bottom);
-            dock.Children.Add(nav);
-
-            var body = new StackPanel();
-            setupSteps[setupStep](body);
-            dock.Children.Add(new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 560 });
-            card.Child = dock;
-            setup.Children.Add(card);
+            nav.Children.Add(next);
+            var bar = new Border { BorderBrush = Wpf.Res<Brush>("Line"), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(48, 14, 28, 16), Child = nav };
+            Grid.SetRow(bar, 2);
+            main.Children.Add(bar);
+            setup.Children.Add(main);
             if (last != null && setupLive != null) setupLive(last);
+        }
+
+        // the step's name in the list on the left
+        static string StepName(Action<StackPanel> step)
+        {
+            switch (step.Method.Name)
+            {
+                case "StepWelcome": return L.T("Features", "Возможности");
+                case "StepObs": return L.T("Connect to OBS", "Подключение к OBS");
+                case "StepCheck": return L.T("Check OBS", "Проверка OBS");
+                case "StepDevices": return L.T("Devices", "Устройства");
+                case "StepFolders": return L.T("Folders", "Папки");
+                case "StepTestClip": return L.T("Test clip", "Тестовый клип");
+                default: return L.T("Done", "Готово");
+            }
         }
 
         // called from Update once a second

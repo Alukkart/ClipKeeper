@@ -193,7 +193,7 @@ namespace DeviceGuard
                     AudioStallCheck = true, ScreenCheck = true, ClipCheck = true, ClipToast = true,
                     GuardMixer = true, DriverWatch = true, Backup = true, PerfCheck = true, HideFromCapture = true;
         public int MinFreeGB = 10, ScreenIntervalSec = 15;
-        public string SoundFile = @"C:\Windows\Media\Alarm01.wav", ObsPath = "", TrimFolder = "", CollectionFolder = "",
+        public string SoundFile = Alarm.DefaultAlarm, ObsPath = "", TrimFolder = "", CollectionFolder = "",
                       MainBounds = "", TrimBounds = "",                // window size and position: "x;y;w;h;max"
                       TrimMode = "lossless", TrimTarget = "discord",   // editor: last mode and share target
                       Language = L.Auto;                               // interface: auto (Windows language), en, ru
@@ -213,7 +213,7 @@ namespace DeviceGuard
         // "Clip saved" sound: its own file and volume, set like the alarm one
         public bool ClipSound = true, ClipInstant = true;   // ClipInstant: confirm the OBS save key press at once (SaveKey)
         public int ClipSoundVolume = 30;
-        public string ClipSoundFile = @"C:\Windows\Media\Windows Notify System Generic.wav";
+        public string ClipSoundFile = Alarm.DefaultClip;   // the sound settings hold "builtin:<id>" (Alarm) or a WAV path
         // global hotkeys for the last clip ("Ctrl+Alt+F9"; empty — none): editor, favorite, copy, show the card again
         public string HotkeyTrim = "", HotkeyFav = "", HotkeyCopy = "", HotkeyCard = "";
         // cleanup of old source clips (Cleanup): off by default
@@ -260,7 +260,7 @@ namespace DeviceGuard
                 s.HideFromCapture = Json.GetBool(d, "HideFromCapture", s.HideFromCapture);
                 s.MinFreeGB = Json.GetInt(d, "MinFreeGB", s.MinFreeGB);
                 s.ScreenIntervalSec = Json.GetInt(d, "ScreenIntervalSec", s.ScreenIntervalSec);
-                s.SoundFile = Json.GetStr(d, "SoundFile") ?? s.SoundFile;
+                s.SoundFile = OwnSound(Json.GetStr(d, "SoundFile"), @"C:\Windows\Media\Alarm01.wav", s.SoundFile);
                 s.ObsPath = Json.GetStr(d, "ObsPath") ?? "";
                 s.TrimFolder = Json.GetStr(d, "TrimFolder") ?? "";
                 s.CollectionFolder = Json.GetStr(d, "CollectionFolder") ?? "";
@@ -293,7 +293,7 @@ namespace DeviceGuard
                 s.ClipSound = Json.GetBool(d, "ClipSound", s.ClipSound);
                 s.ClipInstant = Json.GetBool(d, "ClipInstant", s.ClipInstant);
                 s.ClipSoundVolume = Json.GetInt(d, "ClipSoundVolume", s.ClipSoundVolume);
-                s.ClipSoundFile = Json.GetStr(d, "ClipSoundFile") ?? s.ClipSoundFile;
+                s.ClipSoundFile = OwnSound(Json.GetStr(d, "ClipSoundFile"), @"C:\Windows\Media\Windows Notify System Generic.wav", s.ClipSoundFile);
                 s.HotkeyTrim = Json.GetStr(d, "HotkeyTrim") ?? "";
                 s.HotkeyFav = Json.GetStr(d, "HotkeyFav") ?? "";
                 s.HotkeyCopy = Json.GetStr(d, "HotkeyCopy") ?? "";
@@ -307,6 +307,12 @@ namespace DeviceGuard
             }
             catch (Exception ex) { Log.Write("settings.json could not be read: " + ex.Message); }
             return s;
+        }
+
+        // the Windows sound that was the default before the built-in ones (or nothing) → the new default; a sound the user chose stays
+        static string OwnSound(string saved, string oldDefault, string def)
+        {
+            return string.IsNullOrEmpty(saved) || string.Equals(saved, oldDefault, StringComparison.OrdinalIgnoreCase) ? def : saved;
         }
 
         public void Save()

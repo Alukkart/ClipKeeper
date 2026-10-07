@@ -292,6 +292,42 @@ namespace DeviceGuard
                       "clip sound: no file → built-in chime, volume 0% → silence");
             }
 
+            // built-in sounds: each renders, the volume scales it, an unknown one falls back to the default
+            {
+                Func<string, int, bool, byte[]> bytes = (f, v, chime) =>
+                {
+                    var p = Alarm.Create(f, v, chime);
+                    var ms = new MemoryStream();
+                    p.Stream.Position = 0;
+                    p.Stream.CopyTo(ms);
+                    return ms.ToArray();
+                };
+                Func<byte[], int> peak = w =>
+                {
+                    int p = 0;
+                    for (int i = 44; i + 1 < w.Length; i += 2) p = Math.Max(p, Math.Abs((int)(short)(w[i] | w[i + 1] << 8)));
+                    return p;
+                };
+                foreach (var id in Alarm.ClipSounds.Concat(Alarm.AlarmSounds))
+                {
+                    bool chime = Alarm.ClipSounds.Contains(id);
+                    var full = bytes(Alarm.Builtin + id, 100, chime);
+                    double sec = (full.Length - 44) / 88200.0, top = peak(full) / 32767.0;
+                    check(sec > 0.3 && sec < 2 && top > 0.7 && top < 0.9, "built-in sound " + id + ": " + sec.ToString("0.00") + " s, peak " + top.ToString("0.00"));
+                }
+                double half = (double)peak(bytes(Alarm.DefaultAlarm, 50, false)) / peak(bytes(Alarm.DefaultAlarm, 100, false));
+                check(Math.Abs(half - 0.25) < 0.01, "built-in sound at 50% → peak ×" + half.ToString("0.000") + " (expected 0.250)");
+                check(bytes(Alarm.Builtin + "nope", 100, true).SequenceEqual(bytes(Alarm.DefaultClip, 100, true)) &&
+                      bytes(Alarm.Builtin + "marimba", 100, false).SequenceEqual(bytes(Alarm.DefaultAlarm, 100, false)),
+                      "unknown or the other kind's built-in sound → the default one");
+
+                string tmp = Path.Combine(Path.GetTempPath(), "ck-sound-settings.json");
+                File.WriteAllText(tmp, "{\"SoundFile\": \"C:\\\\Windows\\\\Media\\\\Alarm01.wav\", \"ClipSoundFile\": \"D:\\\\my.wav\"}");
+                var st = Settings.Load(tmp);
+                File.Delete(tmp);
+                check(st.SoundFile == Alarm.DefaultAlarm && st.ClipSoundFile == @"D:\my.wav", "settings: the old Windows default → built-in, an own file stays");
+            }
+
             // monitors from Windows in the OBS format
             {
                 var ids = Monitors.ActiveIds();

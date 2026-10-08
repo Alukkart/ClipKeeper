@@ -664,8 +664,9 @@ namespace DeviceGuard
             if (cfg.GuardEnabled)
             {
                 Add(Row("\uE777", L.T("Restart OBS if it crashes", "Перезапускать OBS, если он упал"),
-                    cfg.UseReplayBuffer ? L.T("With the replay buffer and without the safe mode question", "С буфером повтора и без вопроса про безопасный режим")
-                                        : L.T("Without the safe mode question", "Без вопроса про безопасный режим"),
+                    (cfg.UseReplayBuffer ? L.T("With the replay buffer and without the safe mode question", "С буфером повтора и без вопроса про безопасный режим")
+                                         : L.T("Without the safe mode question", "Без вопроса про безопасный режим")) +
+                    L.T("; also when it lost the graphics card after a driver update", "; и когда он потерял видеокарту после обновления драйвера"),
                     Toggle(cfg.RestartObsOnCrash, v => cfg.RestartObsOnCrash = v)), "crash краш");
                 Add(Row("\uE74E", L.T("OBS settings backup", "Резервная копия настроек OBS"),
                     L.T("Once a day into the backups folder, the last 7 copies are kept", "Раз в день в папку backups, хранятся 7 последних копий"),
@@ -824,7 +825,7 @@ namespace DeviceGuard
                 L.T("Warn if OBS can't keep up rendering or encoding and drops frames (clips stutter); the clip check shows how many were lost", "Предупредить, если OBS не успевает рендерить или кодировать и теряет кадры (клипы дёргаются); в проверке клипа — сколько кадров пропало"),
                 Toggle(cfg.PerfCheck, v => cfg.PerfCheck = v)), "fps lag лаги", true, RowFrames);
             Add(Row("\uE7BA", L.T("Graphics driver failure", "Сбой драйвера видеокарты"),
-                L.T("Warn when Windows reports a driver reset (after the program restarts)", "Предупредить, когда Windows сообщает о сбросе драйвера (после перезапуска программы)"),
+                L.T("Warn when Windows reports a driver reset or install (after the program restarts)", "Предупредить, когда Windows сообщает о сбросе или установке драйвера (после перезапуска программы)"),
                 Toggle(cfg.DriverWatch, v => cfg.DriverWatch = v)), "gpu видеокарта");
 
             Card(L.T("Clips", "Клипы"));

@@ -58,6 +58,7 @@ namespace DeviceGuard
         DateTime lostAt, connectedAt, lastConnectTry = DateTime.MinValue, lastLaunch = DateTime.MinValue,
                  obsSeenSince = DateTime.MinValue;
         string wsError, lastObsExe;
+        volatile string restartWhy;
         int timeouts;
         readonly List<DateTime> launches = new List<DateTime>();
 
@@ -141,7 +142,7 @@ namespace DeviceGuard
 
         public void RequestSave() { pendingSave = true; trigger.Set(); }
         public void RequestCheck() { trigger.Set(); }
-        public void RequestRestartObs() { pendingRestart = true; trigger.Set(); }
+        public void RequestRestartObs() { restartWhy = null; pendingRestart = true; trigger.Set(); }
         public void Reconnect() { reconnect = true; trigger.Set(); }
         public void NotifyChange() { deviceChanged = true; trigger.Set(); }
         public void SessionEnding() { sessionEnding = true; }
@@ -263,7 +264,7 @@ namespace DeviceGuard
             var urgent = new HashSet<string>();
             var fixedMsgs = new List<string>();
 
-            if (pendingRestart) { pendingRestart = false; RestartObs(); }
+            if (pendingRestart) { pendingRestart = false; RestartObs(restartWhy); restartWhy = null; }
             if (reconnect)
             {
                 reconnect = false;
@@ -293,6 +294,7 @@ namespace DeviceGuard
                         CheckSaveKey(now);
                         CheckSources(cur, fixedMsgs);
                         DrainEvents(now);
+                        CheckRender(now, cur, urgent, fixedMsgs);   // before the buffer: a buffer OBS can't feed is not restarted
                         CheckReplayBuffer(now, cur, urgent, fixedMsgs);
                         RunExtras(now, cur, urgent, fixedMsgs, notesCur);
                     }
@@ -370,16 +372,22 @@ namespace DeviceGuard
                 }
                 else if (state.EndsWith("STOPPED"))
                 {
-                    if (rbStopRequested) { rbManualOff = true; Ev(L.T("replay buffer turned off by hand", "буфер повтора выключен вручную")); }
+                    // a failed encoder (NVENC after a driver update) also comes with STOPPING — OBS stops the output
+                    // itself; only its log tells the two apart
+                    string encErr = rbStopRequested && !exitStarted && !plannedExit ? ObsLog.ReplayStopError() : null;
+                    if (encErr != null) Log.Write("OBS log: " + encErr);
+                    if (rbStopRequested && encErr == null) { rbManualOff = true; Ev(L.T("replay buffer turned off by hand", "буфер повтора выключен вручную")); }
                     else if (!exitStarted && !plannedExit)
                     {
                         // without STOPPING it was not the user who stopped the buffer but an error (e.g. NVENC)
                         rbCrashed = true;
+                        rbStopRequested = false;
                         rbCrashAt = now;
                         rbTries = 0;
                         rbLastTry = DateTime.MinValue;
                         rbCrashes.Add(now);
-                        Ev(L.T("⚠ the replay buffer stopped by itself", "⚠ буфер повтора остановился сам"));
+                        Ev(encErr != null ? L.T("⚠ the replay buffer stopped: the OBS encoder failed", "⚠ буфер повтора остановился: сбой кодировщика OBS")
+                                          : L.T("⚠ the replay buffer stopped by itself", "⚠ буфер повтора остановился сам"));
                     }
                 }
             }
@@ -571,7 +579,8 @@ namespace DeviceGuard
             catch (Exception ex) { Ev(L.T("⚠ could not start OBS: ", "⚠ не удалось запустить OBS: ") + ex.Message); }
         }
 
-        void RestartObs()
+        // why — for the log and the window when ClipKeeper restarts OBS by itself; null — from the button
+        void RestartObs(string why)
         {
             plannedExit = true;
             lostUnexpected = false;
@@ -580,7 +589,7 @@ namespace DeviceGuard
             {
                 if (p != null)
                 {
-                    Ev(L.T("restarting OBS from the button", "перезапуск OBS по кнопке"));
+                    Ev(why != null ? L.T("restarting OBS: ", "перезапускаю OBS: ") + why : L.T("restarting OBS from the button", "перезапуск OBS по кнопке"));
                     bool asked = false;
                     try { asked = p.CloseMainWindow(); } catch { }
                     // OBS that hides to the tray, or waits on a question, ignores the close and keeps serving WebSocket;
@@ -600,7 +609,7 @@ namespace DeviceGuard
                 }
             }
             if (obs != null) { obs.Dispose(); obs = null; }
-            LaunchObs(L.T("from the button", "по кнопке"));
+            LaunchObs(why ?? L.T("from the button", "по кнопке"));
         }
 
         // OBS asks "exit while recording?" when the buffer is active — so stop it first
@@ -835,6 +844,12 @@ namespace DeviceGuard
 
             if (rbCrashed)
             {
+                // OBS can't draw: the buffer won't start (OBS only shows an error window) — the "gpu" alarm says what to do
+                if (renderFailSince != DateTime.MinValue)
+                {
+                    cur["rb"] = L.T("The replay buffer stopped: OBS lost the graphics card", "Буфер повтора остановился: OBS потерял видеокарту");
+                    return;
+                }
                 if (Cfg.RbAutoRestart && rbTries < 5 && (now - rbCrashAt).TotalSeconds >= 3 &&
                     (now - rbLastTry).TotalSeconds >= 15)
                     StartReplayBuffer(now);
@@ -903,7 +918,7 @@ namespace DeviceGuard
                               "Проверьте подключение устройств и звуковые программы (SteelSeries GG, Voicemeeter…). Если устройство теперь называется " +
                               "иначе — выберите его в OBS и нажмите «Запомнить текущие устройства» в ClipKeeper."));
             }
-            if (due.ContainsKey("rb") || due.ContainsKey("obs") || due.ContainsKey("hang"))
+            if (due.ContainsKey("rb") || due.ContainsKey("obs") || due.ContainsKey("hang") || due.ContainsKey("gpu"))
             {
                 lines.Add("");
                 lines.Add(L.T("\"Restart OBS\" closes OBS and starts it again with the replay buffer.", "«Перезапустить OBS» закроет OBS и запустит его снова с буфером повтора."));
@@ -916,7 +931,7 @@ namespace DeviceGuard
             if (due.Count > 0)
             {
                 string body = Body(due);
-                bool restartBtn = due.ContainsKey("rb") || due.ContainsKey("obs") || due.ContainsKey("hang");
+                bool restartBtn = due.ContainsKey("rb") || due.ContainsKey("obs") || due.ContainsKey("hang") || due.ContainsKey("gpu");
                 bool isNew = due.Keys.Any(k => !alertKeys.Contains(k));
                 if (isNew || body != alertBody)
                     app.Post(() => app.ShowAlert(L.T("OBS: recording is not going right!", "OBS: запись идёт не так, как надо!"), body, restartBtn, isNew));

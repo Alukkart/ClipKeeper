@@ -139,14 +139,14 @@ collections are copied to `backups\` before the change. A ClipKeeper that alread
 | Check | What ClipKeeper does |
 |---|---|
 | **Devices** | Keeps audio (WASAPI) and screen capture sources on the devices from the reference. If an ID changed after an audio software update (SteelSeries GG, Voicemeeter…), a driver update or a monitor swap, it finds the device by name or monitor model and sets it again. Audio changes are reported by Windows at once; monitors are checked every 5 s and on display changes. |
-| **Replay buffer** | Started again after an error (NVENC, driver). 3 crashes in 10 minutes — auto restart stops and an alarm goes up. |
+| **Replay buffer** | Started again after an error (NVENC, driver). 3 crashes in 10 minutes — auto restart stops and an alarm goes up. When OBS loses the graphics card (a driver update or failure: the recording is white, the buffer stopped) — an alarm, and OBS is restarted once the driver installer is done. |
 | **OBS crash** | Alarm and a restart with `--startreplaybuffer --disable-shutdown-check`. If OBS hangs, the alarm has a **Restart OBS** button. |
 | **Silent audio** | Windows shows a signal on the device, but the OBS meter stays at zero for over 8 s → the source is restarted once; if that doesn't help — alarm. |
 | **Black / frozen picture** | Every 15 s a 64×36 snapshot of the capture. Black, white or single-color while the monitor shows a picture → capture restarted after 30 s, alarm after 60 s. No alarm if the monitor is dark too or you are away. |
 | **Mixer** | Source tracks are restored automatically. Mute and volume shifts of 6 dB or more only get a warning (often changed on purpose), as does a changed track set in recording settings. |
 | **Saved clips** | Length and track count after every save: a "Clip saved" card, or the same card in orange with the problem if the clip is short (with a hint about the memory limit) or misses tracks. |
 | **Dropped frames** | OBS skipped-frame counters every 5 s (the same as in OBS Stats). Over 1% a minute → a yellow warning saying who can't keep up (rendering — the GPU is busy, or the encoder) and what to do; it holds until 3 clean minutes. In a clip: from 2% — "clip stutters", from 0.5% — a note. |
-| **Other** | Graphics driver failures (Windows event log), low disk space for clips, a daily OBS settings backup to `backups\` (the last 7 kept). |
+| **Other** | Graphics driver failures and installs (Windows event log), low disk space for clips, a daily OBS settings backup to `backups\` (the last 7 kept). |
 
 **Alarm:** a blinking red window over the game (doesn't steal focus), a sound every 15 s until you press **Got it**,
 and a Windows notification. When things are fixed, a green window shows for 7 seconds. Sound and volume are in

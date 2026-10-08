@@ -434,6 +434,23 @@ namespace DeviceGuard
             check(early != null && early.RenderTotal == 1200, "frames: less history than the clip length — use what there is");
             check(FrameStats.Between(ps.Take(1).ToList(), t0, t0.AddSeconds(60)) == null, "frames: a single sample — no data");
 
+            // the OBS log tells a failed encoder from a stop by hand (both come as STOPPING → STOPPED)
+            const string rbStart = "18:00:00.000: ==== Replay Buffer Start ===========================================\n";
+            const string rbStop = "21:58:28.035: ==== Replay Buffer Stop ============================================\n";
+            const string encFail = "21:58:28.032: [obs-nvenc] d3d11_encode: nv.nvEncMapInputResource(enc->session, &map) failed: 8 (NV_ENC_ERR_INVALID_PARAM)\n" +
+                                   "21:58:28.033: Error encoding with encoder 'advanced_video_recording'\n" +
+                                   "21:58:28.033: Output 'Буфер повтора': stopping\n" +
+                                   "21:58:28.033: Output 'Буфер повтора': Total frames output: 2638337\n";
+            const string handStop = "21:58:28.033: Output 'Буфер повтора': stopping\n21:58:28.033: Output 'Буфер повтора': Total frames output: 2638337\n";
+            bool logged;
+            string encErr = ObsLog.StopError(rbStart + encFail + rbStop, out logged);
+            check(logged && encErr != null && encErr.Contains("advanced_video_recording"), "OBS log: the encoder failed → the buffer crashed, not stopped by hand");
+            check(ObsLog.StopError(rbStart + handStop + rbStop, out logged) == null && logged, "OBS log: a stop by hand → by hand");
+            check(ObsLog.StopError("17:00:00.000: Error encoding with encoder 'x'\n" + rbStart + handStop + rbStop, out logged) == null,
+                  "OBS log: an encoder error from before the buffer started does not count");
+            ObsLog.StopError(rbStart + encFail + rbStop + rbStart, out logged);
+            check(!logged, "OBS log: this stop is not written yet (a start after the last stop) → wait for it");
+
             // editor keys: overrides survive a save/load, a taken key swaps with its owner
             KeyMap.Load("");
             check(KeyMap.ActOf(System.Windows.Input.Key.X) == KeyMap.Act.Cut && KeyMap.Save() == "", "keys: defaults, nothing saved");

@@ -3,7 +3,7 @@
 #   winget\manifests\a\Alukkart\ClipKeeper\<version>\*.yaml — the first submission to microsoft/winget-pkgs (a pull request
 #     with this folder); later versions go there from release.yml ("WinGet"), which updates the previous manifest;
 #   scoop\clipkeeper.json — for a Scoop bucket; checkver/autoupdate let the bucket follow new releases by itself.
-# The zip hash comes from the release's SHA256SUMS.txt, the release notes from CHANGELOG.md.
+# The hashes of the setup and the zip come from the release's SHA256SUMS.txt, the release notes from CHANGELOG.md.
 # Check: winget validate --manifest <the winget folder>; scoop install .\packaging\out\<version>\scoop\clipkeeper.json
 param([Parameter(Mandatory = $true)][string]$Version)
 
@@ -18,9 +18,14 @@ $out = Join-Path $PSScriptRoot "out\$Version"
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 $sums = (Invoke-WebRequest "https://github.com/$repo/releases/download/v$Version/SHA256SUMS.txt" -UseBasicParsing).Content
 if ($sums -is [byte[]]) { $sums = [Text.Encoding]::ASCII.GetString($sums) }
-$m = [regex]::Match($sums, "(?m)^([0-9a-fA-F]{64})\s+\*?$([regex]::Escape($zip))\s*$")
-if (-not $m.Success) { throw "SHA256SUMS.txt of v$Version has no $zip" }
-$sha = $m.Groups[1].Value
+function HashOf($name) {
+    $m = [regex]::Match($sums, "(?m)^([0-9a-fA-F]{64})\s+\*?$([regex]::Escape($name))\s*$")
+    if ($m.Success) { $m.Groups[1].Value } else { $null }
+}
+$sha = HashOf $zip
+if (-not $sha) { throw "SHA256SUMS.txt of v$Version has no $zip" }
+$setup = "ClipKeeper-$Version-setup.exe"   # from 1.2.0 on
+$setupSha = HashOf $setup
 
 $release = Invoke-RestMethod "https://api.github.com/repos/$repo/releases/tags/v$Version" -Headers @{ 'User-Agent' = 'ClipKeeper-manifests' }
 $date = ([datetime]$release.published_at).ToUniversalTime().ToString('yyyy-MM-dd')
@@ -54,8 +59,21 @@ ManifestType: version
 ManifestVersion: $schema
 "@
 
-# a portable zip: winget unpacks it into its Packages folder and puts that folder on PATH (ClipKeeper needs its
+# the setup first — what winget installs unless asked for --installer-type portable: Inno Setup, for one user, a Start menu
+# shortcut; the same AppId as installer\ClipKeeper.iss, so winget finds it in "Apps" (and ClipKeeper's own updates keep
+# its version there up to date).
+# Then the portable zip: winget unpacks it into its Packages folder and puts that folder on PATH (ClipKeeper needs its
 # ffmpeg\ next to it, so no symlink). ClipKeeper sees that folder and keeps its data in %LOCALAPPDATA%\ClipKeeper
+$setupEntry = if ($setupSha) { @"
+- Architecture: x64
+  InstallerType: inno
+  Scope: user
+  InstallerUrl: https://github.com/$repo/releases/download/v$Version/$setup
+  InstallerSha256: $($setupSha.ToUpper())
+  UpgradeBehavior: install
+  ProductCode: '{F0418725-5FD7-4201-B1E0-62BAE55CB01B}_is1'
+
+"@ } else { '' }
 Save (Join-Path $w "$id.installer.yaml") @"
 # yaml-language-server: `$schema=https://aka.ms/winget-manifest.installer.$schema.schema.json
 
@@ -64,14 +82,14 @@ PackageVersion: $Version
 Platform:
 - Windows.Desktop
 MinimumOSVersion: 10.0.17763.0
-InstallerType: zip
-NestedInstallerType: portable
-NestedInstallerFiles:
-- RelativeFilePath: ClipKeeper\ClipKeeper.exe
-ArchiveBinariesDependOnPath: true
 ReleaseDate: $date
 Installers:
-- Architecture: x64
+$setupEntry- Architecture: x64
+  InstallerType: zip
+  NestedInstallerType: portable
+  NestedInstallerFiles:
+  - RelativeFilePath: ClipKeeper\ClipKeeper.exe
+  ArchiveBinariesDependOnPath: true
   InstallerUrl: $zipUrl
   InstallerSha256: $($sha.ToUpper())
 ManifestType: installer

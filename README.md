@@ -435,7 +435,7 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
     and SmartScreen warns on first start.
 - **Branches** follow git flow: `main` holds released versions only, `develop` the next one; work goes in
   `feature/…` and `fix/…` branches from `develop` and back into it, urgent fixes in `hotfix/…` from `main`
-  (details in [`CLAUDE.md`](CLAUDE.md)).
+  (details in [`CONTRIBUTING.md`](CONTRIBUTING.md)).
 - **Release a version:** make `release/1.1.0` from `develop`; in [`CHANGELOG.md`](CHANGELOG.md) rename
   `## [Unreleased]` to `## [1.1.0] - <date>`, start a new empty `## [Unreleased]` above it, fix the links at the bottom
   and commit — the release notes are made from that section, and a tag without one is not released. Merge the branch

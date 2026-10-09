@@ -71,6 +71,8 @@ namespace DeviceGuard
             lastRecTracksCheck = lastDiskCheck = DateTime.MinValue;
             recTracksNote = diskMsg = null;
             rbStartedAt = DateTime.MinValue;
+            renderCheckAt = renderFailSince = DateTime.MinValue;   // gpuRestartAt stays: one automatic restart per 10 minutes
+            renderFails = 0;
             resetMeters = true;
             ResetPerf();
         }
@@ -81,15 +83,33 @@ namespace DeviceGuard
             if (driverEvent)
             {
                 driverEvent = false;
+                bool update = driverUpdated;
+                driverUpdated = false;
+                driverEventAt = now;
+                lastScreenCheck = renderCheckAt = DateTime.MinValue;   // check the picture right away
                 if ((now - lastDriverNotice).TotalMinutes >= 2)
                 {
                     lastDriverNotice = now;
-                    lastScreenCheck = DateTime.MinValue;   // check the picture right away
-                    Ev(L.T("⚠ Windows: the graphics driver failed or restarted", "⚠ Windows: сбой или перезапуск драйвера видеокарты"));
-                    var lines = new List<string> {
-                        L.T("Windows reports that the graphics driver failed or restarted.", "Windows сообщает, что драйвер видеокарты сбоил или перезапускался."),
-                        L.T("Checking the recording. If something broke, a separate alarm will follow.", "Проверяю запись. Если что-то сломалось, придёт отдельная тревога.") };
-                    app.Post(() => app.ShowNotice(L.T("Graphics driver failure", "Сбой драйвера видеокарты"), lines, true));
+                    List<string> lines;
+                    if (update)
+                    {
+                        Ev(L.T("⚠ Windows: a graphics driver was installed", "⚠ Windows: установлен драйвер видеокарты"));
+                        lines = new List<string> {
+                            L.T("Windows has installed a graphics driver. OBS usually loses the graphics card after that: the replay buffer stops, the recording goes white.",
+                                "Windows установила драйвер видеокарты. После этого OBS обычно теряет видеокарту: буфер повтора останавливается, запись становится белой."),
+                            Cfg.RestartObsOnCrash
+                                ? L.T("Checking OBS. If it lost the card, I'll restart OBS once the installer is done.", "Проверяю OBS. Если он потерял видеокарту — перезапущу OBS, когда установка закончится.")
+                                : L.T("Checking OBS. If it lost the card, an alarm will follow.", "Проверяю OBS. Если он потерял видеокарту, придёт тревога.") };
+                    }
+                    else
+                    {
+                        Ev(L.T("⚠ Windows: the graphics driver failed or restarted", "⚠ Windows: сбой или перезапуск драйвера видеокарты"));
+                        lines = new List<string> {
+                            L.T("Windows reports that the graphics driver failed or restarted.", "Windows сообщает, что драйвер видеокарты сбоил или перезапускался."),
+                            L.T("Checking the recording. If something broke, a separate alarm will follow.", "Проверяю запись. Если что-то сломалось, придёт отдельная тревога.") };
+                    }
+                    app.Post(() => app.ShowNotice(update ? L.T("Graphics driver installed", "Установлен драйвер видеокарты")
+                                                         : L.T("Graphics driver failure", "Сбой драйвера видеокарты"), lines, true));
                 }
             }
             DailyBackup(now);
@@ -297,6 +317,7 @@ namespace DeviceGuard
         void CheckScreens(DateTime now, Dictionary<string, string> cur, HashSet<string> urgent, List<string> fixedMsgs)
         {
             if (!Cfg.ScreenCheck) { screenWatch.Clear(); return; }
+            if (renderFailSince != DateTime.MinValue) return;   // OBS can't draw at all — CheckRender raises that alarm
             if ((now - lastScreenCheck).TotalSeconds >= Math.Max(5, Cfg.ScreenIntervalSec))
             {
                 lastScreenCheck = now;
@@ -696,30 +717,110 @@ namespace DeviceGuard
             return NoGame.Is(g) || !Covers.IsGame(g) ? null : g;
         }
 
-        // ── 6. graphics driver failure (Windows event log) ──────────────────
-        volatile bool driverEvent;
-        DateTime lastDriverNotice = DateTime.MinValue;
+        // ── 6. graphics driver failure or update (Windows event log) ────────
+        volatile bool driverEvent, driverUpdated;
+        DateTime lastDriverNotice = DateTime.MinValue, driverEventAt = DateTime.MinValue;
 
         void StartDriverWatch()
         {
             if (!Cfg.DriverWatch) return;
             try
             {
-                // 4101 — "Display driver stopped responding and has recovered"; errors of the NVIDIA driver itself
+                // 4101 — "Display driver stopped responding and has recovered"; errors of the NVIDIA driver itself;
+                // UserPnp 20003 — a driver service was installed for a device (only display adapters count, below)
                 var q = new EventLogQuery("System", PathType.LogName,
-                    "*[System[(Provider[@Name='Display'] and EventID=4101) or (Provider[@Name='nvlddmkm'] and (Level=1 or Level=2))]]");
+                    "*[System[(Provider[@Name='Display'] and EventID=4101) or (Provider[@Name='nvlddmkm'] and (Level=1 or Level=2))" +
+                    " or (Provider[@Name='Microsoft-Windows-UserPnp'] and EventID=20003)]]");
                 drvWatcher = new EventLogWatcher(q);
                 drvWatcher.EventRecordWritten += (s, e) =>
                 {
                     if (e.EventRecord == null) return;
-                    try { Log.Write("Windows event log: " + e.EventRecord.ProviderName + " #" + e.EventRecord.Id); } catch { }
-                    e.EventRecord.Dispose();
-                    driverEvent = true;
-                    trigger.Set();
+                    try
+                    {
+                        bool install = e.EventRecord.Id == 20003;
+                        if (install && !IsDisplayAdapter(e.EventRecord)) return;
+                        Log.Write("Windows event log: " + e.EventRecord.ProviderName + " #" + e.EventRecord.Id);
+                        if (install) driverUpdated = true;
+                        driverEvent = true;
+                        trigger.Set();
+                    }
+                    catch { }
+                    finally { e.EventRecord.Dispose(); }
                 };
                 drvWatcher.Enabled = true;
             }
             catch (Exception ex) { Log.Write("could not watch the Windows event log: " + ex.Message); }
+        }
+
+        // UserPnp 20003: (service, driver path, device instance ID, …) — a display adapter has the Display class in Enum
+        static bool IsDisplayAdapter(EventRecord r)
+        {
+            if (r.Properties.Count < 3) return false;
+            string id = r.Properties[2].Value as string;
+            if (string.IsNullOrEmpty(id)) return false;
+            using (var k = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Enum\" + id))
+                return k != null && string.Equals(k.GetValue("ClassGUID") as string, "{4d36e968-e325-11ce-bfc1-08002be10318}", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // ── 8. OBS lost the graphics card ───────────────────────────────────
+        // After a driver update (or a hard driver failure) the D3D device OBS draws with is gone for good: the encoder fails,
+        // the replay buffer stops, the recording is white, every screenshot fails. OBS doesn't recover — only a restart helps.
+        DateTime renderCheckAt = DateTime.MinValue, renderFailSince = DateTime.MinValue, gpuRestartAt = DateTime.MinValue;
+        int renderFails;
+
+        void CheckRender(DateTime now, Dictionary<string, string> cur, HashSet<string> urgent, List<string> fixedMsgs)
+        {
+            // every 15 s; at once after a buffer stop or a driver event
+            if ((now - renderCheckAt).TotalSeconds >= 15 || (rbCrashed && renderCheckAt < rbCrashAt))
+            {
+                renderCheckAt = now;
+                bool? draws = ObsDraws();
+                if (draws == false)
+                {
+                    if (renderFails++ == 0) { renderFailSince = now; Ev(L.T("⚠ OBS can't draw the picture", "⚠ OBS не может нарисовать картинку")); }
+                }
+                else if (draws == true)
+                {
+                    if (renderFails >= 2) fixedMsgs.Add(L.T("OBS draws the picture again", "OBS снова рисует картинку"));
+                    renderFails = 0;
+                    renderFailSince = DateTime.MinValue;
+                }
+            }
+            if (renderFails < 2) return;   // twice in a row — not a one-frame hiccup
+
+            string msg = L.T("OBS lost the graphics card (the driver was updated or failed): the recording is white and the replay buffer can't record. Only an OBS restart helps",
+                             "OBS потерял видеокарту (драйвер обновился или сбоил): запись белая, буфер повтора писать не может. Поможет только перезапуск OBS");
+            // restart it ourselves — once per 10 minutes, after the driver installer has left the card alone for 30 s
+            if (Cfg.RestartObsOnCrash && (now - gpuRestartAt).TotalMinutes >= 10)
+            {
+                if ((now - driverEventAt).TotalSeconds >= 30)
+                {
+                    gpuRestartAt = now;
+                    restartWhy = L.T("it lost the graphics card", "он потерял видеокарту");
+                    pendingRestart = true;
+                    trigger.Set();
+                }
+                msg += L.T(", restarting…", ", перезапускаю…");
+            }
+            cur["gpu"] = msg;
+            urgent.Add("gpu");
+        }
+
+        // a tiny screenshot of the program scene: true — OBS draws, false — it can't render, null — can't tell
+        bool? ObsDraws()
+        {
+            try
+            {
+                string scene = Json.GetStr(obs.Request("GetCurrentProgramScene", null, ReqTimeout), "currentProgramSceneName");
+                if (string.IsNullOrEmpty(scene)) return null;
+                obs.Request("GetSourceScreenshot", Json.D("sourceName", scene, "imageFormat", "png", "imageWidth", 16, "imageHeight", 9), ReqTimeout);
+                return true;
+            }
+            catch (ObsException ex)
+            {
+                // 702 "Failed to render screenshot." — the texture for it could not be made
+                return ex.Code == 702 && ex.Message.IndexOf("render", StringComparison.OrdinalIgnoreCase) >= 0 ? false : (bool?)null;
+            }
         }
 
         // ── 7. daily backup of OBS settings ─────────────────────────────────

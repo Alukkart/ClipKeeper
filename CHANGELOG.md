@@ -7,6 +7,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-09
+
+### Fixed
+- After a graphics driver update OBS loses the graphics card: the replay buffer stopped, the recording went white, and
+  ClipKeeper took it for the buffer being turned off by hand — no alarm. Now it reads the OBS log to tell an encoder
+  failure from a stop by hand, notices when OBS can't draw the picture at all, raises an alarm and, with "Restart OBS if it
+  crashes" on, restarts OBS by itself once the driver installer is done. A driver install is reported as it happens.
+
 ## [1.1.0] - 2026-10-07
 
 The library for hundreds of clips: search, names, selecting and joining clips, going through new ones; sharing with
@@ -93,7 +101,8 @@ The first public release.
 - Statistics by month and game, and a month recap to share as a picture.
 - First-run setup, starting together with OBS, updates from GitHub releases, English and Russian interface.
 
-[Unreleased]: https://github.com/Alukkart/ClipKeeper/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Alukkart/ClipKeeper/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/Alukkart/ClipKeeper/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.0...v1.0.1

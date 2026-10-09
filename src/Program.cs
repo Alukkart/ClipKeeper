@@ -155,7 +155,20 @@ namespace DeviceGuard
                 return SelfTest.Probe(args.Length > 1 ? args[1] : Path.Combine(Dir, "probe.txt"));
 
             bool created;
-            using (var mutex = new Mutex(true, @"Local\OBSDeviceGuard", out created))
+            var mutex = new Mutex(true, @"Local\OBSDeviceGuard", out created);
+            // a local build takes over from the ClipKeeper.exe you use every day (installed or unpacked) while it runs,
+            // and starts it again on exit — so a test build can be run without closing that one by hand
+            string handBack = null;
+            if (!created && Updates.LocalBuild && !args.Contains("--exit") && !args.Contains("--ensure"))
+            {
+                string running = RunningCopy();
+                if (running != null && ExitRunning(mutex) == 0)
+                {
+                    mutex = new Mutex(true, @"Local\OBSDeviceGuard", out created);
+                    if (created) handBack = running;
+                }
+            }
+            using (mutex)
             {
                 if (args.Contains("--exit")) return created ? 0 : ExitRunning(mutex);
                 if (!created)
@@ -179,13 +192,31 @@ namespace DeviceGuard
                 wpf.DispatcherUnhandledException += (s, e) => { Log.Write("UI error: " + e.Exception); e.Handled = true; };
                 Wpf.LoadStyles(wpf);
                 Log.Write("=== ClipKeeper " + Version + " started (" + L.Code + ") ===");
-                try { Autostart.Migrate(); } catch (Exception ex) { Log.Write("autostart: " + ex.Message); }
+                // a local build doesn't move autostart to itself: it belongs to the copy you use every day
+                if (!Updates.LocalBuild)
+                    try { Autostart.Migrate(); } catch (Exception ex) { Log.Write("autostart: " + ex.Message); }
                 if (Updates.OnStart(args)) return 0;   // the new version crashed last time — the old one is starting instead
                 new TrayApp(args);
+                if (handBack != null) Log.Write("took over from " + handBack + " — it starts again on exit");
                 wpf.Run();
                 Log.Write("=== ClipKeeper closed ===");
+                if (handBack != null)   // --after: it waits for this copy (and the mutex) to be gone
+                    try { using (var me = Process.GetCurrentProcess()) Process.Start(handBack, "--tray --after " + me.Id); }
+                    catch (Exception ex) { Log.Write("could not start " + handBack + " again: " + ex.Message); }
             }
             return 0;
+        }
+
+        // the path of a running ClipKeeper.exe other than this process; null — none. A test build is ClipKeeper.test.exe,
+        // so it is never the one taken over
+        static string RunningCopy()
+        {
+            using (var me = Process.GetCurrentProcess())
+                foreach (var p in Process.GetProcessesByName("ClipKeeper"))
+                    using (p)
+                        try { if (p.Id != me.Id) return p.MainModule.FileName; }
+                        catch { }
+            return null;
         }
 
         // ClipKeeper.exe --exit — the setup and its uninstaller close the running copy before they touch its files: that copy

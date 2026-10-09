@@ -166,7 +166,7 @@ jobs:
           $sha = (Get-FileHash dist\ClipKeeper.exe -Algorithm SHA256).Hash.ToLower()
           $up = Invoke-RestMethod -Method Post -Uri https://www.virustotal.com/api/v3/files -Headers $h -Form @{ file = Get-Item dist\ClipKeeper.exe }
           $link = "https://www.virustotal.com/gui/file/$sha"
-          $note = "VirusTotal: [ClipKeeper.exe]($link)"
+          $note = "**VirusTotal** — [ClipKeeper.exe]($link)"
           # the free API allows 4 requests a minute: ask every 30 s, up to 6 minutes
           for ($i = 0; $i -lt 12; $i++) {
             Start-Sleep 30
@@ -175,28 +175,35 @@ jobs:
               $s = $a.stats
               $flagged = $s.malicious + $s.suspicious
               $total = $s.malicious + $s.suspicious + $s.undetected + $s.harmless
-              $note = "VirusTotal: [ClipKeeper.exe — $flagged / $total]($link)"
+              $note = "**VirusTotal** — [ClipKeeper.exe: $flagged / $total]($link)"
               break
             }
           }
           $note
           "VT_NOTE=$note" >> $env:GITHUB_ENV
 
+      # 1.1.0 went out without the link because the key was missing and the step was skipped without a word
+      - name: VirusTotal key
+        if: env.HAS_VIRUSTOTAL != 'true'
+        shell: pwsh
+        run: '"::warning::VIRUSTOTAL_API_KEY is not set: the release notes get no VirusTotal link"'
+
       - name: Publish
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # the VirusTotal line first: people look for it before they download
           $notes = @"
-          **Install** — ClipKeeper-$env:VERSION-setup.exe (for you only, no admin rights, a Start menu shortcut), or ClipKeeper-$env:VERSION.zip: unpack into any folder and run ClipKeeper.exe.
+          $env:VT_NOTE
+
+          **Install** —ClipKeeper-$env:VERSION-setup.exe (for you only, no admin rights, a Start menu shortcut), or ClipKeeper-$env:VERSION.zip: unpack into any folder and run ClipKeeper.exe.
           **Update** — Settings → About → Update, or close ClipKeeper in the tray and replace ClipKeeper.exe with the new one. Settings, the device reference and covers stay.
 
           **Установка** — ClipKeeper-$env:VERSION-setup.exe (только для тебя, без прав администратора, ярлык в «Пуске») или ClipKeeper-$env:VERSION.zip: распаковать в любую папку и запустить ClipKeeper.exe.
           **Обновление** — «Настройки → О программе → Обновить» или закрыть ClipKeeper в трее и заменить ClipKeeper.exe новым. Настройки, эталон устройств и обложки останутся.
 
           ffmpeg in the zip: $env:FFMPEG_VERSION ([BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds), GPL, sources there).
-
-          $env:VT_NOTE
           "@
           # what changed (CHANGELOG.md, the "Changes" step) first, then how to install
           $notes = (Get-Content changes.md -Raw -Encoding UTF8).Trim() + "`n`n---`n`n" + $notes

@@ -41,3 +41,6 @@ probe.txt
 shot.txt
 /preview/
 /app.ico
+
+# package manager manifests made by packaging\manifests.ps1
+/packaging/out/

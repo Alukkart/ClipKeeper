@@ -39,6 +39,8 @@ namespace DeviceGuard
             }
             mw.ShowSettingsTab(MainWindow.TabGeneral);
             // the first-run setup, every step
+            string obsExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"obs-studio\bin\64bit\obs64.exe");
+            if (File.Exists(obsExe)) mw.PreviewObsExe(obsExe);   // without the app the OBS check would never find it
             for (int i = 0; i < mw.SetupStepCount; i++)
             {
                 mw.PreviewSetup(i);

@@ -161,7 +161,7 @@ namespace DeviceGuard
                     else if (st == null) st = new ObsFix.Status();
                     readAt = DateTime.Now;
                 }
-                string exe = app != null ? app.Guard.ObsExe() : null;
+                string exe = app != null ? app.Guard.ObsExe() : previewObsExe;
                 if (exe != null) obsRow.Show(0, L.T("OBS is found", "OBS найден"), exe, null);
                 else obsRow.Show(2, L.T("OBS is not found", "OBS не найден"), L.T("Choose obs64.exe so ClipKeeper can start it", "Укажи obs64.exe, чтобы ClipKeeper мог его запускать"), L.T("Choose…", "Выбрать…"));
 
@@ -265,6 +265,10 @@ namespace DeviceGuard
             }
             return list;
         }
+
+        // for previews, which run without the app: the obs64.exe the OBS check reports as found
+        string previewObsExe;
+        public void PreviewObsExe(string exe) { previewObsExe = exe; }
 
         // for previews: OBS without a save key, as the Recording page shows it
         public void PreviewReadiness()

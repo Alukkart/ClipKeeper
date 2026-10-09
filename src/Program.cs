@@ -157,6 +157,7 @@ namespace DeviceGuard
             bool created;
             using (var mutex = new Mutex(true, @"Local\OBSDeviceGuard", out created))
             {
+                if (args.Contains("--exit")) return created ? 0 : ExitRunning(mutex);
                 if (!created)
                 {
                     if (args.Contains("--ensure")) return 0;   // started by OBS (ObsScript) while already running — nothing to do
@@ -185,6 +186,23 @@ namespace DeviceGuard
                 Log.Write("=== ClipKeeper closed ===");
             }
             return 0;
+        }
+
+        // ClipKeeper.exe --exit — the setup and its uninstaller close the running copy before they touch its files: that copy
+        // exits the way "Exit" in the tray does. 0 — it is gone (or was not running), 1 — it is still there after 15 s
+        static int ExitRunning(Mutex mine)
+        {
+            try { using (var ev = EventWaitHandle.OpenExisting(TrayApp.ExitEventName)) ev.Set(); }
+            catch { return 1; }   // a copy too old to know the signal
+            mine.Dispose();   // our handle keeps the mutex alive too
+            for (int i = 0; i < 75; i++)
+            {
+                Mutex m;
+                if (!Mutex.TryOpenExisting(@"Local\OBSDeviceGuard", out m)) return 0;
+                m.Dispose();
+                Thread.Sleep(200);
+            }
+            return 1;
         }
 
         // removes "--name value" from the arguments and returns the value
@@ -647,6 +665,9 @@ namespace DeviceGuard
                   "updates: an unpacked copy (even in a folder named apps\\clipkeeper without Scoop) updates itself");
             check(Updates.ManagerCommand("winget") == "winget upgrade Alukkart.ClipKeeper" && Updates.ManagerCommand("scoop") == "scoop update clipkeeper" &&
                   Updates.ManagerCommand(null) == null, "updates: a package manager's copy is updated with its command");
+            check(Updates.SameFolder(@"C:\Users\a\AppData\Local\Programs\ClipKeeper\", @"c:\users\a\appdata\local\programs\clipkeeper") &&
+                  Updates.SameFolder("\"D:\\Apps\\ClipKeeper\"", @"D:\Apps\ClipKeeper\") && !Updates.SameFolder(@"D:\Apps\ClipKeeper", @"D:\Apps\ClipKeeper2") &&
+                  !Updates.SameFolder(null, @"D:\Apps"), "updates: the setup's entry is matched to this copy by its folder");
 
             string obsIni = Path.Combine(Path.GetTempPath(), "clipkeeper-obs-" + Guid.NewGuid().ToString("N") + ".ini");
             try

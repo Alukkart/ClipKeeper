@@ -183,6 +183,7 @@ namespace DeviceGuard
                 }
                 catch { try { File.Delete(MarkerPath); } catch { } throw; }
                 Log.Write("update " + Program.Version + " → " + r.Version + " installed, restarting");
+                SyncSetupEntry(r.Version);
                 return null;
             }
             catch (Exception ex)
@@ -191,6 +192,31 @@ namespace DeviceGuard
                 Log.Write("update " + r.Version + ": " + ex.Message);
                 return ex.Message;
             }
+        }
+
+        // installed by the setup (installer\ClipKeeper.iss, this AppId): "Apps" in Windows and winget read the version from
+        // the uninstall entry the setup wrote, so a copy that updated itself brings that entry up to date
+        public const string SetupAppId = "{F0418725-5FD7-4201-B1E0-62BAE55CB01B}";
+        const string SetupKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\" + SetupAppId + "_is1";
+
+        public static bool SameFolder(string a, string b)
+        {
+            if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return false;
+            return string.Equals(a.Trim().Trim('"').TrimEnd('\\'), b.Trim().Trim('"').TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
+        }
+
+        static void SyncSetupEntry(string version)
+        {
+            try
+            {
+                using (var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(SetupKey, true))
+                {
+                    if (k == null || !SameFolder(k.GetValue("InstallLocation") as string, Program.ExeDir)) return;
+                    k.SetValue("DisplayVersion", version);
+                    Log.Write("update: the setup's entry in Apps now says " + version);
+                }
+            }
+            catch (Exception ex) { Log.Write("update: the setup's entry not updated: " + ex.Message); }
         }
 
         static void Remove(string p)

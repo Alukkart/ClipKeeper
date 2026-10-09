@@ -32,6 +32,8 @@ jobs:
       # optional VirusTotal scan of ClipKeeper.exe, linked in the release notes: repository secret VIRUSTOTAL_API_KEY
       # (a free key: virustotal.com → your profile → API key). Without it the step is skipped
       HAS_VIRUSTOTAL: ${{ secrets.VIRUSTOTAL_API_KEY != '' }}
+      # optional winget update (see "WinGet"): repository secret WINGET_TOKEN. Without it the step is skipped
+      HAS_WINGET: ${{ secrets.WINGET_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -195,3 +197,16 @@ jobs:
           $flags = @('--title', "ClipKeeper $env:VERSION", '--notes-file', 'notes.md', '--generate-notes')
           if ($env:PRERELEASE -eq 'true') { $flags += '--prerelease' }
           gh release create '${{ github.ref_name }}' (Get-ChildItem dist -File).FullName @flags
+
+      # a pull request to microsoft/winget-pkgs with the new zip, made from the version already there — so it works from
+      # the second version on; the first one goes there by hand (packaging\manifests.ps1). Needs a fork of winget-pkgs
+      # on this account and WINGET_TOKEN: a classic token with the public_repo scope. Not for pre-releases.
+      # A winget problem never stops the release
+      - name: WinGet
+        if: env.HAS_WINGET == 'true' && env.PRERELEASE == 'false'
+        continue-on-error: true
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: Alukkart.ClipKeeper
+          installers-regex: '^ClipKeeper-[0-9.]+\.zip$'
+          token: ${{ secrets.WINGET_TOKEN }}

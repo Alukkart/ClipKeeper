@@ -14,12 +14,25 @@ namespace DeviceGuard
     {
         public static string Dir;      // ClipKeeper's data: next to the exe (portable), or %LOCALAPPDATA%\ClipKeeper if that folder is read-only
         public static string ExeDir;   // the exe folder: ffmpeg\ comes with it
+        public static string Installer;   // "winget" / "scoop" — that package manager owns the exe folder; null — unpacked by hand
+
+        // winget unpacks the zip into ...\WinGet\Packages\Alukkart.ClipKeeper_<source>\, Scoop into
+        // <scoop>\apps\clipkeeper\<version or current>\ (next to <scoop>\shims). Both replace that folder on an update
+        public static string InstalledBy(string exeDir, Func<string, bool> dirExists)
+        {
+            string d = (exeDir ?? "").TrimEnd('\\');
+            if (d.IndexOf(@"\WinGet\Packages\", StringComparison.OrdinalIgnoreCase) >= 0) return "winget";
+            var m = System.Text.RegularExpressions.Regex.Match(d, @"^(.+)\\apps\\clipkeeper\\[^\\]+$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (m.Success && dirExists(Path.Combine(m.Groups[1].Value, "shims"))) return "scoop";
+            return null;
+        }
 
         // a folder like Program Files can't be written without admin rights: settings, the log and the cache would silently
-        // not be saved. Then the data lives in %LOCALAPPDATA%\ClipKeeper; what was already next to the exe is copied there once
+        // not be saved; a package manager's folder is replaced on its update. Then the data lives in %LOCALAPPDATA%\ClipKeeper;
+        // what was already next to the exe is copied there once
         static string DataDir(string exeDir)
         {
-            if (Writable(exeDir)) return exeDir;
+            if (Installer == null && Writable(exeDir)) return exeDir;
             string local = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClipKeeper");
             try
             {
@@ -78,10 +91,11 @@ namespace DeviceGuard
         static int Main(string[] args)
         {
             ExeDir = AppDomain.CurrentDomain.BaseDirectory;
+            Installer = InstalledBy(ExeDir, Directory.Exists);
             Dir = DataDir(ExeDir);
             Log.FilePath = Path.Combine(Dir, "ClipKeeper.log");
             if (!string.Equals(Dir.TrimEnd('\\'), ExeDir.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
-                Log.Write("the program folder is read-only — data is kept in " + Dir);
+                Log.Write((Installer != null ? "installed with " + Installer : "the program folder is read-only") + " — data is kept in " + Dir);
 
             // --lang en|ru picks the language for previews and tests; --after <pid> waits for the old copy to exit (restart)
             string lang = TakeArg(ref args, "--lang"), after = TakeArg(ref args, "--after");
@@ -623,6 +637,16 @@ namespace DeviceGuard
             check(Updates.Parse("{\"message\":\"Not Found\"}") == null, "updates: no release — nothing to offer");
             const string sums = "0a1b  ClipKeeper-1.3.0.zip\r\nAABBCC  ClipKeeper.exe\r\n";
             check(Updates.HashOf(sums, "ClipKeeper.exe") == "aabbcc" && Updates.HashOf(sums, "other.exe") == null, "updates: the exe hash from SHA256SUMS.txt");
+            Func<string, bool> scoopRoot = d => string.Equals(d, @"D:\Tools\scoop\shims", StringComparison.OrdinalIgnoreCase);
+            check(Program.InstalledBy(@"C:\Users\a\AppData\Local\Microsoft\WinGet\Packages\Alukkart.ClipKeeper_Microsoft.Winget.Source_8wekyb3d8bbwe\ClipKeeper\", scoopRoot) == "winget" &&
+                  Program.InstalledBy(@"D:\Tools\scoop\apps\clipkeeper\current\", scoopRoot) == "scoop" &&
+                  Program.InstalledBy(@"D:\Tools\scoop\apps\clipkeeper\1.2.0", scoopRoot) == "scoop",
+                  "updates: a copy installed with winget or Scoop is recognized by its folder");
+            check(Program.InstalledBy(@"D:\Apps\ClipKeeper\", scoopRoot) == null && Program.InstalledBy(@"D:\Games\apps\clipkeeper\current\", scoopRoot) == null &&
+                  Program.InstalledBy(@"D:\Tools\scoop\apps\clipkeeper\", scoopRoot) == null,
+                  "updates: an unpacked copy (even in a folder named apps\\clipkeeper without Scoop) updates itself");
+            check(Updates.ManagerCommand("winget") == "winget upgrade Alukkart.ClipKeeper" && Updates.ManagerCommand("scoop") == "scoop update clipkeeper" &&
+                  Updates.ManagerCommand(null) == null, "updates: a package manager's copy is updated with its command");
 
             string obsIni = Path.Combine(Path.GetTempPath(), "clipkeeper-obs-" + Guid.NewGuid().ToString("N") + ".ini");
             try

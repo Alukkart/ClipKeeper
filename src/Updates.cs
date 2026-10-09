@@ -125,6 +125,15 @@ namespace DeviceGuard
             }
         }
 
+        // a copy from winget or Scoop is updated by that package manager: one that swapped its own exe would leave the
+        // manager thinking the old version is installed. null — ClipKeeper updates itself
+        public static string ManagerCommand(string installer)
+        {
+            return installer == "winget" ? "winget upgrade Alukkart.ClipKeeper"
+                 : installer == "scoop" ? "scoop update clipkeeper"
+                 : null;
+        }
+
         static string ExePath { get { return System.Windows.Forms.Application.ExecutablePath; } }
         static string OldPath { get { return Path.ChangeExtension(ExePath, ".old.exe"); } }
         static string NewPath { get { return Path.ChangeExtension(ExePath, ".new.exe"); } }
@@ -134,6 +143,12 @@ namespace DeviceGuard
         // network and files; call off the UI thread. null — the new exe is in place, restart to run it; otherwise the reason
         public static string Install(Release r)
         {
+            string command = ManagerCommand(Program.Installer);
+            if (command != null)
+                return L.T("ClipKeeper was installed with " + Program.Installer + " — update it there: " + command +
+                           " (the new version gets there a little after it is on GitHub)",
+                           "ClipKeeper установлен через " + Program.Installer + " — обнови его там: " + command +
+                           " (новая версия появляется там чуть позже, чем на GitHub)");
             if (r == null || r.ExeUrl == null) return L.T("the release has no ClipKeeper.exe", "в выпуске нет ClipKeeper.exe");
             if (r.SumsUrl == null) return L.T("the release has no checksums, so the file can't be checked", "в выпуске нет контрольных сумм — файл нечем проверить");
             string exe = ExePath, fresh = NewPath, old = OldPath;

@@ -108,7 +108,8 @@ Every release is built by GitHub Actions from this repository (`.github/workflow
 **Update:** ClipKeeper checks GitHub once a day and says when a new version is out; **Settings → About → Update**
 downloads it, checks it against the release checksums, swaps the exe and restarts. By hand: close ClipKeeper in the tray
 and replace `ClipKeeper.exe` with the new one (it's attached to every release on its own). Settings, the device reference
-and covers stay either way.
+and covers stay either way. A copy installed with winget or Scoop is updated there (`winget upgrade Alukkart.ClipKeeper`,
+`scoop update clipkeeper`) and keeps its data in `%LOCALAPPDATA%\ClipKeeper`.
 
 <details>
 <summary><b>Setting it up by hand</b> (if you skipped the setup)</summary>

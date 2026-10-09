@@ -7,6 +7,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- Ready for winget and Scoop: a copy installed with them keeps its settings and data in `%LOCALAPPDATA%\ClipKeeper`, so
+  an update of the package doesn't lose them, and leaves updating to that package manager — "Update" names its command.
+
 ## [1.1.1] - 2026-10-09
 
 ### Fixed

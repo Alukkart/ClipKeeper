@@ -1,6 +1,7 @@
 # Release: git tag v1.2.3 && git push origin v1.2.3
 # Builds ClipKeeper.exe with the version from the tag, signs it through SignPath if that is set up (see "Sign"),
 # runs the self-test and publishes a release:
+#   ClipKeeper-<version>-setup.exe — the setup: the same files, for one user, without admin rights (installer\ClipKeeper.iss);
 #   ClipKeeper-<version>.zip — for a first install: the app + ffmpeg/ffprobe (BtbN build, GPL) + README with pictures;
 #   ClipKeeper.exe           — for an update: replace the file next to the old one, settings stay;
 #   SHA256SUMS.txt           — checksums.
@@ -51,6 +52,7 @@ jobs:
           $t = $t -replace 'AssemblyInformationalVersion\("[^"]*"\)', "AssemblyInformationalVersion(`"$ver`")"
           Set-Content $f $t -Encoding UTF8 -NoNewline
           "VERSION=$ver" >> $env:GITHUB_ENV
+          "VERSION_NUM=$num" >> $env:GITHUB_ENV
           "PRERELEASE=$(if ($Matches[4]) { 'true' } else { 'false' })" >> $env:GITHUB_ENV
 
       # the release notes start with this version's section of CHANGELOG.md ("## [1.2.3] - date" up to the next "## [").
@@ -143,6 +145,11 @@ jobs:
           Copy-Item "$env:FFMPEG_ROOT\bin\ffmpeg.exe", "$env:FFMPEG_ROOT\bin\ffprobe.exe", "$env:FFMPEG_ROOT\LICENSE.txt" "$pkg\ffmpeg"
           Compress-Archive "$pkg" "dist\ClipKeeper-$env:VERSION.zip"
           Copy-Item ClipKeeper.exe dist
+          # the setup (installer\ClipKeeper.iss) from the same folder; Inno Setup 6 comes with the runner image
+          $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
+          & $iscc /Q "/DAppVersion=$env:VERSION" "/DAppNum=$env:VERSION_NUM" "/DSourceDir=$((Resolve-Path $pkg).Path)" "/DOutputDir=$((Resolve-Path dist).Path)" installer\ClipKeeper.iss
+          if ($LASTEXITCODE) { throw "the setup did not build (ISCC exit code $LASTEXITCODE)" }
           Get-ChildItem dist -File | ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" } |
             Set-Content dist\SHA256SUMS.txt -Encoding ascii
 
@@ -181,11 +188,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $notes = @"
-          **First install** — ClipKeeper-$env:VERSION.zip: unpack into any folder and run ClipKeeper.exe.
-          **Update** — close ClipKeeper in the tray and replace ClipKeeper.exe with the new one. Settings, the device reference and covers stay.
+          **Install** — ClipKeeper-$env:VERSION-setup.exe (for you only, no admin rights, a Start menu shortcut), or ClipKeeper-$env:VERSION.zip: unpack into any folder and run ClipKeeper.exe.
+          **Update** — Settings → About → Update, or close ClipKeeper in the tray and replace ClipKeeper.exe with the new one. Settings, the device reference and covers stay.
 
-          **Первая установка** — ClipKeeper-$env:VERSION.zip: распаковать в любую папку и запустить ClipKeeper.exe.
-          **Обновление** — закрыть ClipKeeper в трее и заменить ClipKeeper.exe новым. Настройки, эталон устройств и обложки останутся.
+          **Установка** — ClipKeeper-$env:VERSION-setup.exe (только для тебя, без прав администратора, ярлык в «Пуске») или ClipKeeper-$env:VERSION.zip: распаковать в любую папку и запустить ClipKeeper.exe.
+          **Обновление** — «Настройки → О программе → Обновить» или закрыть ClipKeeper в трее и заменить ClipKeeper.exe новым. Настройки, эталон устройств и обложки останутся.
 
           ffmpeg in the zip: $env:FFMPEG_VERSION ([BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds), GPL, sources there).
 
@@ -208,5 +215,5 @@ jobs:
         uses: vedantmgoyal9/winget-releaser@v2
         with:
           identifier: Alukkart.ClipKeeper
-          installers-regex: '^ClipKeeper-[0-9.]+\.zip$'
+          installers-regex: '^ClipKeeper-[0-9.]+(-setup\.exe|\.zip)$'
           token: ${{ secrets.WINGET_TOKEN }}

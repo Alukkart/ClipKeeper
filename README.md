@@ -74,9 +74,11 @@ ClipKeeper's own windows are hidden from OBS capture and screenshots, so they ne
 
 ## Install
 
-1. Download `ClipKeeper-<version>.zip` from [Releases](https://github.com/Alukkart/ClipKeeper/releases/latest)
-   and unpack it into a folder of your own (say `D:\Apps\ClipKeeper`) — ffmpeg is already inside. In a folder Windows
-   protects (Program Files) it works too, keeping its data in `%LOCALAPPDATA%\ClipKeeper`, but can't update itself.
+1. Download `ClipKeeper-<version>-setup.exe` from [Releases](https://github.com/Alukkart/ClipKeeper/releases/latest)
+   and run it: it installs for you only, without admin rights, into `%LOCALAPPDATA%\Programs\ClipKeeper`, with a Start
+   menu shortcut and an entry in **Settings → Apps** to remove it; ffmpeg is included.
+   Or the portable `ClipKeeper-<version>.zip`: unpack it into a folder of your own (say `D:\Apps\ClipKeeper`). In a folder
+   Windows protects (Program Files) it works too, keeping its data in `%LOCALAPPDATA%\ClipKeeper`, but can't update itself.
 2. In OBS: **Tools → WebSocket Server Settings** — enable the server. The password is not needed: **Find OBS** in the setup
    takes it from the OBS settings on this computer.
 3. Run `ClipKeeper.exe`. A short setup walks through language and features, the OBS connection, a check of what OBS

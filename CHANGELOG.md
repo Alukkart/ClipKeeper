@@ -8,6 +8,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased]
 
 ### Added
+- A setup, `ClipKeeper-<version>-setup.exe`, next to the zip: it installs ClipKeeper for you only, without admin rights,
+  with a Start menu shortcut (and one on the desktop if you want) and an entry in Settings → Apps. An update closes the
+  running ClipKeeper by itself; removing it asks whether to delete the settings too, and never touches your clips.
+  ClipKeeper still updates itself there.
 - Ready for winget and Scoop: a copy installed with them keeps its settings and data in `%LOCALAPPDATA%\ClipKeeper`, so
   an update of the package doesn't lose them, and leaves updating to that package manager — "Update" names its command.
 

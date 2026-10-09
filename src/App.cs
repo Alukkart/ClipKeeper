@@ -101,15 +101,28 @@ namespace DeviceGuard
         // launching the exe again does not say "already running" but asks this copy to open its window
         public const string ShowEventName = @"Local\ClipKeeperShow";
 
+        // "ClipKeeper.exe --exit" (the setup, the uninstaller) asks this copy to exit
+        public const string ExitEventName = @"Local\ClipKeeperExit";
+
         void ListenShowRequests()
         {
-            EventWaitHandle ev;
-            try { ev = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName); }
+            EventWaitHandle ev, exit;
+            try
+            {
+                ev = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
+                exit = new EventWaitHandle(false, EventResetMode.AutoReset, ExitEventName);
+            }
             catch (Exception ex) { Log.Write("\"open window\" signal: " + ex.Message); return; }
             new Thread(() =>
             {
                 while (ev.WaitOne()) Post(() => ShowMain(false));
             }) { IsBackground = true, Name = "ClipKeeper-show" }.Start();
+            new Thread(() =>
+            {
+                exit.WaitOne();
+                Log.Write("asked to exit (setup or uninstall)");
+                Post(Exit);
+            }) { IsBackground = true, Name = "ClipKeeper-exit" }.Start();
         }
 
         void OnDisplayChanged(object s, EventArgs e) { Guard.NotifyChange(); }

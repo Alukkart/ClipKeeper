@@ -123,6 +123,7 @@ namespace DeviceGuard
             {
                 exit.WaitOne();
                 Log.Write("asked to exit (setup or uninstall)");
+                Program.ExitRequested = true;
                 Post(Exit);
             }) { IsBackground = true, Name = "ClipKeeper-exit" }.Start();
         }

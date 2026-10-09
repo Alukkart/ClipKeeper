@@ -15,6 +15,7 @@ namespace DeviceGuard
         public static string Dir;      // ClipKeeper's data: next to the exe (portable), or %LOCALAPPDATA%\ClipKeeper if that folder is read-only
         public static string ExeDir;   // the exe folder: ffmpeg\ comes with it
         public static string Installer;   // "winget" / "scoop" — that package manager owns the exe folder; null — unpacked by hand
+        public static volatile bool ExitRequested;   // closed by "--exit" (a setup), not by "Exit" in the tray
 
         // winget unpacks the zip into ...\WinGet\Packages\Alukkart.ClipKeeper_<source>\, Scoop into
         // <scoop>\apps\clipkeeper\<version or current>\ (next to <scoop>\shims). Both replace that folder on an update
@@ -200,7 +201,9 @@ namespace DeviceGuard
                 if (handBack != null) Log.Write("took over from " + handBack + " — it starts again on exit");
                 wpf.Run();
                 Log.Write("=== ClipKeeper closed ===");
-                if (handBack != null)   // --after: it waits for this copy (and the mutex) to be gone
+                // not when a setup closed this copy with --exit: it is about to replace the files of that very copy
+                if (handBack != null && ExitRequested) Log.Write("closed by --exit — " + handBack + " is not started again");
+                else if (handBack != null)   // --after: it waits for this copy (and the mutex) to be gone
                     try { using (var me = Process.GetCurrentProcess()) Process.Start(handBack, "--tray --after " + me.Id); }
                     catch (Exception ex) { Log.Write("could not start " + handBack + " again: " + ex.Message); }
             }

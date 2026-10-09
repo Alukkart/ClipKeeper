@@ -74,9 +74,12 @@
 
 ## Установка
 
-1. Скачай `ClipKeeper-<версия>.zip` со страницы [Releases](https://github.com/Alukkart/ClipKeeper/releases/latest)
-   и распакуй в свою папку (например, `D:\Apps\ClipKeeper`) — ffmpeg уже внутри. В папке, которую защищает Windows
-   (Program Files), программа тоже работает — данные хранит в `%LOCALAPPDATA%\ClipKeeper`, — но не может обновиться сама.
+1. Скачай `ClipKeeper-<версия>-setup.exe` со страницы [Releases](https://github.com/Alukkart/ClipKeeper/releases/latest)
+   и запусти: он ставит программу только для тебя, без прав администратора, в `%LOCALAPPDATA%\Programs\ClipKeeper`,
+   с ярлыком в «Пуске» и записью в **«Параметры → Приложения»** для удаления; ffmpeg уже внутри.
+   Или портативный `ClipKeeper-<версия>.zip`: распакуй в свою папку (например, `D:\Apps\ClipKeeper`). В папке, которую
+   защищает Windows (Program Files), программа тоже работает — данные хранит в `%LOCALAPPDATA%\ClipKeeper`, — но не может
+   обновиться сама.
 2. В OBS: **«Сервис → Настройки сервера WebSocket»** — включи сервер. Пароль копировать не нужно: **«Найти OBS»**
    в первой настройке возьмёт его из настроек OBS на этом компьютере.
 3. Запусти `ClipKeeper.exe`. Короткая настройка проведёт через язык и возможности, подключение к OBS, проверку того, что

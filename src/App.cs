@@ -71,7 +71,9 @@ namespace DeviceGuard
             cleanupTimer.Tick += (s, e) => AutoCleanup();
             cleanupTimer.Start();
             obsScriptTimer.Tick += (s, e) => SyncObsScript();
-            if (Cfg.ObsStartScript || File.Exists(ObsScript.ScriptPath)) SyncObsScript();   // the exe path in the script, a change still waiting
+            // the exe path in the script, a change still waiting. Not from a local build: with its own settings it would
+            // point the script at itself, or take it out of OBS, under the copy you use every day; its toggle still works
+            if (!Updates.LocalBuild && (Cfg.ObsStartScript || File.Exists(ObsScript.ScriptPath))) SyncObsScript();
             // a minute without a crash: the update (if there was one) is kept
             var confirm = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
             confirm.Tick += (s, e) => { confirm.Stop(); Updates.Confirm(); };

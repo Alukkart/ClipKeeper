@@ -421,6 +421,9 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
 - **Build:** `build.cmd` — the C# compiler that ships with Windows (.NET Framework 4.8), nothing to install.
   `build.cmd ClipKeeper.test.exe` builds under another name without touching the working exe.
   A local build calls itself `0.0.0-dev`; the interface is WPF, also part of Windows.
+- **Next to the ClipKeeper you use:** a local build, started while an installed (or unpacked) `ClipKeeper.exe` runs,
+  closes that one and starts it again when you exit the build. It keeps its data next to itself and leaves autostart and
+  the OBS start script to the copy you use. A copy older than 1.2.0 can't be closed this way: exit it in the tray first.
 - **The GIF at the top:** `showcase.cmd` builds the test exe and renders `docs/screenshots/<lang>/showcase.gif` in both
   languages from the current interface (about 20 s). It shows real things, like `--preview`: clips from `D:\Sources`,
   covers, your settings — so it runs locally, not in Actions. The slides stay in `preview\showcase-<lang>\`;

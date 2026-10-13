@@ -800,6 +800,7 @@ namespace DeviceGuard
             clipsEmpty.Visibility = list.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             clipsMore.Visibility = more ? Visibility.Visible : Visibility.Collapsed;
             ShowListHead();
+            PeekPending();
         }
 
         // ── for previews ──

@@ -106,13 +106,6 @@ namespace DeviceGuard
             ShowCounts(CountAll(roots));
         }
 
-        void OpenPalette()
-        {
-            if (currentPage != PageClips) ShowPage(PageClips);
-            clipsSearch.Focus();
-            clipsSearch.SelectAll();
-        }
-
         // the middle of a picture as a small square: a cover, or the frame of a clip
         static Brush Square(ImageSource img)
         {

@@ -63,6 +63,9 @@ namespace DeviceGuard
             cfg.CollectionFolder = @"D:\Clips";   // for the picture only, not saved
             mw.PreviewLibrary(clipsRoot, 3, 0);
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-library.png"));
+            mw.PreviewRecPop(true);   // the recording card from the sidebar
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-recording-card.png"));
+            mw.PreviewRecPop(false);
             Render((FrameworkElement)mw.W.Content, 1500, 2400, Path.Combine(dir, "14-library-full.png"));   // every card, Desktop too
             mw.PreviewLibrary(cfg.CollectionFolder, 0, 2);
             Render((FrameworkElement)mw.W.Content, 1500, 940, Path.Combine(dir, "14-library-collection.png"));
@@ -122,6 +125,9 @@ namespace DeviceGuard
             mw.PreviewSelect();
             mw.PreviewFind("hunt", clipsRoot, Directory.Exists(cfg.TrimFolder) ? cfg.TrimFolder : null, cfg.CollectionFolder);
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-find.png"));
+            mw.PreviewPalette("hunt", clipsRoot, Directory.Exists(cfg.TrimFolder) ? cfg.TrimFolder : null, cfg.CollectionFolder);   // the search over everything (Ctrl+K)
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-palette.png"));
+            mw.PreviewPaletteClose();
             mw.PreviewTriage(clipVms.Select(v => v.Path).Take(8).ToList(), game);   // going through new clips
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-triage.png"));
 

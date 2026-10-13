@@ -498,6 +498,67 @@
             </Grid>
         </Border>
 
+        <!-- ── the search over everything (Ctrl+K): clips, games, actions; above every page (MainWindowPalette.cs) ── -->
+        <Grid x:Name="Palette" Grid.ColumnSpan="2" Visibility="Collapsed" Panel.ZIndex="50" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+            <Border x:Name="PaletteScrim" Background="#A6050607"/>
+            <Grid Width="640" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,84,0,0">
+                <Border Background="#141518" CornerRadius="10">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="60" ShadowDepth="20" Opacity="0.7" Color="Black"/>
+                    </Border.Effect>
+                </Border>
+                <Border Background="#141518" CornerRadius="10" BorderBrush="#2EFFFFFF" BorderThickness="1">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Height="52" BorderBrush="#14FFFFFF" BorderThickness="0,0,0,1">
+                            <Grid Margin="16,0,14,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" FontSize="15" Foreground="{StaticResource Sub}"/>
+                                <TextBlock x:Name="PaletteHint" Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="15.5" Foreground="{StaticResource Muted}" IsHitTestVisible="False"
+                                           Text="A clip, a game or an action…¦Клип, игра или действие…"/>
+                                <TextBox x:Name="PaletteInput" Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" FontSize="15.5" Background="Transparent" BorderThickness="0"
+                                         Foreground="#F4F5F7" CaretBrush="#F4F5F7" SelectionBrush="#5A5C66" FocusVisualStyle="{x:Null}"/>
+                                <Border Grid.Column="2" Style="{StaticResource Count}" BorderBrush="{StaticResource LineHi}" BorderThickness="1">
+                                    <TextBlock Text="Esc" FontSize="11" Foreground="{StaticResource Muted}"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <Border DockPanel.Dock="Bottom" Height="38" BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="16,0" VerticalAlignment="Center" TextElement.Foreground="{StaticResource Muted}" TextElement.FontSize="12">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74A;" FontSize="10"/>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74B;" FontSize="10" Margin="0,0,6,0"/>
+                                <TextBlock Text="choose¦выбрать" Margin="0,0,18,0"/>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE751;" FontSize="11" Margin="0,0,6,0"/>
+                                <TextBlock Text="do it¦выполнить" Margin="0,0,18,0"/>
+                                <TextBlock x:Name="PaletteStatus"/>
+                            </StackPanel>
+                        </Border>
+                        <ScrollViewer x:Name="PaletteScroll" MaxHeight="440" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="PaletteList" Margin="8,6,8,8"/>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ── the recording card: opens from the status at the bottom of the sidebar, a click elsewhere closes it (MainWindowRecPop.cs) ── -->
+        <Grid x:Name="RecPop" Grid.ColumnSpan="2" Visibility="Collapsed" Panel.ZIndex="40" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+            <Border x:Name="RecPopCatch" Background="Transparent"/>
+            <Grid Width="372" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="236,0,0,10">
+                <Border Background="#141518" CornerRadius="10">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="50" ShadowDepth="14" Opacity="0.7" Color="Black"/>
+                    </Border.Effect>
+                </Border>
+                <Border Background="#141518" CornerRadius="10" BorderBrush="#2EFFFFFF" BorderThickness="1" Padding="16,14">
+                    <StackPanel x:Name="RecPopBody"/>
+                </Border>
+            </Grid>
+        </Grid>
+
         <!-- ── content ── -->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
@@ -744,7 +805,7 @@
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <Border x:Name="ClipsSearchHost" Width="220" VerticalAlignment="Top"/>
+                            <Border x:Name="ClipsSearchHost" Width="260" VerticalAlignment="Top"/>
                             <WrapPanel x:Name="ClipsFilters" Grid.Column="1" Margin="10,3,0,-6" VerticalAlignment="Top"/>
                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
                                 <Button x:Name="BtnClipsSort" Style="{StaticResource BtnLink}" Margin="8,2,6,0" ToolTip="The order of clips¦Порядок клипов"/>

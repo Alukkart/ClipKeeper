@@ -19,17 +19,29 @@ namespace DeviceGuard
         Brush thumb;
         int decision;
         bool current;
-        public string Path;
+        string path;
+        public string Path { get { return path; } set { path = value; Notify("Tip", "TimeText"); } }
         public bool Starred;   // the star was put here, so undo takes it away
         public Brush Thumb { get { return thumb; } set { Set(ref thumb, value); } }
-        public int Decision { get { return decision; } set { decision = value; Notify("Mark", "MarkVis", "MarkBrush", "Dim"); } }
-        public bool Current { get { return current; } set { current = value; Notify("Ring", "Dim"); } }
+        public int Decision { get { return decision; } set { decision = value; Notify("Mark", "MarkVis", "MarkBrush", "Dim", "StateText"); } }
+        public bool Current { get { return current; } set { current = value; Notify("Ring", "RingThickness", "Dim", "StateText"); } }
         public string Tip { get { return System.IO.Path.GetFileName(Path); } }
         public string Mark { get { return decision == Keep ? "" : decision == Trim ? "" : decision == Delete ? "" : decision == Skip ? "" : ""; } }
         public Visibility MarkVis { get { return decision == None ? Visibility.Collapsed : Visibility.Visible; } }
         public Brush MarkBrush { get { return Wpf.Br(decision == Keep ? Wpf.Warn : decision == Delete ? Wpf.Bad : Wpf.Text, 255); } }
-        public Brush Ring { get { return current ? Wpf.Res<Brush>("Text") : Brushes.Transparent; } }
+        public Brush Ring { get { return current ? Wpf.Br("#F4F5F7") : Wpf.Res<Brush>("Ring"); } }
+        public Thickness RingThickness { get { return new Thickness(current ? 2 : 1); } }
         public double Dim { get { return current ? 1 : decision != None ? 0.45 : 0.8; } }
+        // the queue on the right: when it was saved and what became of it
+        public string TimeText { get { try { return System.IO.File.GetLastWriteTime(Path).ToString("HH:mm"); } catch { return ""; } } }
+        public string StateText
+        {
+            get
+            {
+                return current ? L.T("now", "сейчас") : decision == Keep ? L.T("kept ★", "оставлен ★") : decision == Trim ? L.T("to trim", "обрезать")
+                     : decision == Delete ? L.T("to the bin", "в корзину") : decision == Skip ? L.T("skipped", "пропущен") : L.T("waiting", "ждёт");
+            }
+        }
     }
 
     // "Go through new clips": the clips saved lately that nobody looked at, one at a time, playing by themselves.
@@ -68,6 +80,15 @@ namespace DeviceGuard
                 if (!player.NaturalDuration.HasTimeSpan || seek.ActualWidth <= 0) return;
                 player.Position = TimeSpan.FromSeconds(player.NaturalDuration.TimeSpan.TotalSeconds * e.GetPosition(seek).X / seek.ActualWidth);
             };
+            var name = F<TextBox>("TriageName");
+            name.TextChanged += (s, e) => F<TextBlock>("TriageNameHint").Visibility = name.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+            name.PreviewTextInput += (s, e) => { if (e.Text.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) e.Handled = true; };
+            name.PreviewKeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter) { NameTriaged(name.Text); e.Handled = true; }
+                else if (e.Key == Key.Escape) { Keyboard.Focus(F<FrameworkElement>("TriagePage")); e.Handled = true; }
+            };
+            F<FrameworkElement>("TriagePage").Focusable = true;
             triageClock = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
             triageClock.Tick += (s, e) => TriageTick();
             ((FrameworkElement)F<Border>("TriageProgress").Parent).SizeChanged += (s, e) => TriageStats();
@@ -176,9 +197,8 @@ namespace DeviceGuard
                     Padding = new Thickness(6, 0, 6, 0), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center,
                     Child = new TextBlock { Text = k, FontFamily = Wpf.Res<FontFamily>("MonoFont"), FontSize = 12 },
                 });
-                if (glyph != null) sp.Children.Add(new TextBlock { Style = S("Icon"), Text = glyph, FontSize = 13, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center });
                 sp.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
-                var b = new Button { Style = S(main ? "BtnPrimary" : "BtnGhost"), Content = sp, Margin = new Thickness(0, 0, 10, 0), Padding = new Thickness(12, 9, 12, 9),
+                var b = new Button { Style = S(main ? "BtnPrimary" : "BtnGhost"), Content = sp, Margin = new Thickness(0, 0, main ? 0 : 8, 0), Padding = new Thickness(10, 9, 10, 9),
                                      HorizontalContentAlignment = HorizontalAlignment.Left };
                 b.Click += (s, e) => act();
                 p.Children.Add(b);
@@ -208,6 +228,8 @@ namespace DeviceGuard
             var f = new FileInfo(triage[i].Path);
             var vm = ClipScanner.Describe(f, RootOf(last) ?? f.DirectoryName, null);
             F<TextBlock>("TriageInfo").Text = (vm.Named ? vm.Title + " · " : "") + EventVm.Cap(vm.WhenText) + " · " + vm.SizeText;
+            F<TextBox>("TriageName").Text = vm.Named ? vm.Title : "";
+            F<FrameworkElement>("TriageNameRow").Visibility = Visibility.Visible;
             F<TextBlock>("TriageMsg").Text = L.T("Loading…", "Загружаю…");
             var player = F<MediaElement>("TriagePlayer");
             player.Stop();
@@ -219,6 +241,39 @@ namespace DeviceGuard
                 var c = F<ItemsControl>("TriageQueue").ItemContainerGenerator.ContainerFromIndex(i) as FrameworkElement;
                 if (c != null) c.BringIntoView();
             }));
+        }
+
+        // the name typed under the clip: its file is renamed right away, the player lets it go for that and goes on where it was
+        void NameTriaged(string text)
+        {
+            Keyboard.Focus(F<FrameworkElement>("TriagePage"));
+            if (triageAt >= triage.Count) return;
+            var vm = triage[triageAt];
+            string title = (text ?? "").Trim();
+            if (title.Length == 0) return;
+            var player = F<MediaElement>("TriagePlayer");
+            var at = player.Position;
+            player.Stop();
+            player.Source = null;
+            string to;
+            string err = ClipNames.Rename(vm.Path, title, true, out to);
+            if (err != null)
+            {
+                if (app != null) app.ShowNotice(L.T("The clip was not renamed", "Клип не переименован"), new List<string> { Path.GetFileName(vm.Path) + ": " + err }, false);
+                to = vm.Path;
+            }
+            else
+            {
+                if (app != null && string.Equals(app.Guard.LastClipPath, vm.Path, StringComparison.OrdinalIgnoreCase)) app.Guard.LastClipPath = to;
+                if (app != null) app.ShowToast(L.T("✓ Named: ", "✓ Назван: ") + title);
+                vm.Path = to;
+            }
+            player.Source = new Uri(to);
+            player.Position = at;
+            if (!triagePaused) player.Play();
+            var f = new FileInfo(to);
+            var d = ClipScanner.Describe(f, RootOf(last) ?? f.DirectoryName, null);
+            F<TextBlock>("TriageInfo").Text = (d.Named ? d.Title + " · " : "") + EventVm.Cap(d.WhenText) + " · " + d.SizeText;
         }
 
         void TriageStats()
@@ -306,6 +361,7 @@ namespace DeviceGuard
             foreach (var t in triage) t.Current = false;
             F<Border>("TriageStage").Visibility = Visibility.Collapsed;
             F<UniformGrid>("TriageKeys").Visibility = Visibility.Collapsed;
+            F<FrameworkElement>("TriageNameRow").Visibility = Visibility.Collapsed;
             F<Border>("TriageDone").Visibility = Visibility.Visible;
             F<TextBlock>("TriageStats").Text = "";
             TriageStats();

@@ -69,8 +69,6 @@ namespace DeviceGuard
             sideHalo = F<Ellipse>("SideHalo");
             var sideStatus = F<Border>("SideStatus");
             sideStatus.MouseLeftButtonUp += (s, e) => { if (PageOn(PageRecord)) ShowPage(PageRecord); };
-            sideStatus.MouseEnter += (s, e) => sideStatus.BorderBrush = Wpf.Res<Brush>("LineHi");
-            sideStatus.MouseLeave += (s, e) => sideStatus.BorderBrush = Wpf.Res<Brush>("Line");
             navRecordDot = F<Ellipse>("NavRecordDot");
             heroLabel = F<TextBlock>("HeroLabel");
             heroTitle = F<TextBlock>("HeroTitle");
@@ -136,6 +134,7 @@ namespace DeviceGuard
             };
 
             InitClips();
+            InitSide();
             BuildSettings();
             InitSettingsKeys();
             for (int i = 0; i < navs.Length; i++) navs[i].Visibility = PageOn(i) ? Visibility.Visible : Visibility.Collapsed;
@@ -148,6 +147,7 @@ namespace DeviceGuard
         public void ShowPage(int i)
         {
             if (triageOn) CloseTriage(false);   // another page: the going through ends, nothing undecided is lost
+            if (i != PageClips && peekVm != null) ClosePeek();
             if (!PageOn(i)) i = PageOn(PageClips) ? PageClips : PageOn(PageRecord) ? PageRecord : PageSettings;
             for (int k = 0; k < pages.Length; k++)
             {
@@ -164,6 +164,7 @@ namespace DeviceGuard
             F<FrameworkElement>("SelBar").Visibility = i == PageClips && clips.Any(c => c.Selected) ? Visibility.Visible : Visibility.Collapsed;
             currentPage = i;
             if (navs[i].IsChecked != true) navs[i].IsChecked = true;
+            MarkSideGame();
             if (i == PageClips) LoadClips(false);
             if (i == PageStats) LoadStats(false);
         }

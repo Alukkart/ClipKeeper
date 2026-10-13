@@ -85,6 +85,14 @@ namespace DeviceGuard
             loudTimer.Start();   // after the range stops moving
         }
 
+        // "Share" from the library's clip panel: the editor opens straight on sharing, Discord (10 MB) chosen
+        public void ShowShare()
+        {
+            modeShare.IsChecked = true; modeLossless.IsChecked = false; modePrecise.IsChecked = false;
+            foreach (var t in new[] { tgtDiscord, tgtNitro, tgtTelegram, tgtCustom, tgtGif }) t.IsChecked = t == tgtDiscord;
+            UpdateMode();
+        }
+
         // for previews: the GIF target, or Discord with even loudness and a measured line
         public void PreviewShareTarget(bool gif)
         {

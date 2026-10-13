@@ -152,6 +152,7 @@ namespace DeviceGuard
                 triage.Add(vm);
                 Thumbs.Request(p, img => { if (img != null) vm.Thumb = Fill(img); });
             }
+            if (peekVm != null) ClosePeek();
             triageOn = true;
             F<TextBlock>("TriageTitle").Text = L.T("Going through · ", "Разбор · ") + name;
             pages[PageClips].Visibility = Visibility.Collapsed;

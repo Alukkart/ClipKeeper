@@ -316,6 +316,13 @@ namespace DeviceGuard
             w.W.Show();
         }
 
+        // the editor opened on "Share" (Discord 10 MB chosen): the library's clip panel
+        public void OpenShare(string path, List<string> list)
+        {
+            OpenTrim(path, list);
+            if (trim != null) trim.ShowShare();
+        }
+
         public void ClipsChanged()
         {
             if (main != null) main.LoadClips(true);

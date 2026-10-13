@@ -90,6 +90,35 @@ namespace DeviceGuard
             public Dictionary<string, Tuple<int, double>> Totals;   // clips and seconds of each day / folder (the group headers)
             public string FreshName;
             public string Stats, Folder, Newest;
+            public List<SideGame> Side;   // the games of the folder for the sidebar (null — keep what it shows)
+            public int Total;             // every clip of the folder
+            public int[] Counts;          // clips in Sources, Ready and the collection (-1 — no folder), for the tabs
+        }
+
+        readonly int[] srcCounts = { -1, -1, -1 };
+
+        // how many clips each folder holds; a folder inside another counts only in its own tab (on the reading thread)
+        static int[] CountAll(string[] roots)
+        {
+            var r = new int[roots.Length];
+            for (int k = 0; k < roots.Length; k++)
+            {
+                string root = roots[k];
+                if (root == null) { r[k] = -1; continue; }
+                var files = ClipScanner.Scan(root, int.MaxValue);
+                foreach (var other in roots)
+                    if (other != null && other.Length > root.Length && other.StartsWith(root + "\\", StringComparison.OrdinalIgnoreCase))
+                        files = files.Where(f => !f.FullName.StartsWith(other + "\\", StringComparison.OrdinalIgnoreCase)).ToList();
+                r[k] = files.Count;
+            }
+            return r;
+        }
+
+        void ShowCounts(int[] counts)
+        {
+            if (counts == null) return;
+            Array.Copy(counts, srcCounts, 3);
+            ShowSourceChips();
         }
 
         void InitClips()
@@ -106,10 +135,18 @@ namespace DeviceGuard
             InitFind();
             InitRename();
             InitSelect();
+            InitPeek();
             InitTriage();
             gamesList.AddHandler(Button.ClickEvent, new RoutedEventHandler(OnGameButton));
             F<Button>("BtnClipsBack").Click += (s, e) => GoBack();
             F<Button>("BtnClipsRefresh").Click += (s, e) => LoadClips(true);
+            F<Button>("BtnLatest").Click += (s, e) =>
+            {
+                var path = F<Button>("BtnLatest").Tag as string;
+                var vm = clips.FirstOrDefault(c => string.Equals(c.Path, path, StringComparison.OrdinalIgnoreCase));
+                if (vm != null) Peek(vm);
+                else if (path != null) Shell.Open(path);
+            };
             F<Button>("BtnClipsFolder").Click += (s, e) =>
             {
                 string r = clipsFolder.Text;
@@ -178,7 +215,7 @@ namespace DeviceGuard
         void ShowSourceChips()
         {
             if (!cfg.UseCollection && folderView == SrcCollection) folderView = SrcObs;   // the collection was turned off in settings
-            string sig = RootOf(last) + "|" + ReadyRoot + "|" + CollectionRoot + "|" + folderView + "|" + cfg.UseCollection;
+            string sig = RootOf(last) + "|" + ReadyRoot + "|" + CollectionRoot + "|" + folderView + "|" + cfg.UseCollection + "|" + string.Join(",", srcCounts);
             if (sig == sourceChipsSig) return;
             sourceChipsSig = sig;
             var panel = F<StackPanel>("ClipSource");
@@ -194,10 +231,12 @@ namespace DeviceGuard
             var sp = new StackPanel { Orientation = Orientation.Horizontal };
             sp.Children.Add(new TextBlock { Style = (Style)W.FindResource("Icon"), Text = missing ? "" : SrcGlyphs[kind], FontSize = 12, Margin = new Thickness(0, 0, 7, 0) });
             sp.Children.Add(new TextBlock { Text = SrcNames[kind] });
+            if (!missing && srcCounts[kind] >= 0)
+                sp.Children.Add(new Border { Style = S("Count"), Child = new TextBlock { Text = srcCounts[kind].ToString(), FontSize = 11.5, Foreground = Wpf.Br("#80858E") } });
             string tip = missing
                 ? (kind == SrcReady ? L.T("Choose the ready clips folder — the editor saves trims there too", "Выбрать папку готовых клипов — туда же редактор сохраняет обрезки") : L.T("Choose the collection folder — clips that made it into a video", "Выбрать папку коллекции — клипы, которые вошли в выпуск"))
                 : (root ?? L.T("the OBS recording folder will be known after connecting", "папка записи OBS станет известна после подключения")) + (kind != SrcObs ? L.T("\nRight click — change the folder", "\nПравый клик — сменить папку") : "");
-            var b = new ToggleButton { Style = S("Chip"), Content = sp, IsChecked = folderView == kind && !missing, ToolTip = tip, Margin = new Thickness(0, 0, 6, 0) };
+            var b = new ToggleButton { Style = S("Tab"), Content = sp, IsChecked = folderView == kind && !missing, ToolTip = tip };
             if (missing) b.Opacity = 0.7;
             b.Click += (s, e) =>
             {
@@ -261,6 +300,7 @@ namespace DeviceGuard
             if (gameView == null && key != null) homeScroll = sv.VerticalOffset;
             if (key != FindKey) ResetFind();
             gameView = key;
+            MarkSideGame();
             clipsLimit = 30;
             // reserve the banner space right away so clips don't jump down when the picture loads
             if (key != null && !key.StartsWith("*") && Covers.IsGame(key)) ShowHero(null, true);
@@ -352,6 +392,7 @@ namespace DeviceGuard
             string lastClip = last != null ? last.LastClipPath : null;
             string obsRoot = RootOf(last), readyRoot = ReadyRoot, collRoot = CollectionRoot;
             int limit = clipsLimit, kind = folderView;
+            bool useColl = cfg.UseCollection;
             string view = gameView;
             var find = CurrentFind();
             Task.Factory.StartNew(() =>
@@ -384,7 +425,8 @@ namespace DeviceGuard
                     return cut;
                 };
                 bool byDay = find.Sort == SortNew || find.Sort == SortOld;
-                var d = new LibData { Folder = root, Group = byDay };
+                var d = new LibData { Folder = root, Group = byDay, Side = SideGamesOf(all, game), Total = all.Count,
+                                      Counts = CountAll(new[] { obsRoot, readyRoot, useColl ? collRoot : null }) };
                 if (kind == SrcObs && view != FavKey)
                 {
                     bool everything = view == null || view == AllKey;
@@ -446,13 +488,17 @@ namespace DeviceGuard
             bool home = view == null;
             flatView = home && d.Flat;
             F<Button>("BtnClipsBack").Visibility = home ? Visibility.Collapsed : Visibility.Visible;
-            F<TextBlock>("ClipsTitle").Text = home ? SrcNames[folderView] : view == FavKey ? L.T("Favorites", "Избранное") : view == AllKey ? L.T("All clips", "Все клипы")
+            F<TextBlock>("ClipsTitle").Text = home ? L.T("Library", "Библиотека") : view == FavKey ? L.T("Favorites", "Избранное") : view == AllKey ? L.T("All clips", "Все клипы")
                                             : view == FindKey ? L.T("Search", "Поиск") : Covers.Title(view);
             F<TextBlock>("ClipsStats").Text = d.Stats ?? "";
+            ShowGameHead(view, d.Stats, d.Newest);
             clipsFolder.Text = d.Folder;
             games.Clear();
             clips.Clear();
             groupTotals = d.Totals;
+            if (d.Side != null) ShowSideGames(d.Side, d.Total);
+            ShowCounts(d.Counts);
+            MarkSideGame();
             ApplyGrouping(d.Group);
             WarmClipData();
             ShowFindBar(home, d.Flat, view);
@@ -495,28 +541,74 @@ namespace DeviceGuard
             })));
         }
 
+        // the game's banner is not shown as a picture: blurred far out, it is the light behind the header
         void ShowHero(Covers.Hero hero, bool placeholder)
         {
             F<Grid>("HeroBox").Visibility = Visibility.Visible;
-            F<ScrollViewer>("PageClips").Margin = new Thickness(0, -40, 0, 0);   // the banner goes under the window buttons
-            F<StackPanel>("ClipsBody").Margin = new Thickness(34, 196, 22, 30);
+            F<ScrollViewer>("PageClips").Margin = new Thickness(0, -40, 0, 0);   // the glow goes under the window buttons
+            var body = F<StackPanel>("ClipsBody");
+            body.Margin = new Thickness(34, 70, 22, body.Margin.Bottom);
             if (placeholder) { F<Border>("HeroImage").Background = null; return; }
             var b = new ImageBrush(hero.Image) { Stretch = Stretch.UniformToFill, AlignmentY = AlignmentY.Center };
             b.Freeze();
-            var img = F<Border>("HeroImage");
-            img.Background = b;
-            // a clip frame is busy (game UI, small text) — blur and darken it; Steam art is made for text on top
-            img.Effect = hero.FromClip ? new System.Windows.Media.Effects.BlurEffect { Radius = 28 } : null;
-            img.RenderTransform = hero.FromClip ? new ScaleTransform(1.12, 1.12) : null;   // blurred edges are hidden
-            img.RenderTransformOrigin = new Point(0.5, 0.5);
-            F<Border>("HeroDim").Background = new SolidColorBrush(Color.FromArgb((byte)(hero.FromClip ? 0x60 : 0x10), 0, 0, 0));
+            F<Border>("HeroImage").Background = b;
+            // a clip frame is busier and brighter than Steam art: a little darker
+            F<Border>("HeroDim").Background = new SolidColorBrush(Color.FromArgb((byte)(hero.FromClip ? 0x40 : 0x00), 0, 0, 0));
         }
 
         void HideHero()
         {
             F<Grid>("HeroBox").Visibility = Visibility.Collapsed;
             F<ScrollViewer>("PageClips").Margin = new Thickness(0);
-            F<StackPanel>("ClipsBody").Margin = new Thickness(34, 0, 22, 30);
+            var body = F<StackPanel>("ClipsBody");
+            body.Margin = new Thickness(34, 0, 22, body.Margin.Bottom);
+        }
+
+        // inside a game (or Favorites, All clips): its cover beside the name, and what it holds as chips under it
+        void ShowGameHead(string view, string stats, string newest)
+        {
+            bool game = view != null && !view.StartsWith("*");
+            bool chips = view != null && view != FindKey && !string.IsNullOrEmpty(stats);
+            var box = F<Grid>("ClipsCoverBox");
+            var cover = F<Border>("ClipsCover");
+            box.Visibility = game ? Visibility.Visible : Visibility.Collapsed;
+            cover.Background = null;
+            if (game)
+            {
+                if (newest != null) Thumbs.Request(newest, img => { if (img != null && gameView == view && cover.Background == null) cover.Background = Square(img); });
+                Covers.Get(view, img => { if (gameView == view) cover.Background = Square(img); });
+            }
+            var p = F<WrapPanel>("ClipsChips");
+            p.Children.Clear();
+            p.Visibility = chips ? Visibility.Visible : Visibility.Collapsed;
+            F<TextBlock>("ClipsStats").Visibility = chips ? Visibility.Collapsed : Visibility.Visible;
+            if (chips)
+            {
+                // "25 clips · 40 min · 11.2 GB" — the length is missing while it is not known
+                var parts = stats.Split(new[] { " · " }, StringSplitOptions.None);
+                for (int i = 0; i < parts.Length; i++)
+                    p.Children.Add(Chip(i == 0 ? "" : i == parts.Length - 1 ? "" : "", parts[i]));
+                if (newest != null)
+                {
+                    var when = File.GetLastWriteTime(newest);
+                    p.Children.Add(Chip(null, L.T("latest ", "последний ") + DayOf(when).ToLower(L.Culture) + ", " + when.ToString("HH:mm")));
+                }
+            }
+            var latest = F<Button>("BtnLatest");
+            latest.Visibility = game && newest != null ? Visibility.Visible : Visibility.Collapsed;
+            latest.Tag = newest;
+        }
+
+        static Border Chip(string glyph, string text)
+        {
+            var sp = new StackPanel { Orientation = Orientation.Horizontal };
+            if (glyph != null) sp.Children.Add(new TextBlock { Style = S("Icon"), Text = glyph, FontSize = 11, Foreground = Wpf.Res<Brush>("Muted"), Margin = new Thickness(0, 0, 6, 0) });
+            sp.Children.Add(new TextBlock { Text = text, FontSize = 12, Foreground = Wpf.Br("#C4C7CD"), VerticalAlignment = VerticalAlignment.Center });
+            return new Border
+            {
+                Child = sp, Height = 24, CornerRadius = new CornerRadius(12), Padding = new Thickness(10, 0, 10, 0), Margin = new Thickness(0, 0, 6, 4),
+                BorderThickness = new Thickness(1), BorderBrush = Wpf.Br("#1CFFFFFF"), Background = Wpf.Br("#990E0F11"),
+            };
         }
 
         void LoadCovers()
@@ -729,6 +821,9 @@ namespace DeviceGuard
                 clips.Add(vm);
             }
             clipsEmpty.Visibility = Visibility.Collapsed;
+            ShowGameHead(title, Summary(files), files.Count > 0 ? files[0].FullName : null);
+            var cover = Covers.Fetch(title) ?? (files.Count > 0 ? Thumbs.Load(files[0].FullName, 320, 180) : null);
+            if (cover != null) F<Border>("ClipsCover").Background = Square(cover);
             var hero = Covers.FetchHero(title, files.Count > 0 ? files[0].FullName : null);
             if (hero != null) ShowHero(hero, false);
         }
@@ -743,6 +838,7 @@ namespace DeviceGuard
             gameView = null;
             var all = ClipScanner.Scan(root, int.MaxValue);
             var cards = BuildCards(all, f => GameFor(f, root, kind));
+            PreviewSide(all, f => GameFor(f, root, kind), new[] { RootOf(last) ?? (kind == SrcObs ? root : null), ReadyRoot, CollectionRoot });
             if (fakeFav == 0 && cards.Count(c => !c.Special) <= 1)
             {
                 var page = all.Take(9).Select(f =>

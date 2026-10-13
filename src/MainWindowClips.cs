@@ -594,7 +594,9 @@ namespace DeviceGuard
                 if (newest != null)
                 {
                     var when = File.GetLastWriteTime(newest);
-                    p.Children.Add(Chip(null, L.T("latest ", "последний ") + DayOf(when).ToLower(L.Culture) + ", " + when.ToString("HH:mm")));
+                    // "today" and "yesterday" in lower case; an English month keeps its capital
+                    string day = when.Date >= DateTime.Today.AddDays(-1) ? DayOf(when).ToLower(L.Culture) : L.T(DayOf(when), DayOf(when).ToLower(L.Culture));
+                    p.Children.Add(Chip(null, L.T("latest ", "последний ") + day + ", " + when.ToString("HH:mm")));
                 }
             }
             var latest = F<Button>("BtnLatest");

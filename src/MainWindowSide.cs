@@ -20,6 +20,7 @@ namespace DeviceGuard
         }
 
         const int SideGamesMax = 12;
+        bool sideAsked;
         List<SideGame> sideGames = new List<SideGame>();
         readonly Dictionary<string, Brush> sideCovers = new Dictionary<string, Brush>();
 

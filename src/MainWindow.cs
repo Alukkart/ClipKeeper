@@ -232,7 +232,7 @@ namespace DeviceGuard
 
         static TextBlock Section(string text)
         {
-            return new TextBlock { Text = text.ToUpperInvariant(), Style = S("Caption") };
+            return new TextBlock { Text = text, Style = S("Caption") };
         }
 
         // a line of a settings card: icon, title, description, a control on the right. The line above it is drawn by Divide
@@ -349,7 +349,7 @@ namespace DeviceGuard
             heroDot.Fill = Recording(s) ? Wpf.Br(Wpf.Bad, 255) : br;
             Pulse(heroHalo, Recording(s));
             heroLabel.Foreground = br;
-            heroLabel.Text = s.Level == 0 ? L.T("RUNNING", "РАБОТАЕТ") : s.Level == 1 ? L.T("ATTENTION", "ВНИМАНИЕ") : s.Level == 2 ? L.T("PROBLEM", "ПРОБЛЕМА") : L.T("WAITING", "ОЖИДАНИЕ");
+            heroLabel.Text = s.Level == 0 ? L.T("Running", "Работает") : s.Level == 1 ? L.T("Attention", "Внимание") : s.Level == 2 ? L.T("Problem", "Проблема") : L.T("Waiting", "Ожидание");
             bool noLink = s.ObsStatus != null && s.ObsStatus.StartsWith(Guard.NoLinkPrefix);
             switch (s.Level)
             {

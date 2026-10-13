@@ -46,8 +46,8 @@
         </Style>
         <Style x:Key="SideCaption" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource Muted}"/>
-            <Setter Property="FontSize" Value="11.5"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Normal"/>
         </Style>
     </Window.Resources>
 
@@ -239,7 +239,7 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel>
                                 <Grid Margin="0,0,0,10">
-                                    <TextBlock Text="TRACKS¦ДОРОЖКИ" Style="{StaticResource SideCaption}"/>
+                                    <TextBlock Text="Tracks¦Дорожки" Style="{StaticResource SideCaption}"/>
                                     <TextBlock x:Name="AudioStatus" Foreground="{StaticResource Muted}" FontSize="11.5" HorizontalAlignment="Right"/>
                                 </Grid>
                                 <StackPanel x:Name="TracksPanel"/>
@@ -251,7 +251,7 @@
                                 </StackPanel>
 
                                 <Border Height="1" Background="{StaticResource Line}" Margin="0,18,0,16"/>
-                                <TextBlock Text="SAVING¦СОХРАНЕНИЕ" Style="{StaticResource SideCaption}" Margin="0,0,0,10"/>
+                                <TextBlock Text="Saving¦Сохранение" Style="{StaticResource SideCaption}" Margin="0,0,0,10"/>
                                 <!-- mode: three equal buttons across the width -->
                                 <UniformGrid Rows="1" Columns="3">
                                     <ToggleButton x:Name="ModeLossless" Style="{StaticResource Chip}" IsChecked="True" Margin="0,0,4,0"
@@ -337,7 +337,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="SEND IN ONE CLICK¦ОТПРАВИТЬ В ОДИН КЛИК" Style="{StaticResource SideCaption}"/>
+                                    <TextBlock Text="Send in one click¦Отправить в один клик" Style="{StaticResource SideCaption}"/>
                                     <TextBlock Grid.Column="1" Text="the file is copied — Ctrl&#x2060;+&#x2060;V in the chat¦файл скопируется — Ctrl&#x2060;+&#x2060;V в чат" Foreground="{StaticResource Muted}"
                                                FontSize="11.5" Margin="10,0,0,0" TextWrapping="Wrap" TextAlignment="Right"/>
                                 </Grid>

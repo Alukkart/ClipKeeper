@@ -480,7 +480,7 @@
                 <Border DockPanel.Dock="Bottom" Height="1" Background="{StaticResource Line}" Margin="10,0"/>
 
                 <!-- the games of the folder shown in the library, newest first: one click opens a game (built in MainWindowSide.cs) -->
-                <DockPanel x:Name="SideGamesBox">
+                <DockPanel x:Name="SideGamesBox" Visibility="Hidden">
                     <TextBlock DockPanel.Dock="Top" Text="Games¦Игры" Foreground="#5F646D" FontSize="11.5" Margin="18,18,0,6"/>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel x:Name="SideGames" Margin="0,0,0,6"/>
@@ -590,10 +590,10 @@
                         <Border x:Name="Hero" Style="{StaticResource CardBorder}" Padding="0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="3"/>
+                                    <ColumnDefinition Width="2"/>
                                     <ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
-                                <Border x:Name="HeroStripe" CornerRadius="10,0,0,10" Background="{StaticResource Ok}"/>
+                                <Border x:Name="HeroStripe" CornerRadius="8,0,0,8" Background="{StaticResource Ok}"/>
                                 <Grid Grid.Column="1" Margin="24,24,22,24">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition/>
@@ -609,7 +609,7 @@
                                                 </Ellipse>
                                                 <Ellipse x:Name="HeroDot" Fill="{StaticResource Ok}"/>
                                             </Grid>
-                                            <TextBlock x:Name="HeroLabel" Text="RUNNING¦РАБОТАЕТ" FontSize="12" FontWeight="SemiBold"
+                                            <TextBlock x:Name="HeroLabel" Text="Running¦Работает" FontSize="12" FontWeight="SemiBold"
                                                        Foreground="{StaticResource Ok}" Margin="10,0,0,0"/>
                                         </StackPanel>
                                         <TextBlock x:Name="HeroTitle" Text="All good¦Всё в порядке" FontFamily="{StaticResource DisplayFont}"

@@ -203,6 +203,8 @@ namespace DeviceGuard
         {
             if (clipsRoot == null) clipsFolder.Text = CurrentRoot() ?? L.T("the clip folder appears once ClipKeeper connects to OBS", "папка клипов появится, когда ClipKeeper подключится к OBS");
             ShowSourceChips();
+            // the sidebar lists the games from the first moment, not only once the library has been opened
+            if (!sideAsked && sideGames.Count == 0 && CurrentRoot() != null && currentPage != PageClips) { sideAsked = true; LoadClips(false); }
             if (s.LastClipPath != lastClipSeen)
             {
                 lastClipSeen = s.LastClipPath;

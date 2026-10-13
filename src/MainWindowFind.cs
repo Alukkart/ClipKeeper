@@ -208,6 +208,7 @@ namespace DeviceGuard
             sb.Content = c;
             sb.Tag = sortText;
             sb.Visibility = page ? Visibility.Visible : Visibility.Collapsed;
+            ShowListHead();
         }
 
         void SortMenu(Button anchor)

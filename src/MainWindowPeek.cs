@@ -34,12 +34,12 @@ namespace DeviceGuard
         void InitPeek()
         {
             peekTick.Tick += (s, e) => PeekShowTime();
-            // a click on a frame opens the clip's panel, a double click — the player (a selection takes the click first)
+            // a click on a frame (or a row of the list) opens the clip's panel, a double click — the player (a selection takes the click first)
             clipsList.AddHandler(UIElement.PreviewMouseLeftButtonDownEvent, new MouseButtonEventHandler((s, e) =>
             {
                 if (e.Handled || Keyboard.Modifiers != ModifierKeys.None || Selection.Count > 0) return;
                 var src = e.OriginalSource as DependencyObject;
-                if (InButton(src) || ThumbUnder(src) == null) return;
+                if (InButton(src) || ThumbUnder(src) == null && !RowUnder(src)) return;
                 var vm = ClipUnder(src);
                 if (vm == null || vm.Editing) return;
                 if (e.ClickCount == 2) { PeekStop(); Shell.Open(vm.Path); }

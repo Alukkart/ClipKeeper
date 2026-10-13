@@ -251,7 +251,7 @@ namespace DeviceGuard
         }
         static long selectClock;
         public long SelectedAt;
-        public bool Selecting { get { return selecting; } set { selecting = value; Notify("CheckOpacity"); } }
+        public bool Selecting { get { return selecting; } set { selecting = value; Notify("CheckOpacity", "Selecting"); } }
         public double CheckOpacity { get { return selected || selecting ? 1 : 0; } }
         public Brush CheckRing { get { return selected ? Wpf.Res<Brush>("Text") : RingOff; } }
         public Brush CheckFill { get { return selected ? Wpf.Res<Brush>("Text") : FillOff; } }
@@ -260,6 +260,18 @@ namespace DeviceGuard
         // its own name (ClipNames): a source is named in its file name, when and how big it is goes below
         public bool Named, Source;
         public string WhenText, SizeText;
+        // the list's columns (ClipRowTpl): when (not again if the name already is the date), the size, the game by its title
+        public string WhenCap
+        {
+            get
+            {
+                string w = EventVm.Cap(WhenText) ?? "";
+                return Title != null && w.Length > 0 && Title.StartsWith(w, StringComparison.OrdinalIgnoreCase) ? "" : w;
+            }
+        }
+        public Visibility WhenVis { get { return WhenCap.Length > 0 ? Visibility.Visible : Visibility.Collapsed; } }
+        public string SizeCol { get { return SizeText; } }
+        public string GameText { get { return NoGame.Is(Game) ? "—" : Covers.Title(Game); } }
         public string TitleTip { get { return Path + L.T("\nF2 or a double click — rename", "\nF2 или двойной клик — переименовать"); } }
         bool editing;
         string editText = "";

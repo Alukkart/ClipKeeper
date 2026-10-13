@@ -136,6 +136,7 @@ namespace DeviceGuard
             InitRename();
             InitSelect();
             InitPeek();
+            InitList();
             InitTriage();
             gamesList.AddHandler(Button.ClickEvent, new RoutedEventHandler(OnGameButton));
             F<Button>("BtnClipsBack").Click += (s, e) => GoBack();
@@ -798,6 +799,7 @@ namespace DeviceGuard
                             : L.T("No clips here yet.", "Здесь пока нет клипов.");
             clipsEmpty.Visibility = list.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             clipsMore.Visibility = more ? Visibility.Visible : Visibility.Collapsed;
+            ShowListHead();
         }
 
         // ── for previews ──

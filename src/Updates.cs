@@ -125,6 +125,15 @@ namespace DeviceGuard
             }
         }
 
+        // a copy from winget or Scoop is updated by that package manager: one that swapped its own exe would leave the
+        // manager thinking the old version is installed. null — ClipKeeper updates itself
+        public static string ManagerCommand(string installer)
+        {
+            return installer == "winget" ? "winget upgrade Alukkart.ClipKeeper"
+                 : installer == "scoop" ? "scoop update clipkeeper"
+                 : null;
+        }
+
         static string ExePath { get { return System.Windows.Forms.Application.ExecutablePath; } }
         static string OldPath { get { return Path.ChangeExtension(ExePath, ".old.exe"); } }
         static string NewPath { get { return Path.ChangeExtension(ExePath, ".new.exe"); } }
@@ -134,6 +143,12 @@ namespace DeviceGuard
         // network and files; call off the UI thread. null — the new exe is in place, restart to run it; otherwise the reason
         public static string Install(Release r)
         {
+            string command = ManagerCommand(Program.Installer);
+            if (command != null)
+                return L.T("ClipKeeper was installed with " + Program.Installer + " — update it there: " + command +
+                           " (the new version gets there a little after it is on GitHub)",
+                           "ClipKeeper установлен через " + Program.Installer + " — обнови его там: " + command +
+                           " (новая версия появляется там чуть позже, чем на GitHub)");
             if (r == null || r.ExeUrl == null) return L.T("the release has no ClipKeeper.exe", "в выпуске нет ClipKeeper.exe");
             if (r.SumsUrl == null) return L.T("the release has no checksums, so the file can't be checked", "в выпуске нет контрольных сумм — файл нечем проверить");
             string exe = ExePath, fresh = NewPath, old = OldPath;
@@ -168,6 +183,7 @@ namespace DeviceGuard
                 }
                 catch { try { File.Delete(MarkerPath); } catch { } throw; }
                 Log.Write("update " + Program.Version + " → " + r.Version + " installed, restarting");
+                SyncSetupEntry(r.Version);
                 return null;
             }
             catch (Exception ex)
@@ -176,6 +192,31 @@ namespace DeviceGuard
                 Log.Write("update " + r.Version + ": " + ex.Message);
                 return ex.Message;
             }
+        }
+
+        // installed by the setup (installer\ClipKeeper.iss, this AppId): "Apps" in Windows and winget read the version from
+        // the uninstall entry the setup wrote, so a copy that updated itself brings that entry up to date
+        public const string SetupAppId = "{F0418725-5FD7-4201-B1E0-62BAE55CB01B}";
+        const string SetupKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\" + SetupAppId + "_is1";
+
+        public static bool SameFolder(string a, string b)
+        {
+            if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return false;
+            return string.Equals(a.Trim().Trim('"').TrimEnd('\\'), b.Trim().Trim('"').TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
+        }
+
+        static void SyncSetupEntry(string version)
+        {
+            try
+            {
+                using (var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(SetupKey, true))
+                {
+                    if (k == null || !SameFolder(k.GetValue("InstallLocation") as string, Program.ExeDir)) return;
+                    k.SetValue("DisplayVersion", version);
+                    Log.Write("update: the setup's entry in Apps now says " + version);
+                }
+            }
+            catch (Exception ex) { Log.Write("update: the setup's entry not updated: " + ex.Message); }
         }
 
         static void Remove(string p)

@@ -71,7 +71,9 @@ namespace DeviceGuard
             cleanupTimer.Tick += (s, e) => AutoCleanup();
             cleanupTimer.Start();
             obsScriptTimer.Tick += (s, e) => SyncObsScript();
-            if (Cfg.ObsStartScript || File.Exists(ObsScript.ScriptPath)) SyncObsScript();   // the exe path in the script, a change still waiting
+            // the exe path in the script, a change still waiting. Not from a local build: with its own settings it would
+            // point the script at itself, or take it out of OBS, under the copy you use every day; its toggle still works
+            if (!Updates.LocalBuild && (Cfg.ObsStartScript || File.Exists(ObsScript.ScriptPath))) SyncObsScript();
             // a minute without a crash: the update (if there was one) is kept
             var confirm = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
             confirm.Tick += (s, e) => { confirm.Stop(); Updates.Confirm(); };
@@ -101,15 +103,29 @@ namespace DeviceGuard
         // launching the exe again does not say "already running" but asks this copy to open its window
         public const string ShowEventName = @"Local\ClipKeeperShow";
 
+        // "ClipKeeper.exe --exit" (the setup, the uninstaller) asks this copy to exit
+        public const string ExitEventName = @"Local\ClipKeeperExit";
+
         void ListenShowRequests()
         {
-            EventWaitHandle ev;
-            try { ev = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName); }
+            EventWaitHandle ev, exit;
+            try
+            {
+                ev = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
+                exit = new EventWaitHandle(false, EventResetMode.AutoReset, ExitEventName);
+            }
             catch (Exception ex) { Log.Write("\"open window\" signal: " + ex.Message); return; }
             new Thread(() =>
             {
                 while (ev.WaitOne()) Post(() => ShowMain(false));
             }) { IsBackground = true, Name = "ClipKeeper-show" }.Start();
+            new Thread(() =>
+            {
+                exit.WaitOne();
+                Log.Write("asked to exit (setup or uninstall)");
+                Program.ExitRequested = true;
+                Post(Exit);
+            }) { IsBackground = true, Name = "ClipKeeper-exit" }.Start();
         }
 
         void OnDisplayChanged(object s, EventArgs e) { Guard.NotifyChange(); }

@@ -74,9 +74,11 @@ ClipKeeper's own windows are hidden from OBS capture and screenshots, so they ne
 
 ## Install
 
-1. Download `ClipKeeper-<version>.zip` from [Releases](https://github.com/Alukkart/ClipKeeper/releases/latest)
-   and unpack it into a folder of your own (say `D:\Apps\ClipKeeper`) — ffmpeg is already inside. In a folder Windows
-   protects (Program Files) it works too, keeping its data in `%LOCALAPPDATA%\ClipKeeper`, but can't update itself.
+1. Download `ClipKeeper-<version>-setup.exe` from [Releases](https://github.com/Alukkart/ClipKeeper/releases/latest)
+   and run it: it installs for you only, without admin rights, into `%LOCALAPPDATA%\Programs\ClipKeeper`, with a Start
+   menu shortcut and an entry in **Settings → Apps** to remove it; ffmpeg is included.
+   Or the portable `ClipKeeper-<version>.zip`: unpack it into a folder of your own (say `D:\Apps\ClipKeeper`). In a folder
+   Windows protects (Program Files) it works too, keeping its data in `%LOCALAPPDATA%\ClipKeeper`, but can't update itself.
 2. In OBS: **Tools → WebSocket Server Settings** — enable the server. The password is not needed: **Find OBS** in the setup
    takes it from the OBS settings on this computer.
 3. Run `ClipKeeper.exe`. A short setup walks through language and features, the OBS connection, a check of what OBS
@@ -108,7 +110,8 @@ Every release is built by GitHub Actions from this repository (`.github/workflow
 **Update:** ClipKeeper checks GitHub once a day and says when a new version is out; **Settings → About → Update**
 downloads it, checks it against the release checksums, swaps the exe and restarts. By hand: close ClipKeeper in the tray
 and replace `ClipKeeper.exe` with the new one (it's attached to every release on its own). Settings, the device reference
-and covers stay either way.
+and covers stay either way. A copy installed with winget or Scoop is updated there (`winget upgrade Alukkart.ClipKeeper`,
+`scoop update clipkeeper`) and keeps its data in `%LOCALAPPDATA%\ClipKeeper`.
 
 <details>
 <summary><b>Setting it up by hand</b> (if you skipped the setup)</summary>
@@ -418,6 +421,9 @@ previews; its license is in `ffmpeg\LICENSE.txt`, its source code at
 - **Build:** `build.cmd` — the C# compiler that ships with Windows (.NET Framework 4.8), nothing to install.
   `build.cmd ClipKeeper.test.exe` builds under another name without touching the working exe.
   A local build calls itself `0.0.0-dev`; the interface is WPF, also part of Windows.
+- **Next to the ClipKeeper you use:** a local build, started while an installed (or unpacked) `ClipKeeper.exe` runs,
+  closes that one and starts it again when you exit the build. It keeps its data next to itself and leaves autostart and
+  the OBS start script to the copy you use. A copy older than 1.2.0 can't be closed this way: exit it in the tray first.
 - **The GIF at the top:** `showcase.cmd` builds the test exe and renders `docs/screenshots/<lang>/showcase.gif` in both
   languages from the current interface (about 20 s). It shows real things, like `--preview`: clips from `D:\Sources`,
   covers, your settings — so it runs locally, not in Actions. The slides stay in `preview\showcase-<lang>\`;

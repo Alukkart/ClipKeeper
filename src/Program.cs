@@ -14,12 +14,26 @@ namespace DeviceGuard
     {
         public static string Dir;      // ClipKeeper's data: next to the exe (portable), or %LOCALAPPDATA%\ClipKeeper if that folder is read-only
         public static string ExeDir;   // the exe folder: ffmpeg\ comes with it
+        public static string Installer;   // "winget" / "scoop" — that package manager owns the exe folder; null — unpacked by hand
+        public static volatile bool ExitRequested;   // closed by "--exit" (a setup), not by "Exit" in the tray
+
+        // winget unpacks the zip into ...\WinGet\Packages\Alukkart.ClipKeeper_<source>\, Scoop into
+        // <scoop>\apps\clipkeeper\<version or current>\ (next to <scoop>\shims). Both replace that folder on an update
+        public static string InstalledBy(string exeDir, Func<string, bool> dirExists)
+        {
+            string d = (exeDir ?? "").TrimEnd('\\');
+            if (d.IndexOf(@"\WinGet\Packages\", StringComparison.OrdinalIgnoreCase) >= 0) return "winget";
+            var m = System.Text.RegularExpressions.Regex.Match(d, @"^(.+)\\apps\\clipkeeper\\[^\\]+$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (m.Success && dirExists(Path.Combine(m.Groups[1].Value, "shims"))) return "scoop";
+            return null;
+        }
 
         // a folder like Program Files can't be written without admin rights: settings, the log and the cache would silently
-        // not be saved. Then the data lives in %LOCALAPPDATA%\ClipKeeper; what was already next to the exe is copied there once
+        // not be saved; a package manager's folder is replaced on its update. Then the data lives in %LOCALAPPDATA%\ClipKeeper;
+        // what was already next to the exe is copied there once
         static string DataDir(string exeDir)
         {
-            if (Writable(exeDir)) return exeDir;
+            if (Installer == null && Writable(exeDir)) return exeDir;
             string local = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClipKeeper");
             try
             {
@@ -78,10 +92,11 @@ namespace DeviceGuard
         static int Main(string[] args)
         {
             ExeDir = AppDomain.CurrentDomain.BaseDirectory;
+            Installer = InstalledBy(ExeDir, Directory.Exists);
             Dir = DataDir(ExeDir);
             Log.FilePath = Path.Combine(Dir, "ClipKeeper.log");
             if (!string.Equals(Dir.TrimEnd('\\'), ExeDir.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
-                Log.Write("the program folder is read-only — data is kept in " + Dir);
+                Log.Write((Installer != null ? "installed with " + Installer : "the program folder is read-only") + " — data is kept in " + Dir);
 
             // --lang en|ru picks the language for previews and tests; --after <pid> waits for the old copy to exit (restart)
             string lang = TakeArg(ref args, "--lang"), after = TakeArg(ref args, "--after");
@@ -141,8 +156,22 @@ namespace DeviceGuard
                 return SelfTest.Probe(args.Length > 1 ? args[1] : Path.Combine(Dir, "probe.txt"));
 
             bool created;
-            using (var mutex = new Mutex(true, @"Local\OBSDeviceGuard", out created))
+            var mutex = new Mutex(true, @"Local\OBSDeviceGuard", out created);
+            // a local build takes over from the ClipKeeper.exe you use every day (installed or unpacked) while it runs,
+            // and starts it again on exit — so a test build can be run without closing that one by hand
+            string handBack = null;
+            if (!created && Updates.LocalBuild && !args.Contains("--exit") && !args.Contains("--ensure"))
             {
+                string running = RunningCopy();
+                if (running != null && ExitRunning(mutex) == 0)
+                {
+                    mutex = new Mutex(true, @"Local\OBSDeviceGuard", out created);
+                    if (created) handBack = running;
+                }
+            }
+            using (mutex)
+            {
+                if (args.Contains("--exit")) return created ? 0 : ExitRunning(mutex);
                 if (!created)
                 {
                     if (args.Contains("--ensure")) return 0;   // started by OBS (ObsScript) while already running — nothing to do
@@ -164,13 +193,50 @@ namespace DeviceGuard
                 wpf.DispatcherUnhandledException += (s, e) => { Log.Write("UI error: " + e.Exception); e.Handled = true; };
                 Wpf.LoadStyles(wpf);
                 Log.Write("=== ClipKeeper " + Version + " started (" + L.Code + ") ===");
-                try { Autostart.Migrate(); } catch (Exception ex) { Log.Write("autostart: " + ex.Message); }
+                // a local build doesn't move autostart to itself: it belongs to the copy you use every day
+                if (!Updates.LocalBuild)
+                    try { Autostart.Migrate(); } catch (Exception ex) { Log.Write("autostart: " + ex.Message); }
                 if (Updates.OnStart(args)) return 0;   // the new version crashed last time — the old one is starting instead
                 new TrayApp(args);
+                if (handBack != null) Log.Write("took over from " + handBack + " — it starts again on exit");
                 wpf.Run();
                 Log.Write("=== ClipKeeper closed ===");
+                // not when a setup closed this copy with --exit: it is about to replace the files of that very copy
+                if (handBack != null && ExitRequested) Log.Write("closed by --exit — " + handBack + " is not started again");
+                else if (handBack != null)   // --after: it waits for this copy (and the mutex) to be gone
+                    try { using (var me = Process.GetCurrentProcess()) Process.Start(handBack, "--tray --after " + me.Id); }
+                    catch (Exception ex) { Log.Write("could not start " + handBack + " again: " + ex.Message); }
             }
             return 0;
+        }
+
+        // the path of a running ClipKeeper.exe other than this process; null — none. A test build is ClipKeeper.test.exe,
+        // so it is never the one taken over
+        static string RunningCopy()
+        {
+            using (var me = Process.GetCurrentProcess())
+                foreach (var p in Process.GetProcessesByName("ClipKeeper"))
+                    using (p)
+                        try { if (p.Id != me.Id) return p.MainModule.FileName; }
+                        catch { }
+            return null;
+        }
+
+        // ClipKeeper.exe --exit — the setup and its uninstaller close the running copy before they touch its files: that copy
+        // exits the way "Exit" in the tray does. 0 — it is gone (or was not running), 1 — it is still there after 15 s
+        static int ExitRunning(Mutex mine)
+        {
+            try { using (var ev = EventWaitHandle.OpenExisting(TrayApp.ExitEventName)) ev.Set(); }
+            catch { return 1; }   // a copy too old to know the signal
+            mine.Dispose();   // our handle keeps the mutex alive too
+            for (int i = 0; i < 75; i++)
+            {
+                Mutex m;
+                if (!Mutex.TryOpenExisting(@"Local\OBSDeviceGuard", out m)) return 0;
+                m.Dispose();
+                Thread.Sleep(200);
+            }
+            return 1;
         }
 
         // removes "--name value" from the arguments and returns the value
@@ -623,6 +689,19 @@ namespace DeviceGuard
             check(Updates.Parse("{\"message\":\"Not Found\"}") == null, "updates: no release — nothing to offer");
             const string sums = "0a1b  ClipKeeper-1.3.0.zip\r\nAABBCC  ClipKeeper.exe\r\n";
             check(Updates.HashOf(sums, "ClipKeeper.exe") == "aabbcc" && Updates.HashOf(sums, "other.exe") == null, "updates: the exe hash from SHA256SUMS.txt");
+            Func<string, bool> scoopRoot = d => string.Equals(d, @"D:\Tools\scoop\shims", StringComparison.OrdinalIgnoreCase);
+            check(Program.InstalledBy(@"C:\Users\a\AppData\Local\Microsoft\WinGet\Packages\Alukkart.ClipKeeper_Microsoft.Winget.Source_8wekyb3d8bbwe\ClipKeeper\", scoopRoot) == "winget" &&
+                  Program.InstalledBy(@"D:\Tools\scoop\apps\clipkeeper\current\", scoopRoot) == "scoop" &&
+                  Program.InstalledBy(@"D:\Tools\scoop\apps\clipkeeper\1.2.0", scoopRoot) == "scoop",
+                  "updates: a copy installed with winget or Scoop is recognized by its folder");
+            check(Program.InstalledBy(@"D:\Apps\ClipKeeper\", scoopRoot) == null && Program.InstalledBy(@"D:\Games\apps\clipkeeper\current\", scoopRoot) == null &&
+                  Program.InstalledBy(@"D:\Tools\scoop\apps\clipkeeper\", scoopRoot) == null,
+                  "updates: an unpacked copy (even in a folder named apps\\clipkeeper without Scoop) updates itself");
+            check(Updates.ManagerCommand("winget") == "winget upgrade Alukkart.ClipKeeper" && Updates.ManagerCommand("scoop") == "scoop update clipkeeper" &&
+                  Updates.ManagerCommand(null) == null, "updates: a package manager's copy is updated with its command");
+            check(Updates.SameFolder(@"C:\Users\a\AppData\Local\Programs\ClipKeeper\", @"c:\users\a\appdata\local\programs\clipkeeper") &&
+                  Updates.SameFolder("\"D:\\Apps\\ClipKeeper\"", @"D:\Apps\ClipKeeper\") && !Updates.SameFolder(@"D:\Apps\ClipKeeper", @"D:\Apps\ClipKeeper2") &&
+                  !Updates.SameFolder(null, @"D:\Apps"), "updates: the setup's entry is matched to this copy by its folder");
 
             string obsIni = Path.Combine(Path.GetTempPath(), "clipkeeper-obs-" + Guid.NewGuid().ToString("N") + ".ini");
             try

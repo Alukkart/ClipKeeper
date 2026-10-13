@@ -1,6 +1,7 @@
 # Release: git tag v1.2.3 && git push origin v1.2.3
 # Builds ClipKeeper.exe with the version from the tag, signs it through SignPath if that is set up (see "Sign"),
 # runs the self-test and publishes a release:
+#   ClipKeeper-<version>-setup.exe — the setup: the same files, for one user, without admin rights (installer\ClipKeeper.iss);
 #   ClipKeeper-<version>.zip — for a first install: the app + ffmpeg/ffprobe (BtbN build, GPL) + README with pictures;
 #   ClipKeeper.exe           — for an update: replace the file next to the old one, settings stay;
 #   SHA256SUMS.txt           — checksums.
@@ -32,6 +33,8 @@ jobs:
       # optional VirusTotal scan of ClipKeeper.exe, linked in the release notes: repository secret VIRUSTOTAL_API_KEY
       # (a free key: virustotal.com → your profile → API key). Without it the step is skipped
       HAS_VIRUSTOTAL: ${{ secrets.VIRUSTOTAL_API_KEY != '' }}
+      # optional winget update (see "WinGet"): repository secret WINGET_TOKEN. Without it the step is skipped
+      HAS_WINGET: ${{ secrets.WINGET_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -49,6 +52,7 @@ jobs:
           $t = $t -replace 'AssemblyInformationalVersion\("[^"]*"\)', "AssemblyInformationalVersion(`"$ver`")"
           Set-Content $f $t -Encoding UTF8 -NoNewline
           "VERSION=$ver" >> $env:GITHUB_ENV
+          "VERSION_NUM=$num" >> $env:GITHUB_ENV
           "PRERELEASE=$(if ($Matches[4]) { 'true' } else { 'false' })" >> $env:GITHUB_ENV
 
       # the release notes start with this version's section of CHANGELOG.md ("## [1.2.3] - date" up to the next "## [").
@@ -141,6 +145,11 @@ jobs:
           Copy-Item "$env:FFMPEG_ROOT\bin\ffmpeg.exe", "$env:FFMPEG_ROOT\bin\ffprobe.exe", "$env:FFMPEG_ROOT\LICENSE.txt" "$pkg\ffmpeg"
           Compress-Archive "$pkg" "dist\ClipKeeper-$env:VERSION.zip"
           Copy-Item ClipKeeper.exe dist
+          # the setup (installer\ClipKeeper.iss) from the same folder; Inno Setup 6 comes with the runner image
+          $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
+          & $iscc /Q "/DAppVersion=$env:VERSION" "/DAppNum=$env:VERSION_NUM" "/DSourceDir=$((Resolve-Path $pkg).Path)" "/DOutputDir=$((Resolve-Path dist).Path)" installer\ClipKeeper.iss
+          if ($LASTEXITCODE) { throw "the setup did not build (ISCC exit code $LASTEXITCODE)" }
           Get-ChildItem dist -File | ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" } |
             Set-Content dist\SHA256SUMS.txt -Encoding ascii
 
@@ -157,7 +166,7 @@ jobs:
           $sha = (Get-FileHash dist\ClipKeeper.exe -Algorithm SHA256).Hash.ToLower()
           $up = Invoke-RestMethod -Method Post -Uri https://www.virustotal.com/api/v3/files -Headers $h -Form @{ file = Get-Item dist\ClipKeeper.exe }
           $link = "https://www.virustotal.com/gui/file/$sha"
-          $note = "VirusTotal: [ClipKeeper.exe]($link)"
+          $note = "**VirusTotal** — [ClipKeeper.exe]($link)"
           # the free API allows 4 requests a minute: ask every 30 s, up to 6 minutes
           for ($i = 0; $i -lt 12; $i++) {
             Start-Sleep 30
@@ -166,28 +175,35 @@ jobs:
               $s = $a.stats
               $flagged = $s.malicious + $s.suspicious
               $total = $s.malicious + $s.suspicious + $s.undetected + $s.harmless
-              $note = "VirusTotal: [ClipKeeper.exe — $flagged / $total]($link)"
+              $note = "**VirusTotal** — [ClipKeeper.exe: $flagged / $total]($link)"
               break
             }
           }
           $note
           "VT_NOTE=$note" >> $env:GITHUB_ENV
 
+      # 1.1.0 went out without the link because the key was missing and the step was skipped without a word
+      - name: VirusTotal key
+        if: env.HAS_VIRUSTOTAL != 'true'
+        shell: pwsh
+        run: '"::warning::VIRUSTOTAL_API_KEY is not set: the release notes get no VirusTotal link"'
+
       - name: Publish
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # the VirusTotal line first: people look for it before they download
           $notes = @"
-          **First install** — ClipKeeper-$env:VERSION.zip: unpack into any folder and run ClipKeeper.exe.
-          **Update** — close ClipKeeper in the tray and replace ClipKeeper.exe with the new one. Settings, the device reference and covers stay.
+          $env:VT_NOTE
 
-          **Первая установка** — ClipKeeper-$env:VERSION.zip: распаковать в любую папку и запустить ClipKeeper.exe.
-          **Обновление** — закрыть ClipKeeper в трее и заменить ClipKeeper.exe новым. Настройки, эталон устройств и обложки останутся.
+          **Install** —ClipKeeper-$env:VERSION-setup.exe (for you only, no admin rights, a Start menu shortcut), or ClipKeeper-$env:VERSION.zip: unpack into any folder and run ClipKeeper.exe.
+          **Update** — Settings → About → Update, or close ClipKeeper in the tray and replace ClipKeeper.exe with the new one. Settings, the device reference and covers stay.
+
+          **Установка** — ClipKeeper-$env:VERSION-setup.exe (только для тебя, без прав администратора, ярлык в «Пуске») или ClipKeeper-$env:VERSION.zip: распаковать в любую папку и запустить ClipKeeper.exe.
+          **Обновление** — «Настройки → О программе → Обновить» или закрыть ClipKeeper в трее и заменить ClipKeeper.exe новым. Настройки, эталон устройств и обложки останутся.
 
           ffmpeg in the zip: $env:FFMPEG_VERSION ([BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds), GPL, sources there).
-
-          $env:VT_NOTE
           "@
           # what changed (CHANGELOG.md, the "Changes" step) first, then how to install
           $notes = (Get-Content changes.md -Raw -Encoding UTF8).Trim() + "`n`n---`n`n" + $notes
@@ -195,3 +211,16 @@ jobs:
           $flags = @('--title', "ClipKeeper $env:VERSION", '--notes-file', 'notes.md', '--generate-notes')
           if ($env:PRERELEASE -eq 'true') { $flags += '--prerelease' }
           gh release create '${{ github.ref_name }}' (Get-ChildItem dist -File).FullName @flags
+
+      # a pull request to microsoft/winget-pkgs with the new zip, made from the version already there — so it works from
+      # the second version on; the first one goes there by hand (packaging\manifests.ps1). Needs a fork of winget-pkgs
+      # on this account and WINGET_TOKEN: a classic token with the public_repo scope. Not for pre-releases.
+      # A winget problem never stops the release
+      - name: WinGet
+        if: env.HAS_WINGET == 'true' && env.PRERELEASE == 'false'
+        continue-on-error: true
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: Alukkart.ClipKeeper
+          installers-regex: '^ClipKeeper-[0-9.]+(-setup\.exe|\.zip)$'
+          token: ${{ secrets.WINGET_TOKEN }}

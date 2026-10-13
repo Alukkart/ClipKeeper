@@ -107,6 +107,43 @@ namespace DeviceGuard
             ShowCounts(CountAll(roots));
         }
 
+        // for the self-test: the sidebar's games, the tab counts with a folder inside another, a list row's "when",
+        // and the words lit in the search
+        public static void TestSide(Action<bool, string> check)
+        {
+            string dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "clipkeeper-side-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                Func<string, int, System.IO.FileInfo> make = (rel, minutesAgo) =>
+                {
+                    string p = System.IO.Path.Combine(dir, rel);
+                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(p));
+                    System.IO.File.WriteAllBytes(p, new byte[16]);
+                    System.IO.File.SetLastWriteTime(p, DateTime.Now.AddMinutes(-minutesAgo));
+                    return new System.IO.FileInfo(p);
+                };
+                var all = new List<System.IO.FileInfo>
+                {
+                    make(@"Valorant\a.mp4", 50), make(@"Hunt Showdown\b.mp4", 10), make(@"Hunt Showdown\c.mp4", 90),
+                    make(@"Desktop\d.mp4", 5), make("loose.mp4", 1), make(@"Ready\e.mp4", 2),
+                };
+                Func<System.IO.FileInfo, string> game = f => ClipScanner.GameOf(f, dir);
+                var side = SideGamesOf(all.Take(5).ToList(), game);
+                check(side.Count == 2 && side[0].Key == "Hunt Showdown" && side[0].Count == 2 && side[1].Key == "Valorant" && side[0].Newest.EndsWith("b.mp4"),
+                      "sidebar games: games only (no Desktop, no loose clips), newest first, with counts (" + string.Join(", ", side.Select(g => g.Key + " " + g.Count)) + ")");
+                var counts = CountAll(new[] { dir, System.IO.Path.Combine(dir, "Ready"), null });
+                check(counts[0] == 5 && counts[1] == 1 && counts[2] == -1, "tab counts: a folder inside another counts only in its own tab, no folder is -1 (" + string.Join(",", counts) + ")");
+            }
+            finally { try { System.IO.Directory.Delete(dir, true); } catch { } }
+            var named = new ClipVm { Title = "Bridge duel", WhenText = "yesterday, 17:29" };
+            var dated = new ClipVm { Title = "Yesterday, 17:29", WhenText = "yesterday, 17:29" };
+            check(named.WhenCap == "Yesterday, 17:29" && dated.WhenCap == "" && dated.WhenVis == Visibility.Collapsed, "list rows: when goes under a name, not under a title that is the date already");
+            var t = new TextBlock();
+            Highlight(t, "Hunt Showdown", "show");
+            var runs = t.Inlines.OfType<System.Windows.Documents.Run>().ToList();
+            check(runs.Count == 3 && runs[1].Text == "Show" && runs[1].Background != null && runs[0].Background == null, "search: the typed words are lit in a name");
+        }
+
         // the middle of a picture as a small square: a cover, or the frame of a clip
         static Brush Square(ImageSource img)
         {

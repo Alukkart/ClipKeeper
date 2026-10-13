@@ -71,6 +71,25 @@ namespace DeviceGuard
             b.ToolTip = L.T("Order the clips by it", "Упорядочить клипы по этой колонке");
         }
 
+        // for the self-test: the clip panel, the list, the search and the recording card open over the test cards, or closed
+        public void TestPanels(bool open)
+        {
+            if (open)
+            {
+                Peek(clips[0]);
+                PreviewList(true);
+                OpenPalette();
+                OpenRecPop();
+            }
+            else
+            {
+                CloseRecPop();
+                ClosePalette();
+                PreviewList(false);
+                ClosePeek();
+            }
+        }
+
         // for previews: the list or the frames, not saved
         public void PreviewList(bool list)
         {

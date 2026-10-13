@@ -7,6 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-13
+
 ### Added
 - A setup, `ClipKeeper-<version>-setup.exe`, next to the zip: it installs ClipKeeper for you only, without admin rights,
   with a Start menu shortcut (and one on the desktop if you want) and an entry in Settings → Apps. An update closes the
@@ -109,7 +111,8 @@ The first public release.
 - Statistics by month and game, and a month recap to share as a picture.
 - First-run setup, starting together with OBS, updates from GitHub releases, English and Russian interface.
 
-[Unreleased]: https://github.com/Alukkart/ClipKeeper/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/Alukkart/ClipKeeper/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Alukkart/ClipKeeper/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/Alukkart/ClipKeeper/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/Alukkart/ClipKeeper/compare/v1.0.1...v1.0.2

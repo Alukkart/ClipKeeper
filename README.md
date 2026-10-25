@@ -297,6 +297,10 @@ Ctrl+Z undoes the last cut, Esc drops an unfinished one. Cut parts are skipped w
   Settings → Video encoder; without one the CPU does the work.
 - Trims go to Ready, or next to the source if no folder is chosen. **Delete the source** appears only after a
   successful check and moves the file to the Recycle Bin.
+- **Files to send don't clutter Ready:** Share and GIF files (and the one-click tiles) go to the `sent` folder in
+  ClipKeeper's data, which the library doesn't show, and after 3 days go to the Recycle Bin (Settings → Folders:
+  1 / 3 / 7 / 30 days or always). **To Ready** next to the folder line saves this one as a usual trim; **Keep in Ready**
+  after saving moves a file that's already made.
 - **Smooth preview:** heavy video (HEVC, high bitrate) lags in the player, so a light 720p copy is made in the
   background (~10 s on the GPU) and the player switches to it seamlessly. The original is always what's saved.
   Copies live in `%TEMP%\dg_trim\proxy` — no more than 8, no older than 3 days.

@@ -11,6 +11,7 @@ clipstats.json
 covers/
 backups/
 previews/
+sent/
 
 # build output: build.cmd makes the exe, GitHub Actions makes releases
 /ClipKeeper.exe

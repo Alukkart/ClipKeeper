@@ -68,8 +68,9 @@ namespace DeviceGuard
                 if (Cfg.UpdateCheck && !Updates.LocalBuild) CheckUpdates(false);
             };
             updateTimer.Start();
-            cleanupTimer.Tick += (s, e) => AutoCleanup();
+            cleanupTimer.Tick += (s, e) => { AutoCleanup(); PruneSent(); };
             cleanupTimer.Start();
+            PruneSent();
             obsScriptTimer.Tick += (s, e) => SyncObsScript();
             // the exe path in the script, a change still waiting. Not from a local build: with its own settings it would
             // point the script at itself, or take it out of OBS, under the copy you use every day; its toggle still works
@@ -410,6 +411,13 @@ namespace DeviceGuard
             DateTime t;
             return DateTime.TryParseExact(s ?? "", "yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture,
                                           System.Globalization.DateTimeStyles.None, out t) ? t : DateTime.MinValue;
+        }
+
+        // files saved for sharing go to the Recycle Bin after their days (SentClips); hourly, in the background
+        void PruneSent()
+        {
+            int days = Cfg.ShareKeepDays;
+            System.Threading.Tasks.Task.Factory.StartNew(() => SentClips.Prune(days));
         }
 
         void AutoCleanup()

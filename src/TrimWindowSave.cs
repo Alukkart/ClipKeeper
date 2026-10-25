@@ -40,11 +40,33 @@ namespace DeviceGuard
                                            : Target == ShareTarget.Gif ? L.T("an animation without sound, plays by itself in any chat", "анимация без звука — сама играет в любом чате")
                                            : L.T("good quality up to 2 GB", "хорошее качество до 2 ГБ");
             F<StackPanel>("CustomRow").Visibility = Target == ShareTarget.Custom ? Visibility.Visible : Visibility.Collapsed;
-            UpdateEstimate();
+            UpdateFolder();
+        }
+
+        // "Share" without "To Ready": the file is temporary — it goes to the sent folder and later to the Recycle Bin
+        bool SaveSent { get { return Mode == TrimMode.Share && keepShare.IsChecked != true; } }
+
+        static string KeepText(int days)
+        {
+            return days <= 0 ? L.T("Kept aside from Ready", "Отдельно от «Готовых»")
+                             : L.T("Deleted in ", "Удалится через ") + L.N(days, "day", "days", "день", "дня", "дней");
         }
 
         void UpdateFolder()
         {
+            bool share = Mode == TrimMode.Share, sent = SaveSent;
+            keepShare.Visibility = share ? Visibility.Visible : Visibility.Collapsed;
+            F<TextBlock>("FolderGlyph").Text = sent ? "\uE823" : "\uE8B7";
+            F<Button>("BtnFolder").Visibility = sent ? Visibility.Collapsed : Visibility.Visible;
+            if (sent)
+            {
+                folderText.Text = KeepText(cfg.ShareKeepDays);
+                folderText.ToolTip = L.T("A file to send: the library doesn't show it, and it goes to the Recycle Bin by itself (Settings → Folders). Folder: ",
+                                         "Файл для отправки: в библиотеке его не видно, в корзину он уйдёт сам (Настройки → Папки). Папка: ") + SentClips.Dir;
+                F<Button>("BtnFolderSrc").Visibility = Visibility.Collapsed;
+                UpdateEstimate();
+                return;
+            }
             bool custom = !string.IsNullOrEmpty(cfg.TrimFolder);
             string dir = custom ? cfg.TrimFolder : Path.GetDirectoryName(source);
             string name = Path.GetFileName(dir.TrimEnd('\\'));
@@ -69,7 +91,7 @@ namespace DeviceGuard
             return new TrimJob
             {
                 Source = source, In = inT, Out = outT, Mode = Mode, Target = Target, CustomMb = cfg.ShareCustomMb, SourceInfo = info, Meta = meta,
-                Title = nameBox.Text, OutputDir = string.IsNullOrEmpty(cfg.TrimFolder) ? null : cfg.TrimFolder,
+                Title = nameBox.Text, OutputDir = SaveSent ? SentClips.Dir : string.IsNullOrEmpty(cfg.TrimFolder) ? null : cfg.TrimFolder,
                 Loudness = cfg.ShareLoudness, GifFormat = cfg.GifFormat, GifWidth = cfg.GifWidth, GifFps = cfg.GifFps,
                 MixIndex = mixIndex, RebuildMix = rebuildMix.IsChecked == true,
                 Cuts = cuts.Count > 0 ? cuts.Select(c => new[] { c[0], c[1] }).ToList() : null,
@@ -182,12 +204,35 @@ namespace DeviceGuard
             F<Button>("BtnShow").IsEnabled = done && exists;
             F<Button>("BtnCopy").IsEnabled = done && exists;
             F<Button>("BtnAgain").IsEnabled = done && !sourceDeleted;
+            F<Button>("BtnKeep").Visibility = done && exists && SentClips.IsSent(lastJob.Output) ? Visibility.Visible : Visibility.Collapsed;
             // the source can be deleted only after a successful check
             F<Button>("BtnDelSrc").Visibility = done && verified && !sourceDeleted ? Visibility.Visible : Visibility.Collapsed;
             delSrcText.Text = L.T("Delete the source", "Удалить исходник");
         }
 
         static EventVm StepVm(TrimStep s) { return EventVm.Of(s); }
+
+        // "Keep in Ready": the temporary file moves to where trims go; the copied file (if it was) is copied again from there
+        void KeepSent()
+        {
+            if (lastJob == null || !SentClips.IsSent(lastJob.Output)) return;
+            string was = lastJob.Output;
+            string now = SentClips.Keep(was, cfg.TrimFolder, source);
+            if (now == null)
+            {
+                steps.Add(StepVm(new TrimStep { Text = L.T("Could not move the file (details in the log)", "Не удалось перенести файл (подробности в журнале)"), State = 2 }));
+                return;
+            }
+            lastJob.Output = now;
+            try
+            {
+                if (Clipboard.ContainsFileDropList() && Clipboard.GetFileDropList().Contains(was)) Shell.CopyFile(now);
+            }
+            catch { }
+            steps.Add(StepVm(new TrimStep { Text = L.T("Moved to ", "Перенесён в ") + Path.GetDirectoryName(now) + L.T(" — it stays", " — останется"), State = 1 }));
+            SetResultButtons(true);
+            if (app != null) app.ClipsChanged();
+        }
 
         void DeleteSource()
         {

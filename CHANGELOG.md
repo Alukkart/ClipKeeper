@@ -28,6 +28,9 @@ A new look: graphite drawn with thin lines, where covers and clip frames are the
 - Inside a game: its cover, name and what it holds (clips, length, size, the latest clip) over a soft glow of the
   game's art instead of a big banner; **Latest clip** opens it.
 - Group names are plain words instead of capitals everywhere.
+- Clips made to send no longer pile up in Ready. Share and GIF files, the one-click tiles included, are saved to a
+  `sent` folder that the library doesn't show and go to the Recycle Bin after 3 days (Settings → Folders: 1, 3, 7 or
+  30 days, or always). "To Ready" in the editor saves one as a usual trim; "Keep in Ready" after saving moves it there.
 
 ## [1.2.0] - 2026-10-13
 

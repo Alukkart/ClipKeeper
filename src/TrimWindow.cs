@@ -72,6 +72,7 @@ namespace DeviceGuard
         double speed = 1;                // J/K/L: 1×, 2×, 4×
         bool playing, loopSel, busy, verified, sourceDeleted, audioReady, rebuildTouched, closed, muted, swapping;
         bool copyWhenDone;   // a one-click share: the verified file goes to the clipboard by itself
+        ToggleButton keepShare;   // "Share" saves a temporary file (SentClips) unless this is on — for this window only
         bool testRun;                    // --playtest / --keytest: the window is offscreen, settings are not touched
         // after a seek the video reports the old position for a while as it rolls to a keyframe —
         // leave the audio alone meanwhile, otherwise it "stutters" on the same piece
@@ -131,6 +132,7 @@ namespace DeviceGuard
             resultTitle = F<TextBlock>("ResultTitle");
             delSrcText = F<TextBlock>("DelSrcText");
             folderText = F<TextBlock>("FolderText");
+            keepShare = F<ToggleButton>("KeepShare");
             audioStatus = F<TextBlock>("AudioStatus");
             estSize = F<TextBlock>("EstSize");
             estDur = F<TextBlock>("EstDur");
@@ -238,6 +240,8 @@ namespace DeviceGuard
                     app.ShowToast(L.T("✓ File copied — paste it into Discord or Telegram (Ctrl+V)", "✓ Файл скопирован — вставь его в Discord или Telegram (Ctrl+V)"));
             };
             F<Button>("BtnAgain").Click += (s, e) => ShowExport();
+            F<Button>("BtnKeep").Click += (s, e) => KeepSent();
+            keepShare.Click += (s, e) => UpdateFolder();
             QuickShare(F<Button>("QuickDiscord"), tgtDiscord);
             QuickShare(F<Button>("QuickNitro"), tgtNitro);
             QuickShare(F<Button>("QuickTelegram"), tgtTelegram);

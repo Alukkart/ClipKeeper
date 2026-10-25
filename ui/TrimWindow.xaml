@@ -320,10 +320,14 @@
                                         <ColumnDefinition/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE8B7;" ToolTip="Where to save¦Куда сохранить"/>
+                                    <TextBlock x:Name="FolderGlyph" Style="{StaticResource Glyph}" Text="&#xE8B7;" ToolTip="Where to save¦Куда сохранить"/>
                                     <TextBlock x:Name="FolderText" Grid.Column="1" FontSize="12.5"
                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{StaticResource Sub}"/>
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0">
+                                        <!-- "Share": a temporary file, unless this one should stay in Ready -->
+                                        <ToggleButton x:Name="KeepShare" Style="{StaticResource Chip}" Padding="10,3,10,3" Margin="0" Visibility="Collapsed"
+                                                      Content="To Ready¦В «Готовые»"
+                                                      ToolTip="Save this one to Ready like a usual trim, not as a temporary file¦Сохранить этот клип в «Готовые», как обычную обрезку, а не временным файлом"/>
                                         <Button x:Name="BtnFolder" Style="{StaticResource BtnIcon}" Content="&#xE838;" ToolTip="Choose a folder for trims¦Выбрать папку для обрезок"/>
                                         <Button x:Name="BtnFolderSrc" Style="{StaticResource BtnIcon}" Content="&#xE7A7;" Margin="6,0,0,0"
                                                 ToolTip="Save next to the source¦Сохранять рядом с исходником"/>
@@ -424,6 +428,13 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;" FontSize="12" Margin="0,0,8,0"/>
                                     <TextBlock Text="Copy file¦Копировать файл"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="BtnKeep" Style="{StaticResource BtnGhost}" Margin="0,0,0,6" HorizontalAlignment="Stretch" Visibility="Collapsed"
+                                    ToolTip="Move the file to Ready — then it is not deleted¦Перенести файл в «Готовые» — тогда он не удалится">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE8B7;" FontSize="12" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Keep in Ready¦Оставить в «Готовых»"/>
                                 </StackPanel>
                             </Button>
                             <Button x:Name="BtnDelSrc" Style="{StaticResource BtnGhost}" Margin="0,0,0,6" HorizontalAlignment="Stretch"

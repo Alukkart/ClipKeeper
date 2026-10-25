@@ -184,7 +184,7 @@ namespace DeviceGuard
         {
             return new TextBlock
             {
-                Text = text.ToUpperInvariant(), Foreground = Wpf.Res<Brush>("Muted"), FontSize = 11.5,
+                Text = text, Foreground = Wpf.Res<Brush>("Muted"), FontSize = 12,
                 FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 14, 0, 8),
             };
         }

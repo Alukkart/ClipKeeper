@@ -69,9 +69,9 @@ namespace DeviceGuard
         }
 
         // status colors
-        public static readonly Color Ok = C("#3FB950"), Warn = C("#D29922"), Bad = C("#F85149"),
-                                     Grey = C("#6E7681"), Accent = C("#A1A1AA"), Text = C("#EDEDEF"),
-                                     Brand = C("#EDEDEF");   // the same as the Brand brush in Styles.xaml
+        public static readonly Color Ok = C("#46C97A"), Warn = C("#F0B232"), Bad = C("#FF5A4E"),   // the same as Ok, Warn, Bad in Styles.xaml
+                                     Grey = C("#6F747D"), Accent = C("#A4A8B0"), Text = C("#E6E7EA"),
+                                     Brand = C("#F4F5F7");   // the same as the Brand brush in Styles.xaml
 
         public static Color LevelColor(int level)
         {
@@ -251,7 +251,7 @@ namespace DeviceGuard
         }
         static long selectClock;
         public long SelectedAt;
-        public bool Selecting { get { return selecting; } set { selecting = value; Notify("CheckOpacity"); } }
+        public bool Selecting { get { return selecting; } set { selecting = value; Notify("CheckOpacity", "Selecting"); } }
         public double CheckOpacity { get { return selected || selecting ? 1 : 0; } }
         public Brush CheckRing { get { return selected ? Wpf.Res<Brush>("Text") : RingOff; } }
         public Brush CheckFill { get { return selected ? Wpf.Res<Brush>("Text") : FillOff; } }
@@ -260,6 +260,18 @@ namespace DeviceGuard
         // its own name (ClipNames): a source is named in its file name, when and how big it is goes below
         public bool Named, Source;
         public string WhenText, SizeText;
+        // the list's columns (ClipRowTpl): when (not again if the name already is the date), the size, the game by its title
+        public string WhenCap
+        {
+            get
+            {
+                string w = EventVm.Cap(WhenText) ?? "";
+                return Title != null && w.Length > 0 && Title.StartsWith(w, StringComparison.OrdinalIgnoreCase) ? "" : w;
+            }
+        }
+        public Visibility WhenVis { get { return WhenCap.Length > 0 ? Visibility.Visible : Visibility.Collapsed; } }
+        public string SizeCol { get { return SizeText; } }
+        public string GameText { get { return NoGame.Is(Game) ? "—" : Covers.Title(Game); } }
         public string TitleTip { get { return Path + L.T("\nF2 or a double click — rename", "\nF2 или двойной клик — переименовать"); } }
         bool editing;
         string editText = "";
@@ -276,7 +288,12 @@ namespace DeviceGuard
         public Brush Scrub { get { return scrub; } set { Set(ref scrub, value); } }
         public double ScrubWidth { get { return Math.Max(0, scrubWidth); } set { scrubWidth = value; Notify("ScrubWidth", "ScrubVis"); } }
         public Visibility ScrubVis { get { return scrubWidth >= 0 ? Visibility.Visible : Visibility.Collapsed; } }
-        public string DeleteText { get { return deleteText; } set { Set(ref deleteText, value); } }
+        public string DeleteText { get { return deleteText; } set { Set(ref deleteText, value); Notify("DeleteVis"); } }
+        public Visibility DeleteVis { get { return string.IsNullOrEmpty(deleteText) ? Visibility.Collapsed : Visibility.Visible; } }
+
+        // open in the clip panel on the right (MainWindowPeek.cs): its frame stays outlined
+        bool peeked;
+        public bool Peeked { get { return peeked; } set { Set(ref peeked, value); } }
 
         // favorites: the star is always shown on favorites, on hover for the rest
         bool fav;

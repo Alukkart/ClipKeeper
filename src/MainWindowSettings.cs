@@ -155,7 +155,7 @@ namespace DeviceGuard
         void Group(string name)
         {
             buildGroup = name;
-            settingsNav.Children.Add(new TextBlock { Text = name.ToUpperInvariant(), Style = S("Caption"),
+            settingsNav.Children.Add(new TextBlock { Text = name, Style = S("Caption"),
                                                      Margin = new Thickness(10, settingsNav.Children.Count == 0 ? 8 : 14, 0, 3) });
         }
 

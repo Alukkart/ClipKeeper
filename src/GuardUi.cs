@@ -105,6 +105,16 @@ namespace DeviceGuard
             }, fail);
         }
 
+        // "Save the replay now" from the window (the search, the recording card): the clip comes like after the OBS key
+        public void RequestSaveReplay(Action<string> fail)
+        {
+            Enqueue(() =>
+            {
+                obs.Request("SaveReplayBuffer", null, ReqTimeout);
+                Ev(L.T("replay saved from ClipKeeper", "повтор сохранён из ClipKeeper"));
+            }, fail);
+        }
+
         public void RequestApply(string name, SourceEdit e, Action<string> fail)
         {
             Enqueue(() =>

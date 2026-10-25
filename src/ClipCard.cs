@@ -239,7 +239,7 @@ namespace DeviceGuard
             });
             head.Children.Add(new TextBlock
             {
-                Text = (clip.Ok ? L.T("Clip saved", "Клип сохранён") : L.T("Clip saved with a problem", "Клип сохранён с проблемой")).ToUpperInvariant(),
+                Text = clip.Ok ? L.T("Clip saved", "Клип сохранён") : L.T("Clip saved with a problem", "Клип сохранён с проблемой"),
                 FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(accent), VerticalAlignment = VerticalAlignment.Center,
             });
             sp.Children.Add(head);

@@ -199,6 +199,7 @@ namespace DeviceGuard
                       Language = L.Auto;                               // interface: auto (Windows language), en, ru
         public int TrimVolume = 85;                             // editor: preview volume, %
         public bool TrimLanes;                                  // editor: separate per-track lanes on the timeline
+        public bool ClipsList;                                  // library: clips as a list with columns instead of a grid of frames
         public int ShareCustomMb = 25;                          // editor: the "custom" share target size
         public bool ShareLoudness;                              // editor: even loudness (-14 LUFS) when sharing; off by default
         public int ShareKeepDays = 3;                           // editor: shared files stay in the "sent" folder this long, then go to the Recycle Bin; 0 — kept
@@ -274,6 +275,7 @@ namespace DeviceGuard
                 s.TrimTarget = Json.GetStr(d, "TrimTarget") ?? s.TrimTarget;
                 s.TrimVolume = Json.GetInt(d, "TrimVolume", s.TrimVolume);
                 s.TrimLanes = Json.GetBool(d, "TrimLanes", s.TrimLanes);
+                s.ClipsList = Json.GetBool(d, "ClipsList", s.ClipsList);
                 s.Language = Json.GetStr(d, "Language") ?? s.Language;
                 s.ShareCustomMb = Json.GetInt(d, "ShareCustomMb", s.ShareCustomMb);
                 s.ShareLoudness = Json.GetBool(d, "ShareLoudness", s.ShareLoudness);
@@ -338,7 +340,7 @@ namespace DeviceGuard
                 "MinFreeGB", MinFreeGB, "ScreenIntervalSec", ScreenIntervalSec,
                 "SoundFile", SoundFile, "ObsPath", ObsPath, "TrimFolder", TrimFolder,
                 "CollectionFolder", CollectionFolder, "MainBounds", MainBounds, "TrimBounds", TrimBounds,
-                "TrimMode", TrimMode, "TrimTarget", TrimTarget, "TrimVolume", TrimVolume, "TrimLanes", TrimLanes, "Language", Language,
+                "TrimMode", TrimMode, "TrimTarget", TrimTarget, "TrimVolume", TrimVolume, "TrimLanes", TrimLanes, "ClipsList", ClipsList, "Language", Language,
                 "ShareCustomMb", ShareCustomMb, "ShareLoudness", ShareLoudness, "ShareKeepDays", ShareKeepDays, "GifFormat", GifFormat, "GifWidth", GifWidth, "GifFps", GifFps, "Encoder", Encoder, "KeyBinds", KeyBinds,
                 "GuardEnabled", GuardEnabled, "LibraryEnabled", LibraryEnabled, "UseReplayBuffer", UseReplayBuffer,
                 "SubfoldersAreGames", SubfoldersAreGames, "OnlineCovers", OnlineCovers, "UseCollection", UseCollection,

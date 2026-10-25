@@ -7,7 +7,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+A new look: graphite drawn with thin lines, where covers and clip frames are the only color and red means recording.
+
+### Added
+- A clip's panel: a click on a clip's frame opens it on the right of the library. The clip plays there, its name changes
+  in place, the check shows whether the video and each audio track are there and how loud each track is, and every
+  action is a button — trim, share, copy, favorite, folder, the Recycle Bin. ← → go to the next clip.
+- One search for everything: Ctrl+K (or the box at the top of the sidebar) finds clips in every folder by name, game or
+  date, the games, and actions — save the replay now, trim or copy the latest clip, go through new clips, open a page.
+- The clips as a list: rows with the name and when, the game, the length and the size; a click on a column orders by it.
+- The recording card: a click on the status at the bottom of the sidebar shows everything the guard watches, the problems
+  first, with a button to save the replay right away.
+- The sidebar lists your games with their covers and clip counts; one click opens a game from any page.
+- Going through new clips: a field under the clip names it as it plays, and the queue on the right shows what became of
+  each clip.
+
 ### Changed
+- Sources, Ready and Collection are tabs with their clip counts. Clip cards lose their frame: the actions come over the
+  picture with the mouse.
+- Inside a game: its cover, name and what it holds (clips, length, size, the latest clip) over a soft glow of the
+  game's art instead of a big banner; **Latest clip** opens it.
+- Group names are plain words instead of capitals everywhere.
 - Clips made to send no longer pile up in Ready. Share and GIF files, the one-click tiles included, are saved to a
   `sent` folder that the library doesn't show and go to the Recycle Bin after 3 days (Settings → Folders: 1, 3, 7 or
   30 days, or always). "To Ready" in the editor saves one as a usual trim; "Keep in Ready" after saving moves it there.

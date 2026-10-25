@@ -7,34 +7,39 @@
     <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
     <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas</FontFamily>
 
-    <!-- ── palette: graphite, color only for states ── -->
-    <SolidColorBrush x:Key="Bg" Color="#0B0C0E"/>
-    <SolidColorBrush x:Key="Side" Color="#0E0F11"/>
-    <SolidColorBrush x:Key="Card" Color="#131417"/>
-    <SolidColorBrush x:Key="Card2" Color="#1A1B1F"/>
-    <SolidColorBrush x:Key="Hover" Color="#1E1F24"/>
-    <SolidColorBrush x:Key="Input" Color="#0F1012"/>
-    <SolidColorBrush x:Key="Line" Color="#222328"/>
-    <SolidColorBrush x:Key="LineHi" Color="#2E3036"/>
-    <SolidColorBrush x:Key="Text" Color="#EDEDEF"/>
-    <SolidColorBrush x:Key="Sub" Color="#A1A1AA"/>
-    <SolidColorBrush x:Key="Muted" Color="#71717A"/>
-    <SolidColorBrush x:Key="Ok" Color="#3FB950"/>
-    <SolidColorBrush x:Key="Warn" Color="#D29922"/>
-    <SolidColorBrush x:Key="Bad" Color="#F85149"/>
+    <!-- ── palette: graphite drawn with hairlines; covers and clip frames are the only color, red only for "recording" ── -->
+    <SolidColorBrush x:Key="Bg" Color="#0E0F11"/>
+    <SolidColorBrush x:Key="Side" Color="#0B0C0E"/>
+    <SolidColorBrush x:Key="Card" Color="#111214"/>
+    <SolidColorBrush x:Key="Card2" Color="#17181B"/>
+    <SolidColorBrush x:Key="Hover" Color="#1B1C20"/>
+    <SolidColorBrush x:Key="Input" Color="#0B0C0E"/>
+    <SolidColorBrush x:Key="Line" Color="#1D1E22"/>
+    <SolidColorBrush x:Key="LineHi" Color="#2B2D32"/>
+    <SolidColorBrush x:Key="Text" Color="#E6E7EA"/>
+    <SolidColorBrush x:Key="Sub" Color="#A4A8B0"/>
+    <SolidColorBrush x:Key="Muted" Color="#6F747D"/>
+    <SolidColorBrush x:Key="Ok" Color="#46C97A"/>
+    <SolidColorBrush x:Key="Warn" Color="#F0B232"/>
+    <SolidColorBrush x:Key="Bad" Color="#FF5A4E"/>
     <!-- "accent" is just light: toggles and chips that are on -->
-    <SolidColorBrush x:Key="Accent" Color="#EDEDEF"/>
-    <SolidColorBrush x:Key="OnAccent" Color="#0B0C0E"/>
-    <!-- the brand color: the main action on a screen (Save, Connect), the chosen page, the logo; never a state -->
-    <SolidColorBrush x:Key="Brand" Color="#EDEDEF"/>
+    <SolidColorBrush x:Key="Accent" Color="#F4F5F7"/>
+    <SolidColorBrush x:Key="OnAccent" Color="#0E0F11"/>
+    <!-- the brand color: the main action on a screen (Save, Connect), the logo; never a state -->
+    <SolidColorBrush x:Key="Brand" Color="#F4F5F7"/>
     <SolidColorBrush x:Key="BrandHi" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="BrandSoft" Color="#26EDEDEF"/>
-    <SolidColorBrush x:Key="OnBrand" Color="#0B0C0E"/>
+    <SolidColorBrush x:Key="BrandSoft" Color="#26F4F5F7"/>
+    <SolidColorBrush x:Key="OnBrand" Color="#0E0F11"/>
+    <!-- a hairline over a picture (covers, clip frames): visible on dark art and light art alike -->
+    <SolidColorBrush x:Key="Ring" Color="#17FFFFFF"/>
+    <SolidColorBrush x:Key="RingHi" Color="#80FFFFFF"/>
+    <!-- a small dark plate over a picture: the clip length, the count on a cover, a button on a frame -->
+    <SolidColorBrush x:Key="Plate" Color="#E00E0F11"/>
 
     <!-- ── text ── -->
     <Style x:Key="H1" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="FontSize" Value="20"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
     </Style>
@@ -43,10 +48,10 @@
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
+    <!-- a group name over rows: plain words in a muted grey, no capitals -->
     <Style x:Key="Caption" TargetType="TextBlock">
-        <Setter Property="Foreground" Value="{StaticResource Muted}"/>
-        <Setter Property="FontSize" Value="11.5"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="#80858E"/>
+        <Setter Property="FontSize" Value="12"/>
         <Setter Property="Margin" Value="2,20,0,8"/>
     </Style>
     <Style x:Key="Icon" TargetType="TextBlock">
@@ -56,23 +61,24 @@
     </Style>
 
     <!-- ── card ── -->
+    <!-- a card is an outline, not a raised plate: the page shows through, a hairline holds it together -->
     <Style x:Key="CardBorder" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource Card}"/>
         <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="CornerRadius" Value="8"/>
         <Setter Property="Padding" Value="18"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
     </Style>
 
     <!-- ── buttons ── -->
     <Style x:Key="BtnGhost" TargetType="Button">
-        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="Foreground" Value="{StaticResource Sub}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="{StaticResource LineHi}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="FontSize" Value="13"/>
-        <Setter Property="Padding" Value="14,7"/>
+        <Setter Property="Padding" Value="12,6"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
@@ -80,8 +86,8 @@
                 <ControlTemplate TargetType="Button">
                     <Grid SnapsToDevicePixels="True">
                         <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7"/>
-                        <Border x:Name="hover" Background="White" Opacity="0" CornerRadius="7"/>
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6"/>
+                        <Border x:Name="hover" Background="White" Opacity="0" CornerRadius="6"/>
                         <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Grid>
                     <ControlTemplate.Triggers>
@@ -98,15 +104,26 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <!-- quiet grey until the mouse comes: a row of buttons doesn't compete with the content -->
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource Text}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
     <Style x:Key="BtnPrimary" TargetType="Button" BasedOn="{StaticResource BtnGhost}">
         <Setter Property="Background" Value="{StaticResource Brand}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{StaticResource OnBrand}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource OnBrand}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
     <Style x:Key="BtnIcon" TargetType="Button" BasedOn="{StaticResource BtnGhost}">
-        <Setter Property="Padding" Value="9,7"/>
+        <Setter Property="Padding" Value="8,6"/>
         <Setter Property="FontFamily" Value="{StaticResource IconFont}"/>
         <Setter Property="FontSize" Value="13"/>
     </Style>
@@ -281,36 +298,115 @@
     </Style>
 
     <!-- ── sidebar item ── -->
+    <!-- a compact row: the chosen page is a lighter plate, nothing more -->
     <Style x:Key="Nav" TargetType="RadioButton">
         <Setter Property="Foreground" Value="{StaticResource Sub}"/>
-        <Setter Property="FontSize" Value="13.5"/>
+        <Setter Property="FontSize" Value="13"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Margin" Value="10,1"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
                     <Grid>
-                        <Border x:Name="bg" CornerRadius="7" Background="Transparent"/>
-                        <!-- the chosen page: a short bar in the brand color -->
-                        <Border x:Name="bar" Width="3" Height="16" CornerRadius="1.5" HorizontalAlignment="Left" Margin="-1,0,0,0"
-                                Background="{StaticResource Brand}" Visibility="Hidden"/>
-                        <ContentPresenter Margin="12,8" VerticalAlignment="Center"/>
+                        <Border x:Name="bg" CornerRadius="6" Background="Transparent"/>
+                        <ContentPresenter Margin="8,6" VerticalAlignment="Center" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="bg" Property="Background" Value="#16171A"/>
+                            <Setter TargetName="bg" Property="Background" Value="#141518"/>
                             <Setter Property="Foreground" Value="{StaticResource Text}"/>
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="bg" Property="Background" Value="#1C1D21"/>
-                            <Setter TargetName="bar" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="bg" Property="Background" Value="#1B1C20"/>
+                            <Setter Property="Foreground" Value="#F4F5F7"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- a row of the sidebar that is a button (a game, the search): looks like a page row, never stays chosen by itself -->
+    <Style x:Key="SideRow" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource Sub}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="10,1"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bg" CornerRadius="6" Background="{TemplateBinding Background}" Padding="8,6">
+                        <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bg" Property="Background" Value="#141518"/>
                             <Setter Property="Foreground" Value="{StaticResource Text}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- a tab over a line (Sources / Ready / Collection): the chosen one is light and underlined -->
+    <Style x:Key="Tab" TargetType="ToggleButton">
+        <Setter Property="Foreground" Value="#80858E"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="0,0,22,0"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Grid Background="Transparent">
+                        <ContentPresenter Margin="0,0,0,11" VerticalAlignment="Center"/>
+                        <Border x:Name="line" Height="1" VerticalAlignment="Bottom" Background="Transparent"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter Property="Foreground" Value="#F4F5F7"/>
+                            <Setter TargetName="line" Property="Background" Value="#F4F5F7"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- a small button over a picture (a clip frame): an icon on a dark plate with a hairline -->
+    <Style x:Key="FrameBtn" TargetType="Border">
+        <Setter Property="Width" Value="26"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Margin" Value="0,0,4,0"/>
+        <Setter Property="CornerRadius" Value="5"/>
+        <Setter Property="Background" Value="{StaticResource Plate}"/>
+        <Setter Property="BorderBrush" Value="#1FFFFFFF"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="TextElement.Foreground" Value="#E6E7EA"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#F2202226"/>
+                <Setter Property="BorderBrush" Value="#59FFFFFF"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- a count next to a tab or a row: a small number on a faint plate -->
+    <Style x:Key="Count" TargetType="Border">
+        <Setter Property="Background" Value="#0DFFFFFF"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="5,0"/>
+        <Setter Property="Margin" Value="7,0,0,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
     <!-- a section in the settings list: smaller than a page in the sidebar, the chosen one is filled -->
@@ -329,11 +425,11 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="bg" Property="Background" Value="#16171A"/>
+                            <Setter TargetName="bg" Property="Background" Value="#141518"/>
                             <Setter Property="Foreground" Value="{StaticResource Text}"/>
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="bg" Property="Background" Value="#1C1D21"/>
+                            <Setter TargetName="bg" Property="Background" Value="#1B1C20"/>
                             <Setter Property="Foreground" Value="{StaticResource Text}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -441,7 +537,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="b" CornerRadius="7" Background="Transparent" BorderBrush="{StaticResource Line}"
+                    <Border x:Name="b" CornerRadius="6" Background="Transparent" BorderBrush="{StaticResource Line}"
                             BorderThickness="1" Padding="12,8">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -543,7 +639,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
                     <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="1" CornerRadius="7">
+                            BorderThickness="1" CornerRadius="6">
                         <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -568,7 +664,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="PasswordBox">
                     <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="1" CornerRadius="7">
+                            BorderThickness="1" CornerRadius="6">
                         <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>

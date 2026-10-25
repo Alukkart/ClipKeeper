@@ -748,6 +748,7 @@ namespace DeviceGuard
             MainWindow.TestFind(check);
             ClipNames.Test(check);
             MainWindow.TestTriage(check);
+            MainWindow.TestSide(check);
             ObsFix.Test(check);
             Trimmer.TestMerge(check);
 
@@ -800,6 +801,12 @@ namespace DeviceGuard
                 mw.ShowPage(MainWindow.PageClips);
                 mw.TestLibraryCards();
                 layout(root);
+            });
+            run("library: the clip panel, the list, the search and the recording card lay out", () =>
+            {
+                mw.TestPanels(true);
+                layout(root);
+                mw.TestPanels(false);
             });
             var stats = new StatsResult { TrackedSince = DateTime.Today.AddMonths(-2) };
             for (int i = 0; i < 12; i++)

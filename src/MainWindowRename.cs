@@ -83,19 +83,25 @@ namespace DeviceGuard
         {
             if (!vm.Editing) return;
             vm.Editing = false;
-            string title = vm.EditText.Trim();
-            if (!keep || title.Length == 0 || title == (vm.Named || !vm.Source ? vm.Title : "")) return;
+            if (keep) RenameClip(vm, vm.EditText);
+        }
+
+        // the clip gets a name (its file is renamed); the card is replaced by the renamed one. null — nothing changed
+        ClipVm RenameClip(ClipVm vm, string text)
+        {
+            string title = (text ?? "").Trim();
+            if (title.Length == 0 || title == (vm.Named || !vm.Source ? vm.Title : "")) return null;
             string to;
             string err = ClipNames.Rename(vm.Path, title, vm.Source, out to);
             if (err != null)
             {
                 if (app != null) app.ShowNotice(L.T("The clip was not renamed", "Клип не переименован"), new List<string> { Path.GetFileName(vm.Path) + ": " + err }, false);
-                return;
+                return null;
             }
             if (app != null && string.Equals(app.Guard.LastClipPath, vm.Path, StringComparison.OrdinalIgnoreCase)) app.Guard.LastClipPath = to;
             // the same card with the new name: its place, its day and its picture stay
             int i = clips.IndexOf(vm);
-            if (i < 0) return;
+            if (i < 0) return null;
             var f = new FileInfo(to);
             var nv = vm.Source ? ClipScanner.Describe(f, RootOf(last) ?? f.DirectoryName, null) : DescribeNamed(f);
             nv.Fav = vm.Fav;
@@ -105,7 +111,9 @@ namespace DeviceGuard
             nv.NewVis = vm.NewVis;
             nv.Thumb = vm.Thumb;
             if (vm.Source && gameView != null && !gameView.StartsWith("*")) GameViewTitle(nv);
+            nv.Peeked = vm.Peeked;
             clips[i] = nv;
+            return nv;
         }
 
         static T Find<T>(DependencyObject root, Func<T, bool> ok) where T : DependencyObject

@@ -65,9 +65,9 @@ namespace DeviceGuard
             });
             thumb.Children.Add(new Border
             {
-                CornerRadius = new CornerRadius(4), Background = Wpf.Res<Brush>("Brand"), Padding = new Thickness(6, 1, 6, 1), Margin = new Thickness(6),
+                CornerRadius = new CornerRadius(4), Background = Wpf.Res<Brush>("Bad"), Padding = new Thickness(6, 1, 6, 1), Margin = new Thickness(6),
                 HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
-                Child = new TextBlock { Text = L.T("latest", "последний"), FontSize = 10, FontWeight = FontWeights.SemiBold, Foreground = Wpf.Res<Brush>("OnBrand") },
+                Child = new TextBlock { Text = L.T("latest", "последний"), FontSize = 10, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White },
             });
             thumb.Children.Add(new Border
             {

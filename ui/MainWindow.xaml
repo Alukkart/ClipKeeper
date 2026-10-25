@@ -4,7 +4,7 @@
         Title="ClipKeeper" Width="1080" Height="760"
         WindowStyle="None" ResizeMode="CanResize" WindowStartupLocation="CenterScreen" MinWidth="900" MinHeight="600"
         Background="{StaticResource Bg}" BorderBrush="{StaticResource Line}" BorderThickness="1"
-        FontFamily="{StaticResource UiFont}" FontSize="13.5" Foreground="{StaticResource Text}"
+        FontFamily="{StaticResource UiFont}" FontSize="13" Foreground="{StaticResource Text}"
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="44" ResizeBorderThickness="6" GlassFrameThickness="0"
@@ -74,47 +74,69 @@
             </Grid>
         </DataTemplate>
 
-        <!-- clip card -->
+        <!-- clip card: no plate of its own — the frame with a hairline, the name and the details under it;
+             the actions come over the frame with the mouse -->
         <DataTemplate x:Key="ClipTpl">
-            <Border x:Name="card" Width="236" Margin="0,0,12,12" Background="{StaticResource Card}" BorderBrush="{StaticResource Line}"
-                    BorderThickness="1" CornerRadius="10">
+            <Border x:Name="card" Width="236" Margin="0,0,16,18" Background="Transparent">
                 <StackPanel>
-                    <!-- Tag="thumb": the mouse over it scrolls through the clip's frames (MainWindowScrub.cs) -->
-                    <Grid Height="133" Margin="5,5,5,0" Tag="thumb" Background="Transparent">
-                        <Border CornerRadius="7" Background="#0F1012">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE714;" FontSize="22" Foreground="#2E3036" HorizontalAlignment="Center"/>
+                    <!-- Tag="thumb": the mouse over it scrolls through the clip's frames (MainWindowScrub.cs); a click opens the clip's panel -->
+                    <Grid Height="133" Tag="thumb" Background="Transparent">
+                        <Border CornerRadius="6" Background="#141518">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE714;" FontSize="22" Foreground="#2B2D32" HorizontalAlignment="Center"/>
                         </Border>
-                        <Border CornerRadius="7" Background="{Binding Thumb}"/>
-                        <Border CornerRadius="7" Background="{Binding Scrub}"/>
-                        <Border Height="3" CornerRadius="1.5" VerticalAlignment="Bottom" HorizontalAlignment="Left" Background="{StaticResource Brand}"
+                        <Border CornerRadius="6" Background="{Binding Thumb}"/>
+                        <Border CornerRadius="6" Background="{Binding Scrub}"/>
+                        <Border Height="2" CornerRadius="1" VerticalAlignment="Bottom" HorizontalAlignment="Left" Background="{StaticResource Brand}"
                                 Width="{Binding ScrubWidth}" Visibility="{Binding ScrubVis}"/>
-                        <Border CornerRadius="5" Background="#CC0B0C0E" Padding="6,1" Margin="7" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                        <Border x:Name="ring" CornerRadius="6" BorderThickness="1" BorderBrush="{StaticResource Ring}"/>
+                        <Border CornerRadius="4" Background="{StaticResource Plate}" Padding="6,1" Margin="6" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                 Visibility="{Binding DurationVis}">
-                            <TextBlock Text="{Binding Duration}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="White"/>
+                            <TextBlock Text="{Binding Duration}" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
                         </Border>
-                        <!-- the circle that selects the clip (MainWindowSelect.cs): on hover, and on every card while some are selected -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5">
-                            <Button x:Name="check" Style="{StaticResource BtnBare}" Tag="select" Opacity="{Binding CheckOpacity}" Margin="0,0,4,0"
+                        <!-- the box that selects the clip (MainWindowSelect.cs): on hover, and on every card while some are selected -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6">
+                            <Button x:Name="check" Style="{StaticResource BtnBare}" Tag="select" Opacity="{Binding CheckOpacity}" Margin="0,0,5,0"
                                     ToolTip="Select (Ctrl+click, Shift+click — a range)¦Выбрать (Ctrl+клик, Shift+клик — несколько подряд)">
-                                <Border Width="22" Height="22" CornerRadius="11" BorderThickness="1.5" BorderBrush="{Binding CheckRing}" Background="{Binding CheckFill}">
-                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE73E;" FontSize="11" Foreground="{Binding CheckMark}"
+                                <Border Width="18" Height="18" CornerRadius="5" BorderThickness="1.5" BorderBrush="{Binding CheckRing}" Background="{Binding CheckFill}">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE73E;" FontSize="10" FontWeight="Bold" Foreground="{Binding CheckMark}"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                             </Button>
-                            <Border CornerRadius="5" Background="{StaticResource Brand}" Padding="7,1" Margin="0,2,0,0" VerticalAlignment="Top"
-                                    Visibility="{Binding NewVis}">
-                                <TextBlock Text="latest¦последний" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource OnBrand}"/>
+                            <Border CornerRadius="4" Background="{StaticResource Bad}" Padding="6,0,6,1" VerticalAlignment="Top" Visibility="{Binding NewVis}">
+                                <TextBlock Text="latest¦последний" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
                             </Border>
                         </StackPanel>
-                        <Button x:Name="star" Style="{StaticResource BtnBare}" Tag="fav" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top"
+                        <!-- a star stays on a favorite; the rest get theirs with the mouse -->
+                        <Button x:Name="star" Style="{StaticResource BtnBare}" Tag="fav" Margin="6" HorizontalAlignment="Left" VerticalAlignment="Bottom"
                                 Opacity="{Binding StarOpacity}" ToolTip="{Binding StarTip}">
-                            <Border CornerRadius="6" Background="#CC0B0C0E" Width="28" Height="26">
-                                <TextBlock Style="{StaticResource Icon}" Text="{Binding StarGlyph}" Foreground="{Binding StarBrush}" FontSize="13"
+                            <Border CornerRadius="5" Background="{StaticResource Plate}" Width="24" Height="22">
+                                <TextBlock Style="{StaticResource Icon}" Text="{Binding StarGlyph}" Foreground="{Binding StarBrush}" FontSize="12"
                                            HorizontalAlignment="Center"/>
                             </Border>
                         </Button>
+                        <!-- actions come over the frame with the mouse: a grid of clips stays calm -->
+                        <StackPanel x:Name="actions" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6" Opacity="0">
+                            <Border CornerRadius="5" Background="{StaticResource Plate}" Padding="7,0" Margin="0,0,4,0" Visibility="{Binding DeleteVis}">
+                                <TextBlock Text="{Binding DeleteText}" Foreground="{StaticResource Bad}" FontSize="12" VerticalAlignment="Center"/>
+                            </Border>
+                            <Button Style="{StaticResource BtnBare}" Tag="trim" ToolTip="Trim¦Обрезать">
+                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C6;" FontSize="12"/></Border>
+                            </Button>
+                            <Button Style="{StaticResource BtnBare}" Tag="copy" ToolTip="Copy the file — then Ctrl+V into Discord or Telegram¦Копировать файл — потом Ctrl+V в Discord или Telegram">
+                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;" FontSize="12"/></Border>
+                            </Button>
+                            <Button Style="{StaticResource BtnBare}" Tag="folder" ToolTip="Show in folder¦Показать в папке">
+                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE838;" FontSize="12"/></Border>
+                            </Button>
+                            <Button Style="{StaticResource BtnBare}" Tag="return" Visibility="{Binding ReturnVis}" ToolTip="{Binding ReturnTip}">
+                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE8F1;" FontSize="12"/></Border>
+                            </Button>
+                            <Button Style="{StaticResource BtnBare}" Tag="delete" ToolTip="Move to Recycle Bin¦В корзину">
+                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="12" Foreground="#FF8A80"/></Border>
+                            </Button>
+                        </StackPanel>
                     </Grid>
-                    <StackPanel Margin="12,10,12,2">
+                    <StackPanel Margin="1,8,1,0">
                         <!-- F2 or a double click on the title: rename in place (MainWindowRename.cs); the file name it gets is shown under it -->
                         <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding TitleTip}"
                                    Tag="title" Background="Transparent" Visibility="{Binding TitleVis}"/>
@@ -128,38 +150,11 @@
                         <TextBlock Text="Enter — save · Esc — cancel¦Enter — сохранить · Esc — отмена" Foreground="{StaticResource Muted}" FontSize="11"
                                    Margin="0,3,0,0" Visibility="{Binding EditVis}"/>
                     </StackPanel>
-                    <!-- actions show on hover: a grid of cards stays calm -->
-                    <Grid x:Name="actions" Margin="5,4,5,6" Opacity="0">
-                        <StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource BtnLink}" Tag="open" ToolTip="Open in player¦Открыть в плеере">
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="13"/>
-                            </Button>
-                            <Button Style="{StaticResource BtnLink}" Tag="trim" ToolTip="Trim¦Обрезать">
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE8C6;" FontSize="13"/>
-                            </Button>
-                            <Button Style="{StaticResource BtnLink}" Tag="folder" ToolTip="Show in folder¦Показать в папке">
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE838;" FontSize="13"/>
-                            </Button>
-                            <Button Style="{StaticResource BtnLink}" Tag="copy" ToolTip="Copy the file — then Ctrl+V into Discord or Telegram¦Копировать файл — потом Ctrl+V в Discord или Telegram">
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;" FontSize="13"/>
-                            </Button>
-                            <Button Style="{StaticResource BtnLink}" Tag="return" Visibility="{Binding ReturnVis}" ToolTip="{Binding ReturnTip}">
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE8F1;" FontSize="13"/>
-                            </Button>
-                        </StackPanel>
-                        <Button Style="{StaticResource BtnLink}" Tag="delete" HorizontalAlignment="Right" ToolTip="Move to Recycle Bin¦В корзину">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding DeleteText}" Foreground="{StaticResource Bad}" FontSize="12.5" Margin="0,0,6,0"
-                                           VerticalAlignment="Center"/>
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="13"/>
-                            </StackPanel>
-                        </Button>
-                    </Grid>
                 </StackPanel>
             </Border>
             <DataTemplate.Triggers>
                 <Trigger SourceName="card" Property="IsMouseOver" Value="True">
-                    <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource LineHi}"/>
+                    <Setter TargetName="ring" Property="BorderBrush" Value="{StaticResource RingHi}"/>
                     <Setter TargetName="star" Property="Opacity" Value="1"/>
                     <Setter TargetName="check" Property="Opacity" Value="1"/>
                     <Setter TargetName="actions" Property="Opacity" Value="1"/>
@@ -167,35 +162,133 @@
                 <Trigger SourceName="card" Property="IsKeyboardFocusWithin" Value="True">
                     <Setter TargetName="actions" Property="Opacity" Value="1"/>
                 </Trigger>
+                <DataTrigger Binding="{Binding Peeked}" Value="True">
+                    <Setter TargetName="ring" Property="BorderBrush" Value="{StaticResource RingHi}"/>
+                </DataTrigger>
                 <DataTrigger Binding="{Binding Selected}" Value="True">
-                    <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource Text}"/>
+                    <Setter TargetName="ring" Property="BorderBrush" Value="#F4F5F7"/>
+                    <Setter TargetName="ring" Property="BorderThickness" Value="2"/>
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
 
-        <!-- a clip in the queue of "Go through new clips": its frame, what was decided, the current one outlined -->
+        <!-- a clip as a row of the list (Settings: ClipsList): frame, name and when, game, length, size; the actions with the mouse.
+             The columns match ClipsListHead; a click opens the clip's panel like a click on a frame -->
+        <DataTemplate x:Key="ClipRowTpl">
+            <Border x:Name="row" Tag="row" Height="52" Background="Transparent" BorderBrush="#0DFFFFFF" BorderThickness="0,0,0,1" Margin="0,0,12,0">
+                <Grid Margin="4,0,8,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="26"/>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="170"/>
+                        <ColumnDefinition Width="64"/>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="130"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid>
+                        <Button x:Name="check" Style="{StaticResource BtnBare}" Tag="select" Opacity="{Binding CheckOpacity}" VerticalAlignment="Center"
+                                ToolTip="Select (Ctrl+click, Shift+click — a range)¦Выбрать (Ctrl+клик, Shift+клик — несколько подряд)">
+                            <Border Width="16" Height="16" CornerRadius="4" BorderThickness="1.5" BorderBrush="{Binding CheckRing}" Background="{Binding CheckFill}">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE73E;" FontSize="9" FontWeight="Bold" Foreground="{Binding CheckMark}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Button>
+                        <TextBlock x:Name="starMark" Style="{StaticResource Icon}" Text="&#xE735;" FontSize="12" Foreground="{StaticResource Warn}"
+                                   Opacity="{Binding StarOpacity}" IsHitTestVisible="False"/>
+                    </Grid>
+                    <!-- Tag="thumb": frames under the mouse, as on a card -->
+                    <Grid Grid.Column="1" Width="72" Height="40" HorizontalAlignment="Left" Tag="thumb" Background="Transparent">
+                        <Border CornerRadius="4" Background="#141518"/>
+                        <Border CornerRadius="4" Background="{Binding Thumb}"/>
+                        <Border CornerRadius="4" Background="{Binding Scrub}"/>
+                        <Border x:Name="ring" CornerRadius="4" BorderThickness="1" BorderBrush="{StaticResource Ring}"/>
+                        <Border CornerRadius="3" Background="{StaticResource Bad}" Width="6" Height="6" Margin="4" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                Visibility="{Binding NewVis}" ToolTip="The latest clip¦Последний клип"/>
+                    </Grid>
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,12,0">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding TitleTip}"
+                                   Tag="title" Background="Transparent" Visibility="{Binding TitleVis}"/>
+                        <TextBox Tag="rename" Style="{StaticResource Field}" Visibility="{Binding EditVis}" Padding="6,2" Margin="-7,-3,0,0"
+                                 FontWeight="SemiBold" BorderBrush="{StaticResource Sub}" MaxLength="120"
+                                 Text="{Binding EditText, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Text="{Binding WhenCap}" Visibility="{Binding WhenVis}" Foreground="#5F646D" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="3" Text="{Binding GameText}" Foreground="{StaticResource Sub}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               Margin="0,0,10,0"/>
+                    <TextBlock Grid.Column="4" Text="{Binding Duration}" Foreground="{StaticResource Sub}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="5" Text="{Binding SizeCol}" Foreground="{StaticResource Sub}" VerticalAlignment="Center"/>
+                    <StackPanel x:Name="actions" Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Opacity="0">
+                        <Border CornerRadius="5" Background="{StaticResource Plate}" Padding="7,0" Margin="0,0,4,0" Visibility="{Binding DeleteVis}">
+                            <TextBlock Text="{Binding DeleteText}" Foreground="{StaticResource Bad}" FontSize="12" VerticalAlignment="Center"/>
+                        </Border>
+                        <Button Style="{StaticResource BtnBare}" Tag="trim" ToolTip="Trim¦Обрезать">
+                            <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C6;" FontSize="12"/></Border>
+                        </Button>
+                        <Button Style="{StaticResource BtnBare}" Tag="copy" ToolTip="Copy the file — then Ctrl+V into Discord or Telegram¦Копировать файл — потом Ctrl+V в Discord или Telegram">
+                            <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;" FontSize="12"/></Border>
+                        </Button>
+                        <Button Style="{StaticResource BtnBare}" Tag="fav" ToolTip="{Binding StarTip}">
+                            <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="{Binding StarGlyph}" Foreground="{Binding StarBrush}" FontSize="12"/></Border>
+                        </Button>
+                        <Button Style="{StaticResource BtnBare}" Tag="delete" ToolTip="Move to Recycle Bin¦В корзину">
+                            <Border Style="{StaticResource FrameBtn}" Margin="0"><TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="12" Foreground="#FF8A80"/></Border>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <Trigger SourceName="row" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="row" Property="Background" Value="#08FFFFFF"/>
+                    <Setter TargetName="actions" Property="Opacity" Value="1"/>
+                    <Setter TargetName="check" Property="Opacity" Value="1"/>
+                    <Setter TargetName="starMark" Property="Visibility" Value="Hidden"/>
+                </Trigger>
+                <DataTrigger Binding="{Binding Selecting}" Value="True">
+                    <Setter TargetName="starMark" Property="Visibility" Value="Hidden"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Peeked}" Value="True">
+                    <Setter TargetName="row" Property="Background" Value="#0FFFFFFF"/>
+                    <Setter TargetName="ring" Property="BorderBrush" Value="{StaticResource RingHi}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Selected}" Value="True">
+                    <Setter TargetName="row" Property="Background" Value="#14FFFFFF"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- a clip in the queue of "Go through new clips": its frame, when it was saved and what was decided; the current one outlined -->
         <DataTemplate x:Key="TriageTpl">
-            <Button Style="{StaticResource BtnBare}" Tag="triage" Margin="0,0,6,0" ToolTip="{Binding Tip}">
-                <Border Width="68" Height="38" CornerRadius="6" BorderThickness="2" BorderBrush="{Binding Ring}" Padding="0">
-                    <Grid Opacity="{Binding Dim}">
+            <Button Style="{StaticResource BtnBare}" Tag="triage" Margin="0,0,0,8" ToolTip="{Binding Tip}">
+                <Grid Background="Transparent" Opacity="{Binding Dim}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid Width="72" Height="40">
                         <Border CornerRadius="4" Background="#1A1B1F"/>
                         <Border CornerRadius="4" Background="{Binding Thumb}"/>
-                        <Border CornerRadius="3" Background="#D90B0C0E" Padding="3,1" Margin="2" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                        <Border CornerRadius="4" BorderThickness="{Binding RingThickness}" BorderBrush="{Binding Ring}"/>
+                        <Border CornerRadius="3" Background="#D90E0F11" Padding="3,1" Margin="2" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                 Visibility="{Binding MarkVis}">
                             <TextBlock Style="{StaticResource Icon}" Text="{Binding Mark}" FontSize="10" Foreground="{Binding MarkBrush}"/>
                         </Border>
                     </Grid>
-                </Border>
+                    <StackPanel Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding TimeText}" FontSize="12" Foreground="{StaticResource Text}"/>
+                        <TextBlock Text="{Binding StateText}" FontSize="11.5" Foreground="{StaticResource Muted}"/>
+                    </StackPanel>
+                </Grid>
             </Button>
         </DataTemplate>
 
         <!-- game card in the library: 2:3 cover, name, clip count and total length -->
         <DataTemplate x:Key="GameTpl">
-            <Button Style="{StaticResource BtnBare}" Tag="game" Margin="0,0,16,18" ToolTip="{Binding Tip}">
+            <Button Style="{StaticResource BtnBare}" Tag="game" Margin="0,0,16,20" ToolTip="{Binding Tip}">
                 <StackPanel x:Name="card" Width="164">
                     <Grid Height="246">
                         <Grid.Clip>
-                            <RectangleGeometry Rect="0,0,164,246" RadiusX="10" RadiusY="10"/>
+                            <RectangleGeometry Rect="0,0,164,246" RadiusX="6" RadiusY="6"/>
                         </Grid.Clip>
                         <Border Background="{StaticResource Card2}"/>
                         <!-- a frame of the game's latest clip, blurred: what a logo, a wide picture or the letters lie on -->
@@ -264,27 +357,25 @@
                         <Border Background="{Binding Cover}"/>
                         <!-- a dark logo on a transparent background: drawn white, it reads on the dark card -->
                         <Border Background="White" OpacityMask="{Binding CoverMask}" Visibility="{Binding CoverMaskVis}"/>
-                        <Border x:Name="ring" CornerRadius="10" BorderThickness="2" BorderBrush="Transparent"/>
-                        <Border CornerRadius="5" Background="#CC0B0C0E" Padding="7,2" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Bottom">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE714;" FontSize="11" Foreground="#D4D4D8" Margin="0,0,5,0"/>
-                                <TextBlock Text="{Binding CountText}" FontSize="11.5" FontWeight="SemiBold" Foreground="White"/>
-                            </StackPanel>
+                        <Border x:Name="ring" CornerRadius="6" BorderThickness="1" BorderBrush="{StaticResource Ring}"/>
+                        <Border CornerRadius="4" Background="{StaticResource Plate}" BorderBrush="{StaticResource Ring}" BorderThickness="1" Padding="6,0,6,1" Margin="7"
+                                HorizontalAlignment="Right" VerticalAlignment="Top">
+                            <TextBlock Text="{Binding CountText}" FontSize="11.5" FontWeight="SemiBold" Foreground="#E6E7EA"/>
                         </Border>
-                        <Button x:Name="coverBtn" Style="{StaticResource BtnBare}" Tag="cover" Margin="6" Opacity="0"
-                                HorizontalAlignment="Right" VerticalAlignment="Top" Visibility="{Binding CoverBtnVis}" ToolTip="Set your own cover¦Поставить свою обложку">
-                            <Border CornerRadius="6" Background="#CC0B0C0E" Width="28" Height="26">
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE8B9;" FontSize="13" Foreground="White" HorizontalAlignment="Center"/>
+                        <Button x:Name="coverBtn" Style="{StaticResource BtnBare}" Tag="cover" Margin="7" Opacity="0"
+                                HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="{Binding CoverBtnVis}" ToolTip="Set your own cover¦Поставить свою обложку">
+                            <Border Style="{StaticResource FrameBtn}">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE8B9;" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Button>
                     </Grid>
-                    <TextBlock Text="{Binding NameText}" FontWeight="SemiBold" Margin="2,10,0,0" TextTrimming="CharacterEllipsis"/>
-                    <TextBlock Text="{Binding StatsText}" Foreground="{StaticResource Muted}" FontSize="12" Margin="2,2,0,0" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding NameText}" FontWeight="SemiBold" Margin="1,9,0,0" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding StatsText}" Foreground="{StaticResource Muted}" FontSize="12" Margin="1,2,0,0" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
             </Button>
             <DataTemplate.Triggers>
                 <Trigger SourceName="card" Property="IsMouseOver" Value="True">
-                    <Setter TargetName="ring" Property="BorderBrush" Value="{StaticResource BrandHi}"/>
+                    <Setter TargetName="ring" Property="BorderBrush" Value="{StaticResource RingHi}"/>
                     <Setter TargetName="coverBtn" Property="Opacity" Value="1"/>
                 </Trigger>
             </DataTemplate.Triggers>
@@ -293,7 +384,7 @@
 
     <Grid x:Name="Root">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="228"/>
+            <ColumnDefinition Width="232"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
 
@@ -301,8 +392,8 @@
         <Border Background="{StaticResource Side}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0">
             <Grid>
             <DockPanel x:Name="MainSide">
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="22,20,0,24">
-                    <Grid Width="26" Height="26">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="18,16,0,10">
+                    <Grid Width="20" Height="20">
                         <Viewbox>
                             <Grid Width="40" Height="40">
                                 <Path Data="M20,2.5 L35,8.5 V19.5 C35,29 28.5,35 20,38 C11.5,35 5,29 5,19.5 V8.5 Z" Fill="{StaticResource Brand}"/>
@@ -311,48 +402,44 @@
                             </Grid>
                         </Viewbox>
                     </Grid>
-                    <TextBlock Text="ClipKeeper" FontFamily="{StaticResource DisplayFont}" FontSize="15.5" FontWeight="SemiBold"
-                               Margin="11,0,0,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="ClipKeeper" FontFamily="{StaticResource DisplayFont}" FontSize="14" FontWeight="SemiBold"
+                               Margin="9,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <!-- OBS link and recording: a pulsing red dot while the buffer records; a click opens Recording -->
-                <Border x:Name="SideStatus" DockPanel.Dock="Bottom" Margin="14,14,14,16" Padding="12,10" CornerRadius="8"
-                        Background="Transparent" BorderBrush="{StaticResource Line}" BorderThickness="1">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <Ellipse x:Name="SideHalo" Width="7" Height="7" Fill="{StaticResource Bad}" VerticalAlignment="Center" Opacity="0"
-                                 RenderTransformOrigin="0.5,0.5">
-                            <Ellipse.RenderTransform>
-                                <ScaleTransform/>
-                            </Ellipse.RenderTransform>
-                        </Ellipse>
-                        <Ellipse x:Name="SideDot" Width="7" Height="7" Fill="{StaticResource Muted}" VerticalAlignment="Center"/>
-                        <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                            <TextBlock x:Name="SideConn" Text="OBS: connecting…¦OBS: подключение…" FontSize="12.5" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock x:Name="SideSub" Text="" Foreground="{StaticResource Muted}" FontSize="11.5" TextTrimming="CharacterEllipsis"/>
-                        </StackPanel>
-                    </Grid>
-                </Border>
+                <!-- the search over everything: clips, games and actions (MainWindowPalette.cs) -->
+                <Button x:Name="SideSearch" DockPanel.Dock="Top" Style="{StaticResource BtnBare}" Margin="10,4,10,12"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                        ToolTip="Find a clip, a game or an action¦Найти клип, игру или действие">
+                    <Border x:Name="SideSearchBox" Height="30" CornerRadius="6" BorderThickness="1" BorderBrush="{StaticResource LineHi}" Background="Transparent">
+                        <Grid Margin="9,0,6,0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" FontSize="12" Foreground="{StaticResource Muted}"/>
+                                <TextBlock Text="Find a clip¦Найти клип" Foreground="{StaticResource Muted}" FontSize="12.5" Margin="8,0,0,0"/>
+                            </StackPanel>
+                            <Border Style="{StaticResource Count}" HorizontalAlignment="Right" BorderBrush="{StaticResource LineHi}" BorderThickness="1">
+                                <TextBlock Text="Ctrl K" FontSize="10.5" Foreground="{StaticResource Muted}"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Button>
 
-                <StackPanel>
+                <StackPanel DockPanel.Dock="Top">
                     <RadioButton x:Name="NavLibrary" Style="{StaticResource Nav}" GroupName="nav" IsChecked="True">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8F1;" FontSize="15" Width="28"/>
+                        <DockPanel>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8F1;" FontSize="14" Width="25"/>
+                            <TextBlock x:Name="NavLibraryCount" DockPanel.Dock="Right" Foreground="#5F646D" FontSize="12" VerticalAlignment="Center"/>
                             <TextBlock Text="Library¦Библиотека"/>
-                        </StackPanel>
+                        </DockPanel>
                     </RadioButton>
                     <RadioButton x:Name="NavStats" Style="{StaticResource Nav}" GroupName="nav">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE9D2;" FontSize="15" Width="28"/>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE9D2;" FontSize="14" Width="25"/>
                             <TextBlock Text="Statistics¦Статистика"/>
                         </StackPanel>
                     </RadioButton>
                     <RadioButton x:Name="NavRecord" Style="{StaticResource Nav}" GroupName="nav">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE7C8;" FontSize="15" Width="28"/>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE7C8;" FontSize="14" Width="25"/>
                             <TextBlock Text="Recording¦Запись"/>
                             <!-- a recording problem — a dot in its severity color -->
                             <Ellipse x:Name="NavRecordDot" Width="7" Height="7" Margin="10,1,0,0" VerticalAlignment="Center"
@@ -361,11 +448,44 @@
                     </RadioButton>
                     <RadioButton x:Name="NavSettings" Style="{StaticResource Nav}" GroupName="nav">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE713;" FontSize="15" Width="28"/>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE713;" FontSize="14" Width="25"/>
                             <TextBlock Text="Settings¦Настройки"/>
                         </StackPanel>
                     </RadioButton>
                 </StackPanel>
+
+                <!-- OBS link and recording: a pulsing red dot while the buffer records; a click opens the recording card -->
+                <Border x:Name="SideStatus" DockPanel.Dock="Bottom" Margin="10,8,10,10" Padding="8,9" CornerRadius="6"
+                        Background="Transparent" BorderBrush="Transparent" BorderThickness="0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Ellipse x:Name="SideHalo" Width="8" Height="8" Fill="{StaticResource Bad}" VerticalAlignment="Center" Opacity="0"
+                                 RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform/>
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <Ellipse x:Name="SideDot" Width="8" Height="8" Fill="{StaticResource Muted}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                            <TextBlock x:Name="SideConn" Text="OBS: connecting…¦OBS: подключение…" FontSize="12.5" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="SideSub" Text="" Foreground="{StaticResource Muted}" FontSize="11.5" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Style="{StaticResource Icon}" Text="&#xE70E;" FontSize="10" Foreground="{StaticResource Muted}" Margin="6,0,0,0"/>
+                    </Grid>
+                </Border>
+                <Border DockPanel.Dock="Bottom" Height="1" Background="{StaticResource Line}" Margin="10,0"/>
+
+                <!-- the games of the folder shown in the library, newest first: one click opens a game (built in MainWindowSide.cs) -->
+                <DockPanel x:Name="SideGamesBox" Visibility="Hidden">
+                    <TextBlock DockPanel.Dock="Top" Text="Games¦Игры" Foreground="#5F646D" FontSize="11.5" Margin="18,18,0,6"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel x:Name="SideGames" Margin="0,0,0,6"/>
+                    </ScrollViewer>
+                </DockPanel>
             </DockPanel>
 
             <!-- settings: back to the page you came from, the search and the sections in groups (built in MainWindowSettings.cs) -->
@@ -386,6 +506,67 @@
             </DockPanel>
             </Grid>
         </Border>
+
+        <!-- ── the search over everything (Ctrl+K): clips, games, actions; above every page (MainWindowPalette.cs) ── -->
+        <Grid x:Name="Palette" Grid.ColumnSpan="2" Visibility="Collapsed" Panel.ZIndex="50" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+            <Border x:Name="PaletteScrim" Background="#A6050607"/>
+            <Grid Width="640" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,84,0,0">
+                <Border Background="#141518" CornerRadius="10">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="60" ShadowDepth="20" Opacity="0.7" Color="Black"/>
+                    </Border.Effect>
+                </Border>
+                <Border Background="#141518" CornerRadius="10" BorderBrush="#2EFFFFFF" BorderThickness="1">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Height="52" BorderBrush="#14FFFFFF" BorderThickness="0,0,0,1">
+                            <Grid Margin="16,0,14,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" FontSize="15" Foreground="{StaticResource Sub}"/>
+                                <TextBlock x:Name="PaletteHint" Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="15.5" Foreground="{StaticResource Muted}" IsHitTestVisible="False"
+                                           Text="A clip, a game or an action…¦Клип, игра или действие…"/>
+                                <TextBox x:Name="PaletteInput" Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" FontSize="15.5" Background="Transparent" BorderThickness="0"
+                                         Foreground="#F4F5F7" CaretBrush="#F4F5F7" SelectionBrush="#5A5C66" FocusVisualStyle="{x:Null}"/>
+                                <Border Grid.Column="2" Style="{StaticResource Count}" BorderBrush="{StaticResource LineHi}" BorderThickness="1">
+                                    <TextBlock Text="Esc" FontSize="11" Foreground="{StaticResource Muted}"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <Border DockPanel.Dock="Bottom" Height="38" BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="16,0" VerticalAlignment="Center" TextElement.Foreground="{StaticResource Muted}" TextElement.FontSize="12">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74A;" FontSize="10"/>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74B;" FontSize="10" Margin="0,0,6,0"/>
+                                <TextBlock Text="choose¦выбрать" Margin="0,0,18,0"/>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE751;" FontSize="11" Margin="0,0,6,0"/>
+                                <TextBlock Text="do it¦выполнить" Margin="0,0,18,0"/>
+                                <TextBlock x:Name="PaletteStatus"/>
+                            </StackPanel>
+                        </Border>
+                        <ScrollViewer x:Name="PaletteScroll" MaxHeight="440" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="PaletteList" Margin="8,6,8,8"/>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ── the recording card: opens from the status at the bottom of the sidebar, a click elsewhere closes it (MainWindowRecPop.cs) ── -->
+        <Grid x:Name="RecPop" Grid.ColumnSpan="2" Visibility="Collapsed" Panel.ZIndex="40" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+            <Border x:Name="RecPopCatch" Background="Transparent"/>
+            <Grid Width="372" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="236,0,0,10">
+                <Border Background="#141518" CornerRadius="10">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="50" ShadowDepth="14" Opacity="0.7" Color="Black"/>
+                    </Border.Effect>
+                </Border>
+                <Border Background="#141518" CornerRadius="10" BorderBrush="#2EFFFFFF" BorderThickness="1" Padding="16,14">
+                    <StackPanel x:Name="RecPopBody"/>
+                </Border>
+            </Grid>
+        </Grid>
 
         <!-- ── content ── -->
         <Grid Grid.Column="1">
@@ -409,10 +590,10 @@
                         <Border x:Name="Hero" Style="{StaticResource CardBorder}" Padding="0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="3"/>
+                                    <ColumnDefinition Width="2"/>
                                     <ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
-                                <Border x:Name="HeroStripe" CornerRadius="10,0,0,10" Background="{StaticResource Ok}"/>
+                                <Border x:Name="HeroStripe" CornerRadius="8,0,0,8" Background="{StaticResource Ok}"/>
                                 <Grid Grid.Column="1" Margin="24,24,22,24">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition/>
@@ -428,7 +609,7 @@
                                                 </Ellipse>
                                                 <Ellipse x:Name="HeroDot" Fill="{StaticResource Ok}"/>
                                             </Grid>
-                                            <TextBlock x:Name="HeroLabel" Text="RUNNING¦РАБОТАЕТ" FontSize="12" FontWeight="SemiBold"
+                                            <TextBlock x:Name="HeroLabel" Text="Running¦Работает" FontSize="12" FontWeight="SemiBold"
                                                        Foreground="{StaticResource Ok}" Margin="10,0,0,0"/>
                                         </StackPanel>
                                         <TextBlock x:Name="HeroTitle" Text="All good¦Всё в порядке" FontFamily="{StaticResource DisplayFont}"
@@ -546,44 +727,65 @@
                 <ScrollViewer x:Name="PageClips" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                               shell:WindowChrome.IsHitTestVisibleInChrome="True">
                   <Grid>
-                    <!-- game banner: Steam art or a clip frame; goes under the window buttons and fades into the background -->
-                    <Grid x:Name="HeroBox" Height="320" VerticalAlignment="Top" Visibility="Collapsed" Background="{StaticResource Bg}" ClipToBounds="True">
-                        <Border x:Name="HeroImage"/>
+                    <!-- a game's glow: its banner (Steam art or a clip frame) blurred far out behind the header, fading into the page -->
+                    <Grid x:Name="HeroBox" Height="300" VerticalAlignment="Top" Visibility="Collapsed" ClipToBounds="True" IsHitTestVisible="True" Background="Transparent">
+                        <Border x:Name="HeroImage" Opacity="0.55" RenderTransformOrigin="0.5,0.3">
+                            <Border.Effect>
+                                <BlurEffect Radius="70"/>
+                            </Border.Effect>
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1.35" ScaleY="1.35"/>
+                            </Border.RenderTransform>
+                        </Border>
                         <Border x:Name="HeroDim" Background="#00000000"/>
                         <Border>
                             <Border.Background>
                                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                    <GradientStop Color="#A60B0C0E" Offset="0"/>
-                                    <GradientStop Color="#000B0C0E" Offset="0.22"/>
-                                    <GradientStop Color="#000B0C0E" Offset="0.4"/>
-                                    <GradientStop Color="#E60B0C0E" Offset="0.82"/>
-                                    <GradientStop Color="#FF0B0C0E" Offset="1"/>
+                                    <GradientStop Color="#330E0F11" Offset="0"/>
+                                    <GradientStop Color="#800E0F11" Offset="0.5"/>
+                                    <GradientStop Color="#FF0E0F11" Offset="1"/>
                                 </LinearGradientBrush>
                             </Border.Background>
                         </Border>
-                        <Button x:Name="BtnHero" Style="{StaticResource BtnBare}" Margin="0,56,34,0" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                Opacity="0" ToolTip="Set your own banner picture¦Поставить свою картинку для баннера">
-                            <Border CornerRadius="6" Background="#CC0B0C0E" Width="30" Height="28">
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE8B9;" FontSize="13" Foreground="White" HorizontalAlignment="Center"/>
+                        <Button x:Name="BtnHero" Style="{StaticResource BtnBare}" Margin="0,48,34,0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                Opacity="0" ToolTip="Set your own picture for the game's glow¦Поставить свою картинку для подсветки игры">
+                            <Border Style="{StaticResource FrameBtn}">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE8B9;" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Button>
                     </Grid>
                     <StackPanel x:Name="ClipsBody" Margin="34,0,22,30">
-                        <Grid Margin="0,0,12,16">
+                        <Grid Margin="0,0,12,18">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <Button x:Name="BtnClipsBack" Style="{StaticResource BtnIcon}" Content="&#xE72B;" Visibility="Collapsed"
-                                    VerticalAlignment="Top" Margin="0,2,14,0" ToolTip="Back to the library (Backspace)¦К библиотеке (Backspace)"/>
-                            <StackPanel Grid.Column="1">
+                                    VerticalAlignment="Top" Margin="0,0,14,0" ToolTip="Back to the library (Backspace)¦К библиотеке (Backspace)"/>
+                            <!-- inside a game: its cover beside the name -->
+                            <Grid x:Name="ClipsCoverBox" Grid.Column="1" Width="72" Height="96" Margin="0,0,18,0" Visibility="Collapsed" VerticalAlignment="Bottom">
+                                <Border CornerRadius="6" Background="{StaticResource Card2}"/>
+                                <Border x:Name="ClipsCover" CornerRadius="6"/>
+                                <Border CornerRadius="6" BorderThickness="1" BorderBrush="#2EFFFFFF"/>
+                            </Grid>
+                            <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
                                 <TextBlock x:Name="ClipsTitle" Text="Clips¦Клипы" Style="{StaticResource H1}" TextTrimming="CharacterEllipsis"
                                            ToolTip="{Binding Text, ElementName=ClipsFolder}"/>
+                                <!-- inside a game: clips, length, size and the latest clip as chips (MainWindowClips.cs) -->
+                                <WrapPanel x:Name="ClipsChips" Margin="0,9,0,-4" Visibility="Collapsed"/>
                                 <!-- the folder path is only a tooltip (on the title and the folder button) -->
                                 <TextBlock x:Name="ClipsFolder" Visibility="Collapsed"/>
                             </StackPanel>
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,2,0,0">
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="12,0,0,0">
+                                <Button x:Name="BtnLatest" Style="{StaticResource BtnGhost}" Visibility="Collapsed" Margin="0,0,6,0"
+                                        ToolTip="Open the game's latest clip¦Открыть последний клип игры">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="11" Margin="0,0,8,0"/>
+                                        <TextBlock Text="Latest clip¦Последний клип"/>
+                                    </StackPanel>
+                                </Button>
                                 <Button x:Name="BtnSortClips" Style="{StaticResource BtnGhost}" Visibility="Collapsed" Margin="0,0,6,0"
                                         ToolTip="Move to the collection, into game folders, every ready clip where ClipKeeper recorded the game¦Перенести в коллекцию, по папкам игр, все готовые клипы, в которых ClipKeeper записал игру">
                                     <StackPanel Orientation="Horizontal">
@@ -597,10 +799,14 @@
                                 <Button x:Name="BtnClipsFolder" Style="{StaticResource BtnIcon}" Content="&#xE838;" ToolTip="{Binding Text, ElementName=ClipsFolder}"/>
                             </StackPanel>
                         </Grid>
-                        <Grid Margin="0,0,12,16">
-                            <StackPanel x:Name="ClipSource" Orientation="Horizontal"/>
-                            <TextBlock x:Name="ClipsStats" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource Muted}" FontSize="12.5"/>
-                        </Grid>
+                        <!-- Sources / Ready / Collection: tabs over a hairline, the chosen one underlined -->
+                        <Border Margin="0,0,12,16" BorderThickness="0,0,0,1" BorderBrush="{StaticResource Line}">
+                            <Grid Margin="0,0,0,-1">
+                                <StackPanel x:Name="ClipSource" Orientation="Horizontal"/>
+                                <TextBlock x:Name="ClipsStats" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,1,0,0"
+                                           Foreground="#5F646D" FontSize="12.5"/>
+                            </Grid>
+                        </Border>
                         <!-- the search, filters and the order of clips (MainWindowFind.cs); filters wrap in a narrow window -->
                         <Grid x:Name="ClipsTools" Margin="0,0,12,14" Visibility="Collapsed">
                             <Grid.ColumnDefinitions>
@@ -608,10 +814,18 @@
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <Border x:Name="ClipsSearchHost" Width="220" VerticalAlignment="Top"/>
+                            <Border x:Name="ClipsSearchHost" Width="260" VerticalAlignment="Top"/>
                             <WrapPanel x:Name="ClipsFilters" Grid.Column="1" Margin="10,3,0,-6" VerticalAlignment="Top"/>
-                            <Button x:Name="BtnClipsSort" Grid.Column="2" Style="{StaticResource BtnLink}" VerticalAlignment="Top" Margin="8,4,0,0"
-                                    ToolTip="The order of clips¦Порядок клипов"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
+                                <Button x:Name="BtnClipsSort" Style="{StaticResource BtnLink}" Margin="8,2,6,0" ToolTip="The order of clips¦Порядок клипов"/>
+                                <!-- frames or a list (Settings: ClipsList) -->
+                                <Border x:Name="ViewSwitch" CornerRadius="6" BorderThickness="1" BorderBrush="{StaticResource LineHi}" Height="30" VerticalAlignment="Top">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ToggleButton x:Name="ViewGrid" Style="{StaticResource LinkToggle}" Content="&#xE80A;" Margin="2" ToolTip="Frames¦Кадрами"/>
+                                        <ToggleButton x:Name="ViewList" Style="{StaticResource LinkToggle}" Content="&#xE8FD;" Margin="0,2,2,2" ToolTip="A list with columns¦Списком с колонками"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
                         </Grid>
                         <Border x:Name="SortCard" Visibility="Collapsed" Style="{StaticResource CardBorder}" Margin="0,0,12,14">
                             <StackPanel>
@@ -636,6 +850,24 @@
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
+                        <!-- the column names over the list (the columns match ClipRowTpl); a click on one orders the clips by it -->
+                        <Border x:Name="ClipsListHead" Visibility="Collapsed" Margin="0,0,12,4" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1">
+                            <Grid Margin="4,0,8,6" TextElement.FontSize="12" TextElement.Foreground="#5F646D">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="26"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="64"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="130"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="ColName" Grid.Column="2" Style="{StaticResource BtnBare}" Foreground="#5F646D" HorizontalAlignment="Left"/>
+                                <TextBlock Grid.Column="3" Text="Game¦Игра"/>
+                                <Button x:Name="ColLength" Grid.Column="4" Style="{StaticResource BtnBare}" Foreground="#5F646D" HorizontalAlignment="Left"/>
+                                <Button x:Name="ColSize" Grid.Column="5" Style="{StaticResource BtnBare}" Foreground="#5F646D" HorizontalAlignment="Left"/>
+                            </Grid>
+                        </Border>
                         <ItemsControl x:Name="ClipsList" ItemTemplate="{StaticResource ClipTpl}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -663,59 +895,88 @@
                     </StackPanel>
                 </Border>
 
+                <!-- a clip's panel on the right of the library: watch, name, check, tracks, actions (MainWindowPeek.cs);
+                     the shadow lies under the panel (an effect on the panel itself would blur its text) -->
+                <Grid x:Name="PeekPanel" Visibility="Collapsed" Width="392" HorizontalAlignment="Right">
+                    <Border Background="{StaticResource Bg}" Margin="12,0,0,0">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="40" ShadowDepth="0" Opacity="0.6" Color="Black"/>
+                        </Border.Effect>
+                    </Border>
+                    <Border Background="{StaticResource Bg}" BorderBrush="{StaticResource LineHi}" BorderThickness="1,1,0,0" Margin="12,0,0,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="PeekBody" Margin="18,16,18,18"/>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+
                 <!-- "Go through new clips": one clip at a time, a key decides (MainWindowTriage.cs); takes the library's place -->
-                <Grid x:Name="TriagePage" Visibility="Collapsed" Margin="34,0,34,24">
+                <Grid x:Name="TriagePage" Visibility="Collapsed" Margin="34,0,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <Grid Margin="0,0,0,12">
+                    <Grid Margin="0,0,34,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <Button x:Name="BtnTriageClose" Style="{StaticResource BtnIcon}" Content="&#xE711;" Margin="0,0,14,0" ToolTip="Finish (Esc)¦Закончить (Esc)"/>
-                        <TextBlock x:Name="TriageTitle" Grid.Column="1" Style="{StaticResource H1}" FontSize="21" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock x:Name="TriageTitle" Grid.Column="1" Style="{StaticResource H1}" FontSize="20" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                         <TextBlock x:Name="TriageStats" Grid.Column="2" Foreground="{StaticResource Muted}" FontSize="12.5" VerticalAlignment="Center" Margin="12,0,0,0"/>
                     </Grid>
-                    <Border Grid.Row="1" Height="3" CornerRadius="1.5" Background="{StaticResource Line}">
-                        <Border x:Name="TriageProgress" HorizontalAlignment="Left" CornerRadius="1.5" Background="{StaticResource Text}" Width="0"/>
+                    <Border Grid.Row="1" Height="3" CornerRadius="1.5" Background="{StaticResource Line}" Margin="0,0,34,0">
+                        <Border x:Name="TriageProgress" HorizontalAlignment="Left" CornerRadius="1.5" Background="#F4F5F7" Width="0"/>
                     </Border>
-                    <Grid Grid.Row="2" Margin="0,14,0,0">
-                        <Border x:Name="TriageStage" Background="Black" CornerRadius="10" ClipToBounds="True">
-                            <Grid>
-                                <MediaElement x:Name="TriagePlayer" LoadedBehavior="Manual" UnloadedBehavior="Manual" ScrubbingEnabled="True" Stretch="Uniform"/>
-                                <TextBlock x:Name="TriageMsg" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Margin="40"/>
-                                <Border CornerRadius="5" Background="#CC0B0C0E" Padding="8,3" Margin="12" HorizontalAlignment="Right" VerticalAlignment="Top">
-                                    <TextBlock x:Name="TriageInfo" Foreground="White" FontSize="12.5"/>
-                                </Border>
-                                <Border CornerRadius="5" Background="#CC0B0C0E" Padding="8,3" Margin="12,12,12,20" HorizontalAlignment="Left" VerticalAlignment="Bottom">
-                                    <TextBlock x:Name="TriageTime" Foreground="White" FontFamily="{StaticResource MonoFont}" FontSize="12"/>
-                                </Border>
-                                <!-- a click on the line jumps there -->
-                                <Grid x:Name="TriageSeek" Height="8" VerticalAlignment="Bottom" Background="#59000000" Cursor="Hand">
-                                    <Border x:Name="TriageSeekFill" HorizontalAlignment="Left" Background="{StaticResource Text}" Width="0"/>
+                    <Grid Grid.Row="2" Margin="0,16,0,24">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="222"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Margin="0,0,22,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Border x:Name="TriageStage" Background="Black" CornerRadius="8" ClipToBounds="True" BorderBrush="{StaticResource Ring}" BorderThickness="1">
+                                <Grid>
+                                    <MediaElement x:Name="TriagePlayer" LoadedBehavior="Manual" UnloadedBehavior="Manual" ScrubbingEnabled="True" Stretch="Uniform"/>
+                                    <TextBlock x:Name="TriageMsg" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Margin="40"/>
+                                    <Border CornerRadius="4" Background="{StaticResource Plate}" Padding="7,2" Margin="12" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                        <TextBlock x:Name="TriageInfo" Foreground="White" FontSize="12.5"/>
+                                    </Border>
+                                    <Border CornerRadius="4" Background="{StaticResource Plate}" Padding="7,2" Margin="12,12,12,20" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                                        <TextBlock x:Name="TriageTime" Foreground="White" FontSize="12" FontWeight="SemiBold"/>
+                                    </Border>
+                                    <!-- a click on the line jumps there -->
+                                    <Grid x:Name="TriageSeek" Height="8" VerticalAlignment="Bottom" Background="#59000000" Cursor="Hand">
+                                        <Border x:Name="TriageSeekFill" HorizontalAlignment="Left" Background="#F4F5F7" Width="0"/>
+                                    </Grid>
                                 </Grid>
+                            </Border>
+                            <Border x:Name="TriageDone" Visibility="Collapsed" Style="{StaticResource CardBorder}" VerticalAlignment="Top">
+                                <StackPanel x:Name="TriageSummary"/>
+                            </Border>
+                            <!-- a name for the clip while it plays: Enter renames its file (MainWindowTriage.cs) -->
+                            <Grid x:Name="TriageNameRow" Grid.Row="1" Margin="0,12,0,0">
+                                <TextBox x:Name="TriageName" Style="{StaticResource Field}" FontSize="14" Padding="10,7" MaxLength="120"/>
+                                <TextBlock x:Name="TriageNameHint" IsHitTestVisible="False" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}" FontSize="14"
+                                           Text="A name for this clip — Enter¦Название клипа — Enter"/>
                             </Grid>
-                        </Border>
-                        <Border x:Name="TriageDone" Visibility="Collapsed" Style="{StaticResource CardBorder}" VerticalAlignment="Top">
-                            <StackPanel x:Name="TriageSummary"/>
+                            <UniformGrid x:Name="TriageKeys" Grid.Row="2" Rows="1" Columns="4" Margin="0,10,0,0"/>
+                        </Grid>
+                        <Border Grid.Column="1" BorderBrush="{StaticResource Line}" BorderThickness="1,0,0,0" Padding="16,0,10,0">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Top" Text="Queue¦Очередь" FontSize="11.5" Foreground="#5F646D" Margin="0,0,0,10"/>
+                                <ScrollViewer x:Name="TriageQueueScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <ItemsControl x:Name="TriageQueue" ItemTemplate="{StaticResource TriageTpl}"/>
+                                </ScrollViewer>
+                            </DockPanel>
                         </Border>
                     </Grid>
-                    <ScrollViewer x:Name="TriageQueueScroll" Grid.Row="3" Margin="0,14,0,0" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
-                        <ItemsControl x:Name="TriageQueue" ItemTemplate="{StaticResource TriageTpl}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                    </ScrollViewer>
-                    <UniformGrid x:Name="TriageKeys" Grid.Row="4" Rows="1" Columns="4" Margin="0,14,0,0"/>
                 </Grid>
 
                 <!-- Statistics: built in code (MainWindowStats.cs) -->

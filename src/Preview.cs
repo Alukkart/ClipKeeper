@@ -63,6 +63,9 @@ namespace DeviceGuard
             cfg.CollectionFolder = @"D:\Clips";   // for the picture only, not saved
             mw.PreviewLibrary(clipsRoot, 3, 0);
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-library.png"));
+            mw.PreviewRecPop(true);   // the recording card from the sidebar
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-recording-card.png"));
+            mw.PreviewRecPop(false);
             Render((FrameworkElement)mw.W.Content, 1500, 2400, Path.Combine(dir, "14-library-full.png"));   // every card, Desktop too
             mw.PreviewLibrary(cfg.CollectionFolder, 0, 2);
             Render((FrameworkElement)mw.W.Content, 1500, 940, Path.Combine(dir, "14-library-collection.png"));
@@ -89,6 +92,7 @@ namespace DeviceGuard
             var clipVms = ClipScanner.Scan(Path.Combine(clipsRoot, game), 9).Select(f => ClipScanner.Describe(f, clipsRoot, null)).ToList();
             if (clipVms.Count > 0) clipVms[0].NewVis = Visibility.Visible;
             if (clipVms.Count > 1) clipVms[1].Fav = true;
+            clipVms.ForEach(v => v.Game = game);
             clipVms.ForEach(MainWindow.GameViewTitle);
             foreach (var vm in clipVms)
             {
@@ -97,6 +101,17 @@ namespace DeviceGuard
             }
             mw.PreviewClips(clipVms, clipsRoot, game);
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-clips.png"));
+            mw.PreviewPeek(0);   // the clip's panel on the right
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-peek.png"));
+            Render((FrameworkElement)mw.W.Content, 1400, 900, Path.Combine(dir, "14-peek-wide.png"));
+            mw.PreviewPeek(-1);
+            bool wasList = cfg.ClipsList;
+            mw.PreviewList(true);   // the same clips as a list with columns
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-list.png"));
+            mw.PreviewPeek(1);
+            Render((FrameworkElement)mw.W.Content, 1400, 900, Path.Combine(dir, "14-list-peek.png"));
+            mw.PreviewPeek(-1);
+            mw.PreviewList(wasList);
             RenderAuto(mw.PreviewSortMenu(), Path.Combine(dir, "14-sort-menu.png"));
             clipVms[0].EditText = L.T("Bridge duel", "Дуэль на мосту");   // renaming on the card
             clipVms[0].Editing = true;
@@ -110,6 +125,9 @@ namespace DeviceGuard
             mw.PreviewSelect();
             mw.PreviewFind("hunt", clipsRoot, Directory.Exists(cfg.TrimFolder) ? cfg.TrimFolder : null, cfg.CollectionFolder);
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-find.png"));
+            mw.PreviewPalette("hunt", clipsRoot, Directory.Exists(cfg.TrimFolder) ? cfg.TrimFolder : null, cfg.CollectionFolder);   // the search over everything (Ctrl+K)
+            Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-palette.png"));
+            mw.PreviewPaletteClose();
             mw.PreviewTriage(clipVms.Select(v => v.Path).Take(8).ToList(), game);   // going through new clips
             Render((FrameworkElement)mw.W.Content, 1078, 758, Path.Combine(dir, "14-triage.png"));
 
@@ -174,6 +192,16 @@ namespace DeviceGuard
                     new TrimStep { State = 1, Text = L.T("Written to the file: \"Hunt Showdown\", clip from 04.10.2026 13:18", "В файле записано: «Hunt Showdown», клип от 04.10.2026 13:18") },
                 }, true, Path.Combine(Path.GetDirectoryName(clip), Path.GetFileNameWithoutExtension(clip) + L.T(" — trim.mp4", " — обрезка.mp4")));
                 Render((FrameworkElement)tw2.W.Content, 1400, 900, Path.Combine(dir, "17-trim-result.png"));
+                // a one-click Discord share: a temporary file, "Keep in Ready" under the buttons
+                var tw3 = new TrimWindow(null, cfg, clip, info.Audio.Count - 1);
+                tw3.PreviewLoad(info, Png(sp), Png(wp), 54.5, 84.5, 61, clipsRoot);
+                tw3.PreviewResult(new[]
+                {
+                    new TrimStep { State = 1, Text = L.T("Saved: Hunt Showdown 14.10 14-50 (discord).mp4 · 9.4 MB", "Сохранено: Hunt Showdown 14.10 14-50 (discord).mp4 · 9,4 МБ") },
+                    new TrimStep { State = 1, Text = L.T("The video reads from start to end", "Видео читается от начала до конца") },
+                    new TrimStep { State = 1, Text = L.T("The file is copied — paste it into the chat (Ctrl+V)", "Файл скопирован — вставь его в чат (Ctrl+V)") },
+                }, true, Path.Combine(SentClips.Dir, "Hunt Showdown 14.10 14-50 (discord).mp4"));
+                Render((FrameworkElement)tw3.W.Content, 1400, 900, Path.Combine(dir, "17-trim-result-share.png"));
                 File.Delete(sp);
                 File.Delete(wp);
             }

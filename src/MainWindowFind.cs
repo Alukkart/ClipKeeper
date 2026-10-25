@@ -44,7 +44,7 @@ namespace DeviceGuard
         Border SearchField(TextBox tb, string hint, string tip)
         {
             var box = new Border { Background = Wpf.Res<Brush>("Input"), BorderBrush = Wpf.Res<Brush>("LineHi"), BorderThickness = new Thickness(1),
-                                   CornerRadius = new CornerRadius(7), Height = 34, ToolTip = tip };
+                                   CornerRadius = new CornerRadius(6), Height = 30, ToolTip = tip };
             var g = new Grid();
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             g.ColumnDefinitions.Add(new ColumnDefinition());
@@ -121,8 +121,7 @@ namespace DeviceGuard
             header.AppendChild(c0); header.AppendChild(c1); header.AppendChild(c2);
             var name = new FrameworkElementFactory(typeof(TextBlock));
             name.SetBinding(TextBlock.TextProperty, new Binding("Name"));
-            name.SetValue(TextBlock.FontFamilyProperty, Wpf.Res<FontFamily>("DisplayFont"));
-            name.SetValue(TextBlock.FontSizeProperty, 14.5);
+            name.SetValue(TextBlock.FontSizeProperty, 13.0);
             name.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
             var meta = new FrameworkElementFactory(typeof(TextBlock));
             var mb = new MultiBinding { Converter = new GroupMeta(day => { Tuple<int, double> t; return day != null && groupTotals != null && groupTotals.TryGetValue(day, out t) ? t : null; }) };
@@ -131,7 +130,7 @@ namespace DeviceGuard
             meta.SetBinding(TextBlock.TextProperty, mb);
             meta.SetValue(Grid.ColumnProperty, 1);
             meta.SetValue(TextBlock.ForegroundProperty, Wpf.Res<Brush>("Muted"));
-            meta.SetValue(TextBlock.FontSizeProperty, 12.5);
+            meta.SetValue(TextBlock.FontSizeProperty, 12.0);
             meta.SetValue(FrameworkElement.MarginProperty, new Thickness(10, 0, 0, 0));
             meta.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
             var line = new FrameworkElementFactory(typeof(Border));
@@ -209,6 +208,7 @@ namespace DeviceGuard
             sb.Content = c;
             sb.Tag = sortText;
             sb.Visibility = page ? Visibility.Visible : Visibility.Collapsed;
+            ShowListHead();
         }
 
         void SortMenu(Button anchor)

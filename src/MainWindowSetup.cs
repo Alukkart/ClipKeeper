@@ -93,7 +93,7 @@ namespace DeviceGuard
                                               Margin = new Thickness(11, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
             DockPanel.SetDock(logo, Dock.Top);
             side.Children.Add(logo);
-            var caption = new TextBlock { Text = L.T("FIRST SETUP", "ПЕРВАЯ НАСТРОЙКА"), Style = S("Caption"), Margin = new Thickness(24, 0, 0, 8) };
+            var caption = new TextBlock { Text = L.T("First setup", "Первая настройка"), Style = S("Caption"), Margin = new Thickness(24, 0, 0, 8) };
             DockPanel.SetDock(caption, Dock.Top);
             side.Children.Add(caption);
             if (!lastStep)
@@ -225,7 +225,7 @@ namespace DeviceGuard
                 L.T("It keeps your OBS recording from breaking and keeps your clips. A few steps — and everything can be changed later in Settings.",
                     "Он следит, чтобы запись OBS не сломалась, и хранит клипы. Несколько шагов — и всё это потом можно поменять в настройках."));
 
-            p.Children.Add(new TextBlock { Text = "LANGUAGE · ЯЗЫК", Style = S("Caption") });
+            p.Children.Add(new TextBlock { Text = "Language · Язык", Style = S("Caption") });
             var langs = new WrapPanel { Margin = new Thickness(0, 0, 0, 18) };
             foreach (var o in new[] { new[] { L.Auto, L.T("As in Windows", "Как в Windows") }, new[] { L.En, "English" }, new[] { L.Ru, "Русский" } })
             {
@@ -243,7 +243,7 @@ namespace DeviceGuard
             }
             p.Children.Add(langs);
 
-            p.Children.Add(new TextBlock { Text = L.T("WHAT DO YOU NEED", "ЧТО НУЖНО"), Style = S("Caption") });
+            p.Children.Add(new TextBlock { Text = L.T("What do you need", "Что нужно"), Style = S("Caption") });
             CheckBox guard = null, library = null;
             var g1 = SetupToggle(L.T("Recording guard", "Наблюдение за записью"),
                 L.T("Devices, replay buffer, audio, picture and frames — with an alarm when something breaks", "Устройства, буфер повтора, звук, картинка и кадры — с тревогой, если что-то сломалось"),
@@ -336,7 +336,7 @@ namespace DeviceGuard
             };
 
             // by hand: another computer, a portable OBS
-            p.Children.Add(new TextBlock { Text = L.T("OR BY HAND", "ИЛИ ВРУЧНУЮ"), Style = S("Caption"), Margin = new Thickness(2, 22, 0, 4) });
+            p.Children.Add(new TextBlock { Text = L.T("Or by hand", "Или вручную"), Style = S("Caption"), Margin = new Thickness(2, 22, 0, 4) });
             p.Children.Add(new TextBlock
             {
                 Text = L.T("In OBS: Tools → WebSocket Server Settings → Show Connect Info.", "В OBS: «Сервис → Настройки сервера WebSocket → Показать сведения о подключении»."),

@@ -67,7 +67,8 @@ Both halves work on their own — turn off the one you don't need in **Settings 
 | Checks every saved clip: length, tracks, dropped frames | Lossless, frame-exact and share — or one click: Discord 10 MB / Nitro / Telegram, and the file is already copied |
 | Alarm over the game: a window that doesn't steal focus, a sound | Every saved file is checked: length, video, audio in each track |
 | Low disk space, graphics driver failures, daily OBS settings backup | Statistics by month and game, and a month recap to share as a picture |
-| | Move the mouse over a clip — its frames scroll by |
+| Everything it watches in one card from the sidebar, and "Save the replay now" | Move the mouse over a clip — its frames scroll by; a click opens its panel: play, name, how loud each track is |
+| | One search for everything (Ctrl+K): clips in every folder, games, actions |
 
 The interface is in **English and Russian** (Settings → General → Language · Язык; by default it follows Windows).
 ClipKeeper's own windows are hidden from OBS capture and screenshots, so they never end up in a clip.
@@ -204,13 +205,21 @@ Clips come from three folders, following a clip's path:
 | **Collection** | Clips that made it into a video. Optional — Settings → Folders. |
 
 - Ready and Collection are chosen with the **+** button; right click it to change the folder.
-- Each folder opens with cards: Favorites, All clips and games — cover, clip count, total length and size.
+- Sources, Ready and Collection are tabs, each with its clip count. Each folder opens with cards: Favorites, All clips and
+  games — cover, clip count, total length and size.
   Favorites and All clips show frames of their latest clips fanned out over a blurred copy of the newest one.
   With a single group (e.g. ready clips without game data) the clips are shown right away.
 - **Search, filters and order** above the clips: a search by name, game or date — "bridge", "yesterday", "5 october",
   "05.10" (Ctrl+F); filters *Favorites*, *Not trimmed* and *Older than a month*; the order newest, oldest, longest or
   largest. Clips by date fall into days (Today, Yesterday, 5 October…). From the library's home — or with **Search all
   folders** from a game — the search goes through Sources, Ready and the collection at once, grouped by folder.
+- **The clip panel:** a click on a clip's frame opens it on the right. The clip plays right there (Space; a click on the
+  line under it jumps), its name changes in place, the check says whether the video and every audio track are there, each
+  track shows how loud it is ("silence" in yellow), and every action is a button: trim, share (the editor opens on
+  Discord / Nitro / Telegram / GIF), copy, favorite, folder, to the collection, the Recycle Bin (press twice).
+  ← → go to the next clip, Esc closes it, a double click on a frame opens the player.
+- **Frames or a list:** the switch next to the order shows the clips as rows — the frame, the name and when, the game,
+  the length and the size; a click on a column name orders the clips by it. The choice is remembered.
 - **Names:** F2 over a card or a double click on its title, then Enter. The name goes into the file name, so it shows the
   same in Explorer, Discord and Telegram: a source keeps its game and time around it (`Hunt Showdown - Bridge duel -
   2026-10-05 19-56-05.mp4`), a ready clip is its name. The star, the statistics and the last clip follow the file.
@@ -225,10 +234,12 @@ Clips come from three folders, following a clip's path:
   **Go through N new clips**. They play one after another and a key decides each: **F** keeps it with a star, **X** —
   trim later, **Delete** — for the Recycle Bin, **→** — skip, **Z** — undo, **Space** — pause. Nothing is deleted on the
   way: at the end the marked clips go to the bin with one press and the ones to trim open in the editor together.
+  A field under the clip names it as it plays (Enter); the queue on the right shows what became of each clip.
 - **Covers** come from Steam, or from Wikipedia for non-Steam games (only an article about the game itself), and are
   kept in `covers\`. Hover a card to set your own cover. Turn online covers off in Settings → Games and covers — then only your
   own pictures and clip frames are used.
-- Inside a game: a banner on top (Steam art, or a blurred frame of the latest clip; can be replaced too).
+- Inside a game: its cover, its name and chips of what it holds (clips, length, size, the latest clip), with the game's
+  art (Steam, or a frame of the latest clip; can be replaced) blurred into a glow behind them; **Latest clip** opens it.
   Back — the arrow, Backspace or the mouse back button.
 - **Cleanup of old clips** (Settings → Cleanup, off by default) moves source clips older than N days to the Recycle Bin.
   **Check** shows how many and the full list first; **To the Recycle Bin** needs a second press. It never touches favorites,
@@ -236,8 +247,8 @@ Clips come from three folders, following a clip's path:
   less than N days ago. Only local disks; if Windows would delete a file for good instead of recycling it, it asks. Without
   ffmpeg it refuses (it can't tell trims from sources). Once a day by itself if you turn that on — but it stops and asks
   if more than 300 clips or half of the folder would go. Every moved file is listed in `cleanup.log`.
-- **Clip buttons:** ★ favorite, open, trim, show in folder, copy the file (then Ctrl+V into Discord / Telegram),
-  move to the Recycle Bin (press twice).
+- **Clip buttons** come over the frame with the mouse: trim, copy the file (then Ctrl+V into Discord / Telegram), show
+  in folder, move to the Recycle Bin (press twice); the ★ in the corner stars it.
 - **To collection** (Ready clips): a known game goes into its collection folder (an existing folder is found even if
   spelled slightly differently); an unknown one opens a list of the collection's game folders.
   **All to collection** moves every clip with a known game and shows the plan first.
@@ -297,6 +308,10 @@ Ctrl+Z undoes the last cut, Esc drops an unfinished one. Cut parts are skipped w
   Settings → Video encoder; without one the CPU does the work.
 - Trims go to Ready, or next to the source if no folder is chosen. **Delete the source** appears only after a
   successful check and moves the file to the Recycle Bin.
+- **Files to send don't clutter Ready:** Share and GIF files (and the one-click tiles) go to the `sent` folder in
+  ClipKeeper's data, which the library doesn't show, and after 3 days go to the Recycle Bin (Settings → Folders:
+  1 / 3 / 7 / 30 days or always). **To Ready** next to the folder line saves this one as a usual trim; **Keep in Ready**
+  after saving moves a file that's already made.
 - **Smooth preview:** heavy video (HEVC, high bitrate) lags in the player, so a light 720p copy is made in the
   background (~10 s on the GPU) and the player switches to it seamlessly. The original is always what's saved.
   Copies live in `%TEMP%\dg_trim\proxy` — no more than 8, no older than 3 days.
@@ -353,8 +368,17 @@ program holds is reported instead of taken.
 (or the guard is off). Click — open the window; right click — a menu with the status, shortcuts and quick actions
 ("Restart OBS" works on the second press). Launching `ClipKeeper.exe` again opens the running copy's window.
 
-**Window:** Library, Statistics, Recording, Settings. It opens on the library, or straight on Recording if there's
-a problem; a dot next to Recording shows it (red — problem, yellow — attention).
+**Window:** Library, Statistics, Recording, Settings in the sidebar, and under them the games of the folder the library
+shows — one click opens a game from any page. It opens on the library, or straight on Recording if there's a problem;
+a dot next to Recording shows it (red — problem, yellow — attention).
+
+**Search over everything (Ctrl+K,** or the box at the top of the sidebar**):** clips in Sources, Ready and the collection by
+name, game or date, the games, and actions — save the replay now, trim or copy the latest clip, go through new clips,
+open a page. ↑ ↓ choose, Enter does it; a found clip opens in the library with its panel.
+
+**Recording card:** a click on the status at the bottom of the sidebar shows, from any page, everything the guard
+watches — the buffer, the picture, frames, the disk, each audio source with its device — the problems first, and
+**Save replay** (ClipKeeper asks OBS itself), **Test alarm** and **More** (the Recording page).
 
 **Recording page:** the overall status and tiles (OBS fps and dropped frames, buffer, audio, screen, disk, last clip);
 below — the sources (the device reference), folded to one line while all is fine and opened by itself on a problem: **Edit** changes device, tracks, volume and mute right in OBS and

@@ -628,6 +628,34 @@ namespace DeviceGuard
             catch (Exception ex) { check(false, "cleanup: " + ex.Message); }
             finally { try { Directory.Delete(croot, true); } catch { } }
 
+            // clips saved for sharing: temporary, old ones go after their days, "Keep in Ready" moves one out
+            string sroot = Path.Combine(Path.GetTempPath(), "clipkeeper-sent-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                string sent = Path.Combine(sroot, "sent"), ready = Path.Combine(sroot, "Ready"), src = Path.Combine(sroot, "Rec");
+                foreach (var d in new[] { sent, ready, src }) Directory.CreateDirectory(d);
+                var now = DateTime.Now;
+                Action<string, DateTime> file = (fp, when) => { File.WriteAllText(fp, "x"); File.SetCreationTime(fp, when); File.SetLastWriteTime(fp, when); };
+                file(Path.Combine(sent, "old (discord).mp4"), now.AddDays(-4));
+                file(Path.Combine(sent, "fresh (discord).mp4"), now.AddDays(-1));
+                file(Path.Combine(sent, "copied.gif"), now.AddDays(-10));
+                File.SetCreationTime(Path.Combine(sent, "copied.gif"), now.AddHours(-2));   // old date, but made two hours ago
+                check(string.Join(",", SentClips.Expired(sent, 3, now).Select(f => f.Name)) == "old (discord).mp4",
+                      "sent: after 3 days only the old file goes — the fresh one and the just-made one stay");
+                check(SentClips.Expired(sent, 0, now).Count == 0, "sent: \"always\" — nothing goes");
+                check(SentClips.IsSent(Path.Combine(SentClips.Dir, "a (discord).mp4")) && !SentClips.IsSent(Path.Combine(ready, "a.mp4")) &&
+                      !SentClips.IsSent(Path.Combine(SentClips.Dir, @"sub\a.mp4")),
+                      "sent: a file is temporary only right in the sent folder");
+                file(Path.Combine(ready, "fresh (discord).mp4"), now);
+                string moved = SentClips.Keep(Path.Combine(sent, "fresh (discord).mp4"), ready, Path.Combine(src, "clip.mp4"));
+                check(moved == Path.Combine(ready, "fresh (discord) 2.mp4") && File.Exists(moved) && !File.Exists(Path.Combine(sent, "fresh (discord).mp4")),
+                      "sent: \"Keep in Ready\" moves the file, a name taken there gets \" 2\"");
+                string beside = SentClips.Keep(Path.Combine(sent, "copied.gif"), Path.Combine(sroot, "unplugged"), Path.Combine(src, "clip.mp4"));
+                check(beside == Path.Combine(src, "copied.gif") && File.Exists(beside), "sent: no Ready folder — moved next to the source");
+            }
+            catch (Exception ex) { check(false, "sent: " + ex.Message); }
+            finally { try { Directory.Delete(sroot, true); } catch { } }
+
             // "Start ClipKeeper together with OBS": the script entry in a scene collection, and nothing else of OBS changes
             string sp1 = @"C:\Users\Ян\AppData\Roaming\ClipKeeper\clipkeeper_start.lua", sp2 = @"D:\Moved\ClipKeeper\clipkeeper_start.lua";
             var coll = Json.Obj(Json.Parse("{\"name\":\"Main\",\"modules\":{\"scripts-tool\":[{\"path\":\"C:/x/other.lua\",\"settings\":{\"a\":1}}]}}"));
@@ -720,6 +748,7 @@ namespace DeviceGuard
             MainWindow.TestFind(check);
             ClipNames.Test(check);
             MainWindow.TestTriage(check);
+            MainWindow.TestSide(check);
             ObsFix.Test(check);
             Trimmer.TestMerge(check);
 
@@ -772,6 +801,12 @@ namespace DeviceGuard
                 mw.ShowPage(MainWindow.PageClips);
                 mw.TestLibraryCards();
                 layout(root);
+            });
+            run("library: the clip panel, the list, the search and the recording card lay out", () =>
+            {
+                mw.TestPanels(true);
+                layout(root);
+                mw.TestPanels(false);
             });
             var stats = new StatsResult { TrackedSince = DateTime.Today.AddMonths(-2) };
             for (int i = 0; i < 12; i++)

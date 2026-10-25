@@ -256,6 +256,7 @@ namespace DeviceGuard
             F<Border>("ProgressFill").Width = 2000;
             F<Border>("ProgressFill").Background = Wpf.Br(ok ? Wpf.Ok : Wpf.Bad, 255);
             F<Button>("BtnDelSrc").Visibility = ok ? Visibility.Visible : Visibility.Collapsed;
+            F<Button>("BtnKeep").Visibility = ok && SentClips.IsSent(output) ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 }

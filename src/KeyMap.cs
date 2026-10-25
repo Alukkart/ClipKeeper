@@ -360,7 +360,7 @@ namespace DeviceGuard
             var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, first ? 0 : 12, 0, 4) };
             head.Children.Add(new Border { Width = 3, Height = 13, CornerRadius = new CornerRadius(1.5), Background = new SolidColorBrush(g.Color),
                                            Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center });
-            head.Children.Add(new TextBlock { Text = g.Name.ToUpperInvariant(), Foreground = Wpf.Res<Brush>("Muted"), FontSize = 11.5, FontWeight = FontWeights.SemiBold });
+            head.Children.Add(new TextBlock { Text = g.Name, Foreground = Wpf.Res<Brush>("Muted"), FontSize = 12 });
             return head;
         }
 

@@ -67,10 +67,6 @@ namespace DeviceGuard
             F<Button>("BtnSourcesFold").Click += (s, e) => FoldSources(F<StackPanel>("SourcesBody").Visibility == Visibility.Visible);
             sideDot = F<Ellipse>("SideDot");
             sideHalo = F<Ellipse>("SideHalo");
-            var sideStatus = F<Border>("SideStatus");
-            sideStatus.MouseLeftButtonUp += (s, e) => { if (PageOn(PageRecord)) ShowPage(PageRecord); };
-            sideStatus.MouseEnter += (s, e) => sideStatus.BorderBrush = Wpf.Res<Brush>("LineHi");
-            sideStatus.MouseLeave += (s, e) => sideStatus.BorderBrush = Wpf.Res<Brush>("Line");
             navRecordDot = F<Ellipse>("NavRecordDot");
             heroLabel = F<TextBlock>("HeroLabel");
             heroTitle = F<TextBlock>("HeroTitle");
@@ -136,6 +132,9 @@ namespace DeviceGuard
             };
 
             InitClips();
+            InitSide();
+            InitPalette();
+            InitRecPop();
             BuildSettings();
             InitSettingsKeys();
             for (int i = 0; i < navs.Length; i++) navs[i].Visibility = PageOn(i) ? Visibility.Visible : Visibility.Collapsed;
@@ -148,6 +147,7 @@ namespace DeviceGuard
         public void ShowPage(int i)
         {
             if (triageOn) CloseTriage(false);   // another page: the going through ends, nothing undecided is lost
+            if (i != PageClips && peekVm != null) ClosePeek();
             if (!PageOn(i)) i = PageOn(PageClips) ? PageClips : PageOn(PageRecord) ? PageRecord : PageSettings;
             for (int k = 0; k < pages.Length; k++)
             {
@@ -164,6 +164,7 @@ namespace DeviceGuard
             F<FrameworkElement>("SelBar").Visibility = i == PageClips && clips.Any(c => c.Selected) ? Visibility.Visible : Visibility.Collapsed;
             currentPage = i;
             if (navs[i].IsChecked != true) navs[i].IsChecked = true;
+            MarkSideGame();
             if (i == PageClips) LoadClips(false);
             if (i == PageStats) LoadStats(false);
         }
@@ -231,7 +232,7 @@ namespace DeviceGuard
 
         static TextBlock Section(string text)
         {
-            return new TextBlock { Text = text.ToUpperInvariant(), Style = S("Caption") };
+            return new TextBlock { Text = text, Style = S("Caption") };
         }
 
         // a line of a settings card: icon, title, description, a control on the right. The line above it is drawn by Divide
@@ -348,7 +349,7 @@ namespace DeviceGuard
             heroDot.Fill = Recording(s) ? Wpf.Br(Wpf.Bad, 255) : br;
             Pulse(heroHalo, Recording(s));
             heroLabel.Foreground = br;
-            heroLabel.Text = s.Level == 0 ? L.T("RUNNING", "РАБОТАЕТ") : s.Level == 1 ? L.T("ATTENTION", "ВНИМАНИЕ") : s.Level == 2 ? L.T("PROBLEM", "ПРОБЛЕМА") : L.T("WAITING", "ОЖИДАНИЕ");
+            heroLabel.Text = s.Level == 0 ? L.T("Running", "Работает") : s.Level == 1 ? L.T("Attention", "Внимание") : s.Level == 2 ? L.T("Problem", "Проблема") : L.T("Waiting", "Ожидание");
             bool noLink = s.ObsStatus != null && s.ObsStatus.StartsWith(Guard.NoLinkPrefix);
             switch (s.Level)
             {
@@ -427,6 +428,7 @@ namespace DeviceGuard
                 eventsList.ItemsSource = ev;
                 eventsEmpty.Visibility = ev.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             }
+            UpdateRecPop();
         }
 
         static bool Recording(Snapshot s) { return s.Connected && s.RbState == 1 && s.Level == 0; }

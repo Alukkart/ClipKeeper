@@ -201,6 +201,7 @@ namespace DeviceGuard
         public bool TrimLanes;                                  // editor: separate per-track lanes on the timeline
         public int ShareCustomMb = 25;                          // editor: the "custom" share target size
         public bool ShareLoudness;                              // editor: even loudness (-14 LUFS) when sharing; off by default
+        public int ShareKeepDays = 3;                           // editor: shared files stay in the "sent" folder this long, then go to the Recycle Bin; 0 — kept
         public string GifFormat = "gif";                        // editor: the GIF target — gif or webp, its width and frame rate
         public int GifWidth = 480, GifFps = 15;
         public string Encoder = "auto", KeyBinds = "";          // video encoder (Encoders); editor key overrides (KeyMap)
@@ -276,6 +277,7 @@ namespace DeviceGuard
                 s.Language = Json.GetStr(d, "Language") ?? s.Language;
                 s.ShareCustomMb = Json.GetInt(d, "ShareCustomMb", s.ShareCustomMb);
                 s.ShareLoudness = Json.GetBool(d, "ShareLoudness", s.ShareLoudness);
+                s.ShareKeepDays = Json.GetInt(d, "ShareKeepDays", s.ShareKeepDays);
                 s.GifFormat = Json.GetStr(d, "GifFormat") == "webp" ? "webp" : "gif";
                 s.GifWidth = Json.GetInt(d, "GifWidth", s.GifWidth);
                 s.GifFps = Json.GetInt(d, "GifFps", s.GifFps);
@@ -337,7 +339,7 @@ namespace DeviceGuard
                 "SoundFile", SoundFile, "ObsPath", ObsPath, "TrimFolder", TrimFolder,
                 "CollectionFolder", CollectionFolder, "MainBounds", MainBounds, "TrimBounds", TrimBounds,
                 "TrimMode", TrimMode, "TrimTarget", TrimTarget, "TrimVolume", TrimVolume, "TrimLanes", TrimLanes, "Language", Language,
-                "ShareCustomMb", ShareCustomMb, "ShareLoudness", ShareLoudness, "GifFormat", GifFormat, "GifWidth", GifWidth, "GifFps", GifFps, "Encoder", Encoder, "KeyBinds", KeyBinds,
+                "ShareCustomMb", ShareCustomMb, "ShareLoudness", ShareLoudness, "ShareKeepDays", ShareKeepDays, "GifFormat", GifFormat, "GifWidth", GifWidth, "GifFps", GifFps, "Encoder", Encoder, "KeyBinds", KeyBinds,
                 "GuardEnabled", GuardEnabled, "LibraryEnabled", LibraryEnabled, "UseReplayBuffer", UseReplayBuffer,
                 "SubfoldersAreGames", SubfoldersAreGames, "OnlineCovers", OnlineCovers, "UseCollection", UseCollection,
                 "SortClips", SortClips, "SortPrefix", SortPrefix, "SortRecordings", SortRecordings, "SortScreenshots", SortScreenshots,

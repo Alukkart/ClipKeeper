@@ -1006,6 +1006,28 @@ namespace DeviceGuard
             Add(Row("\uE714", L.T("Sources", "Исходники"), obsPath, null), "folder папка obs");
             Add(Row("\uE8C6", L.T("Ready — the editor saves here too", "Готовые — сюда же сохраняет редактор"), readyPath,
                 RowButton(null, L.T("Choose…", "Выбрать…"), "BtnGhost", () => PickSettingsFolder(SrcReady))), "folder папка trim");
+            // files saved in the editor's "Share" mode: temporary, out of the library (SentClips)
+            var keep = new StackPanel { Orientation = Orientation.Horizontal };
+            var keepChips = new[] { 1, 3, 7, 30, 0 }.Select(d => new System.Windows.Controls.Primitives.ToggleButton
+            {
+                Style = S("Chip"), Tag = d, IsChecked = cfg.ShareKeepDays == d, Margin = new Thickness(6, 0, 0, 0),
+                Content = d == 0 ? L.T("always", "всегда") : L.N(d, "day", "days", "день", "дня", "дней"),
+            }).ToList();
+            foreach (var c in keepChips)
+            {
+                var me = c;
+                me.Click += (s, e) =>
+                {
+                    foreach (var o in keepChips) o.IsChecked = o == me;
+                    cfg.ShareKeepDays = (int)me.Tag;
+                    Changed(false);
+                };
+                keep.Children.Add(me);
+            }
+            Add(Row("\uE823", L.T("Clips saved for sharing", "Клипы под отправку"),
+                L.T("The editor's \"Share\" saves them aside: the library doesn't show them, and after this long they go to the Windows Recycle Bin",
+                    "Режим «Отправить» в редакторе сохраняет их отдельно: в библиотеке их не видно, а через это время они уходят в корзину Windows"),
+                keep), "share отправка discord telegram temporary временные корзина");
             Add(Row("\uE8F1", L.T("Collection", "Коллекция"),
                 L.T("A third folder for clips that made it into a video", "Третья папка — для клипов, вошедших в выпуск"),
                 Toggle(cfg.UseCollection, v => { cfg.UseCollection = v; Changed(true); })), "folder папка");

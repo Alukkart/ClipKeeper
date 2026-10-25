@@ -174,6 +174,16 @@ namespace DeviceGuard
                     new TrimStep { State = 1, Text = L.T("Written to the file: \"Hunt Showdown\", clip from 04.10.2026 13:18", "В файле записано: «Hunt Showdown», клип от 04.10.2026 13:18") },
                 }, true, Path.Combine(Path.GetDirectoryName(clip), Path.GetFileNameWithoutExtension(clip) + L.T(" — trim.mp4", " — обрезка.mp4")));
                 Render((FrameworkElement)tw2.W.Content, 1400, 900, Path.Combine(dir, "17-trim-result.png"));
+                // a one-click Discord share: a temporary file, "Keep in Ready" under the buttons
+                var tw3 = new TrimWindow(null, cfg, clip, info.Audio.Count - 1);
+                tw3.PreviewLoad(info, Png(sp), Png(wp), 54.5, 84.5, 61, clipsRoot);
+                tw3.PreviewResult(new[]
+                {
+                    new TrimStep { State = 1, Text = L.T("Saved: Hunt Showdown 14.10 14-50 (discord).mp4 · 9.4 MB", "Сохранено: Hunt Showdown 14.10 14-50 (discord).mp4 · 9,4 МБ") },
+                    new TrimStep { State = 1, Text = L.T("The video reads from start to end", "Видео читается от начала до конца") },
+                    new TrimStep { State = 1, Text = L.T("The file is copied — paste it into the chat (Ctrl+V)", "Файл скопирован — вставь его в чат (Ctrl+V)") },
+                }, true, Path.Combine(SentClips.Dir, "Hunt Showdown 14.10 14-50 (discord).mp4"));
+                Render((FrameworkElement)tw3.W.Content, 1400, 900, Path.Combine(dir, "17-trim-result-share.png"));
                 File.Delete(sp);
                 File.Delete(wp);
             }

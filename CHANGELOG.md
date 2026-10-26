@@ -7,6 +7,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- Screen readers: the window buttons, the favorite star, the cover button, the Sources header and the editor's player and
+  timeline buttons had no name, so Narrator read just "button". Now it says "Close", "Play / pause" and so on.
+
 ## [1.3.0] - 2026-10-25
 
 A new look: graphite drawn with thin lines, where covers and clip frames are the only color and red means recording.

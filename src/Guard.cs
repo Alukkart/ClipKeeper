@@ -525,7 +525,7 @@ namespace DeviceGuard
             if (wsError != null && (authFailed ? Cfg.HasPassword : (now - obsSeenSince).TotalSeconds >= 60))
                 cur["ws"] = authFailed
                     ? L.T("No access to OBS: " + wsError + ". Open the ClipKeeper window and enter the password", "Нет доступа к OBS: " + wsError + ". Откройте окно ClipKeeper и введите пароль")
-                    : L.T("Cannot connect to the OBS WebSocket (" + wsError + "). Is the WebSocket server enabled in OBS?", "Не могу подключиться к WebSocket OBS (" + wsError + "). Включён ли сервер WebSocket в OBS?");
+                    : L.T("Cannot connect to the OBS WebSocket (" + wsError + "). Is the WebSocket server enabled in OBS? In safe mode OBS does not start it", "Не могу подключиться к WebSocket OBS (" + wsError + "). Включён ли сервер WebSocket в OBS? В безопасном режиме OBS его не запускает");
             lock (st) obsStatus = wsError != null ? NoLinkPrefix + wsError : L.T("OBS is running, connecting…", "OBS запущен, подключаюсь…");
             return false;
         }
@@ -563,7 +563,8 @@ namespace DeviceGuard
             if (scriptErr != null && scriptErr != ObsScript.WaitObs) Log.Write("OBS start script before launch: " + scriptErr);
             app.Post(app.SyncObsScript);   // the settings row shows the new state
             ObsFix.ApplyPending();         // what the first-run check fixed while OBS was open (WebSocket, replay buffer, save key)
-            // --disable-shutdown-check: no "OBS crashed, start in safe mode?" question
+            // no "OBS crashed, start in safe mode?" question: the crash marks for OBS 32+, --disable-shutdown-check for older ones
+            if (!ObsScript.ObsRunning() && ObsFix.ClearCrashMarks(ObsFix.SentinelDir) > 0) Log.Write("OBS crash mark cleared before the start");
             string args = (Cfg.UseReplayBuffer ? "--startreplaybuffer " : "") + "--disable-shutdown-check" + (Cfg.ObsMinimized ? " --minimize-to-tray" : "");
             try
             {

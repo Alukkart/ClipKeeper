@@ -144,7 +144,7 @@ collections are copied to `backups\` before the change. A ClipKeeper that alread
 |---|---|
 | **Devices** | Keeps audio (WASAPI) and screen capture sources on the devices from the reference. If an ID changed after an audio software update (SteelSeries GG, Voicemeeter…), a driver update or a monitor swap, it finds the device by name or monitor model and sets it again. Audio changes are reported by Windows at once; monitors are checked every 5 s and on display changes. |
 | **Replay buffer** | Started again after an error (NVENC, driver). 3 crashes in 10 minutes — auto restart stops and an alarm goes up. When OBS loses the graphics card (a driver update or failure: the recording is white, the buffer stopped) — an alarm, and OBS is restarted once the driver installer is done. |
-| **OBS crash** | Alarm and a restart with `--startreplaybuffer --disable-shutdown-check`. If OBS hangs, the alarm has a **Restart OBS** button. |
+| **OBS crash** | Alarm and a restart with the replay buffer on and without the safe mode question. If OBS hangs, the alarm has a **Restart OBS** button. |
 | **Silent audio** | Windows shows a signal on the device, but the OBS meter stays at zero for over 8 s → the source is restarted once; if that doesn't help — alarm. |
 | **Black / frozen picture** | Every 15 s a 64×36 snapshot of the capture. Black, white or single-color while the monitor shows a picture → capture restarted after 30 s, alarm after 60 s. No alarm if the monitor is dark too or you are away. |
 | **Mixer** | Source tracks are restored automatically. Mute and volume shifts of 6 dB or more only get a warning (often changed on purpose), as does a changed track set in recording settings. |

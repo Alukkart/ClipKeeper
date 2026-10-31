@@ -116,6 +116,24 @@ namespace DeviceGuard
             return lines.ToArray();
         }
 
+        // OBS 32+ has no --disable-shutdown-check: it asks about safe mode when it finds a run_* file left in .sentinel by the
+        // last run, and in safe mode (since OBS 33) there is no WebSocket. Only while OBS is closed; the crash logs stay.
+        public static string SentinelDir { get { return Path.Combine(ObsDir, ".sentinel"); } }
+
+        public static int ClearCrashMarks(string dir)
+        {
+            int n = 0;
+            try
+            {
+                if (!Directory.Exists(dir)) return 0;
+                foreach (var f in Directory.GetFiles(dir, "run_*"))
+                    try { File.Delete(f); n++; }
+                    catch (Exception ex) { Log.Write("OBS crash mark " + f + ": " + ex.Message); }
+            }
+            catch (Exception ex) { Log.Write("OBS crash marks: " + ex.Message); }
+            return n;
+        }
+
         // ── the fixes ──
         static readonly List<Tuple<string, Func<string>>> pending = new List<Tuple<string, Func<string>>>();
         public static bool Pending { get { lock (pending) return pending.Count > 0; } }

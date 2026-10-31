@@ -120,19 +120,19 @@
                                 <TextBlock Text="{Binding DeleteText}" Foreground="{StaticResource Bad}" FontSize="12" VerticalAlignment="Center"/>
                             </Border>
                             <Button Style="{StaticResource BtnBare}" Tag="trim" ToolTip="Trim¦Обрезать">
-                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C6;" FontSize="12"/></Border>
+                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" HorizontalAlignment="Center" Text="&#xE8C6;" FontSize="12"/></Border>
                             </Button>
                             <Button Style="{StaticResource BtnBare}" Tag="copy" ToolTip="Copy the file — then Ctrl+V into Discord or Telegram¦Копировать файл — потом Ctrl+V в Discord или Telegram">
-                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;" FontSize="12"/></Border>
+                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" HorizontalAlignment="Center" Text="&#xE8C8;" FontSize="12"/></Border>
                             </Button>
                             <Button Style="{StaticResource BtnBare}" Tag="folder" ToolTip="Show in folder¦Показать в папке">
-                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE838;" FontSize="12"/></Border>
+                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" HorizontalAlignment="Center" Text="&#xE838;" FontSize="12"/></Border>
                             </Button>
                             <Button Style="{StaticResource BtnBare}" Tag="return" Visibility="{Binding ReturnVis}" ToolTip="{Binding ReturnTip}">
-                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE8F1;" FontSize="12"/></Border>
+                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" HorizontalAlignment="Center" Text="&#xE8F1;" FontSize="12"/></Border>
                             </Button>
                             <Button Style="{StaticResource BtnBare}" Tag="delete" ToolTip="Move to Recycle Bin¦В корзину">
-                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="12" Foreground="#FF8A80"/></Border>
+                                <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" HorizontalAlignment="Center" Text="&#xE74D;" FontSize="12" Foreground="#FF8A80"/></Border>
                             </Button>
                         </StackPanel>
                     </Grid>
@@ -223,16 +223,16 @@
                             <TextBlock Text="{Binding DeleteText}" Foreground="{StaticResource Bad}" FontSize="12" VerticalAlignment="Center"/>
                         </Border>
                         <Button Style="{StaticResource BtnBare}" Tag="trim" ToolTip="Trim¦Обрезать">
-                            <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C6;" FontSize="12"/></Border>
+                            <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" HorizontalAlignment="Center" Text="&#xE8C6;" FontSize="12"/></Border>
                         </Button>
                         <Button Style="{StaticResource BtnBare}" Tag="copy" ToolTip="Copy the file — then Ctrl+V into Discord or Telegram¦Копировать файл — потом Ctrl+V в Discord или Telegram">
-                            <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;" FontSize="12"/></Border>
+                            <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" HorizontalAlignment="Center" Text="&#xE8C8;" FontSize="12"/></Border>
                         </Button>
                         <Button Style="{StaticResource BtnBare}" Tag="fav" ToolTip="{Binding StarTip}">
-                            <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" Text="{Binding StarGlyph}" Foreground="{Binding StarBrush}" FontSize="12"/></Border>
+                            <Border Style="{StaticResource FrameBtn}"><TextBlock Style="{StaticResource Icon}" HorizontalAlignment="Center" Text="{Binding StarGlyph}" Foreground="{Binding StarBrush}" FontSize="12"/></Border>
                         </Button>
                         <Button Style="{StaticResource BtnBare}" Tag="delete" ToolTip="Move to Recycle Bin¦В корзину">
-                            <Border Style="{StaticResource FrameBtn}" Margin="0"><TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="12" Foreground="#FF8A80"/></Border>
+                            <Border Style="{StaticResource FrameBtn}" Margin="0"><TextBlock Style="{StaticResource Icon}" HorizontalAlignment="Center" Text="&#xE74D;" FontSize="12" Foreground="#FF8A80"/></Border>
                         </Button>
                     </StackPanel>
                 </Grid>

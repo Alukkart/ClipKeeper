@@ -11,6 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - With OBS 32 and newer, a restart after a crash stopped at the question about safe mode, and the replay buffer stayed off
   until it was answered. ClipKeeper now starts OBS without that question.
 - The message about a missing WebSocket connection now mentions safe mode: since OBS 33 the server doesn't start in it.
+- The icons on a clip's hover buttons sit in the middle of their buttons.
 
 ## [1.3.0] - 2026-10-25
 

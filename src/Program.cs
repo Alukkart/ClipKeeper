@@ -745,6 +745,19 @@ namespace DeviceGuard
             }
             finally { try { File.Delete(obsIni); } catch { } }
 
+            string marks = Path.Combine(Path.GetTempPath(), "clipkeeper-sentinel-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                check(ObsFix.ClearCrashMarks(marks) == 0, "OBS crash marks: no folder — nothing to do");
+                Directory.CreateDirectory(marks);
+                File.WriteAllText(Path.Combine(marks, "run_a"), "");
+                File.WriteAllText(Path.Combine(marks, "run_b"), "");
+                File.WriteAllText(Path.Combine(marks, "other.txt"), "");
+                check(ObsFix.ClearCrashMarks(marks) == 2 && Directory.GetFiles(marks).Length == 1 && File.Exists(Path.Combine(marks, "other.txt")),
+                      "OBS crash marks: only run_* files go");
+            }
+            finally { try { Directory.Delete(marks, true); } catch { } }
+
             MainWindow.TestFind(check);
             ClipNames.Test(check);
             MainWindow.TestTriage(check);

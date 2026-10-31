@@ -12,6 +12,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   until it was answered. ClipKeeper now starts OBS without that question.
 - The message about a missing WebSocket connection now mentions safe mode: since OBS 33 the server doesn't start in it.
 - The icons on a clip's hover buttons sit in the middle of their buttons.
+- Screen readers: the window buttons, the favorite star, the cover button, the Sources header and the editor's player and
+  timeline buttons had no name, so Narrator read just "button". Now it says "Close", "Play / pause" and so on.
 
 ## [1.3.0] - 2026-10-25
 

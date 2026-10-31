@@ -85,9 +85,9 @@
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top"
                     shell:WindowChrome.IsHitTestVisibleInChrome="True">
             <Button x:Name="BtnKeys" Style="{StaticResource ChromeBtn}" Content="&#xE765;" ToolTip="Keys  ·  ?¦Клавиши  ·  ?"/>
-            <Button x:Name="BtnMin" Style="{StaticResource ChromeBtn}" Content="&#xE921;"/>
-            <Button x:Name="BtnMax" Style="{StaticResource ChromeBtn}" Content="&#xE922;"/>
-            <Button x:Name="BtnClose" Style="{StaticResource ChromeClose}" Content="&#xE8BB;"/>
+            <Button x:Name="BtnMin" Style="{StaticResource ChromeBtn}" Content="&#xE921;" AutomationProperties.Name="Minimize¦Свернуть"/>
+            <Button x:Name="BtnMax" Style="{StaticResource ChromeBtn}" Content="&#xE922;" AutomationProperties.Name="Maximize¦Развернуть"/>
+            <Button x:Name="BtnClose" Style="{StaticResource ChromeClose}" Content="&#xE8BB;" AutomationProperties.Name="Close¦Закрыть"/>
         </StackPanel>
 
         <Grid Grid.Row="1">
@@ -136,31 +136,31 @@
                         <TextBlock x:Name="SpeedText" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource Warn}"
                                    Margin="10,0,0,1" VerticalAlignment="Bottom"/>
                         <Button x:Name="BtnMute" Style="{StaticResource BtnLink}" FontFamily="{StaticResource IconFont}" Content="&#xE767;"
-                                Margin="18,0,0,0" ToolTip="Preview audio on / off  ·  M (does not affect the file)¦Звук просмотра вкл / выкл  ·  M (на файл не влияет)"/>
+                                Margin="18,0,0,0" ToolTip="Preview audio on / off  ·  M (does not affect the file)¦Звук просмотра вкл / выкл  ·  M (на файл не влияет)" AutomationProperties.Name="Preview audio on / off¦Звук просмотра вкл / выкл"/>
                         <Slider x:Name="Volume" Style="{StaticResource Slide}" Width="80" Minimum="0" Maximum="100" Value="85"
                                 VerticalAlignment="Center" ToolTip="Preview volume (does not affect the file)¦Громкость просмотра (на файл не влияет)"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <Button x:Name="BtnBack" Style="{StaticResource BtnIcon}" Content="&#xE892;" ToolTip="Back 5 s  ·  J¦Назад 5 с  ·  J"/>
-                        <Button x:Name="BtnFrameBack" Style="{StaticResource BtnIcon}" Content="&#xE76B;" Margin="6,0,0,0" ToolTip="Frame back  ·  ←¦Кадр назад  ·  ←"/>
+                        <Button x:Name="BtnBack" Style="{StaticResource BtnIcon}" Content="&#xE892;" ToolTip="Back 5 s  ·  J¦Назад 5 с  ·  J" AutomationProperties.Name="Back 5 s¦Назад 5 с"/>
+                        <Button x:Name="BtnFrameBack" Style="{StaticResource BtnIcon}" Content="&#xE76B;" Margin="6,0,0,0" ToolTip="Frame back  ·  ←¦Кадр назад  ·  ←" AutomationProperties.Name="Frame back¦Кадр назад"/>
                         <Button x:Name="BtnPlay" Style="{StaticResource BtnPrimary}" FontFamily="{StaticResource IconFont}" FontSize="14"
-                                Content="&#xE768;" Margin="8,0" Width="52" Padding="0,8" ToolTip="Play / pause  ·  Space¦Пуск / пауза  ·  пробел"/>
-                        <Button x:Name="BtnFrameFwd" Style="{StaticResource BtnIcon}" Content="&#xE76C;" Margin="0,0,6,0" ToolTip="Frame forward  ·  →¦Кадр вперёд  ·  →"/>
-                        <Button x:Name="BtnFwd" Style="{StaticResource BtnIcon}" Content="&#xE893;" ToolTip="Forward 5 s¦Вперёд 5 с"/>
+                                Content="&#xE768;" Margin="8,0" Width="52" Padding="0,8" ToolTip="Play / pause  ·  Space¦Пуск / пауза  ·  пробел" AutomationProperties.Name="Play / pause¦Пуск / пауза"/>
+                        <Button x:Name="BtnFrameFwd" Style="{StaticResource BtnIcon}" Content="&#xE76C;" Margin="0,0,6,0" ToolTip="Frame forward  ·  →¦Кадр вперёд  ·  →" AutomationProperties.Name="Frame forward¦Кадр вперёд"/>
+                        <Button x:Name="BtnFwd" Style="{StaticResource BtnIcon}" Content="&#xE893;" ToolTip="Forward 5 s¦Вперёд 5 с" AutomationProperties.Name="Forward 5 s¦Вперёд 5 с"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button x:Name="BtnCut" Style="{StaticResource BtnIcon}" Content="&#xE8C6;" Margin="0,0,14,0"
-                                ToolTip="Cut a piece from the middle  ·  X — press at the piece start and again at its end¦Вырезать кусок из середины  ·  X — нажми в начале куска и ещё раз в конце"/>
+                                ToolTip="Cut a piece from the middle  ·  X — press at the piece start and again at its end¦Вырезать кусок из середины  ·  X — нажми в начале куска и ещё раз в конце" AutomationProperties.Name="Cut a piece from the middle¦Вырезать кусок из середины"/>
                         <Button x:Name="BtnIn" Style="{StaticResource BtnIcon}" FontFamily="{StaticResource MonoFont}" FontWeight="Bold" FontSize="14"
-                                Content="[" Width="34" ToolTip="Range start here  ·  I¦Начало отрезка здесь  ·  I"/>
+                                Content="[" Width="34" ToolTip="Range start here  ·  I¦Начало отрезка здесь  ·  I" AutomationProperties.Name="Range start here¦Начало отрезка здесь"/>
                         <TextBlock x:Name="SelText" FontFamily="{StaticResource MonoFont}" FontSize="12.5" Margin="10,0"
                                    VerticalAlignment="Center" ToolTip="Range start → end (the result length is bottom right)¦Начало → конец отрезка (длина итога — справа, внизу)"/>
                         <Button x:Name="BtnOut" Style="{StaticResource BtnIcon}" FontFamily="{StaticResource MonoFont}" FontWeight="Bold" FontSize="14"
-                                Content="]" Width="34" ToolTip="Range end here  ·  O¦Конец отрезка здесь  ·  O"/>
+                                Content="]" Width="34" ToolTip="Range end here  ·  O¦Конец отрезка здесь  ·  O" AutomationProperties.Name="Range end here¦Конец отрезка здесь"/>
                         <Button x:Name="BtnPlaySel" Style="{StaticResource BtnIcon}" Content="&#xE8EE;" Margin="6,0,0,0"
-                                ToolTip="Loop the range  ·  Enter¦Проиграть отрезок по кругу  ·  Enter"/>
+                                ToolTip="Loop the range  ·  Enter¦Проиграть отрезок по кругу  ·  Enter" AutomationProperties.Name="Loop the range¦Проиграть отрезок по кругу"/>
                     </StackPanel>
                 </Grid>
 
@@ -175,16 +175,16 @@
                         </Grid>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <ToggleButton x:Name="BtnLanes" Style="{StaticResource LinkToggle}" Content="&#xE8FD;" Margin="0,0,10,0"
-                                          ToolTip="Separate tracks — each gets its own lane with a waveform  ·  T¦Дорожки по отдельности — у каждой своя полоса с волной  ·  T"/>
+                                          ToolTip="Separate tracks — each gets its own lane with a waveform  ·  T¦Дорожки по отдельности — у каждой своя полоса с волной  ·  T" AutomationProperties.Name="Separate tracks¦Дорожки по отдельности"/>
                             <Border Width="1" Height="16" Background="{StaticResource Line}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <Button x:Name="BtnZoomOut" Style="{StaticResource BtnLink}" FontFamily="{StaticResource IconFont}" Content="&#xE71F;"
-                                    ToolTip="Zoom out  ·  −¦Отдалить  ·  −"/>
+                                    ToolTip="Zoom out  ·  −¦Отдалить  ·  −" AutomationProperties.Name="Zoom out¦Отдалить"/>
                             <TextBlock x:Name="ZoomText" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource Muted}"
                                        VerticalAlignment="Center" MinWidth="34" TextAlignment="Center" Text="1×"/>
                             <Button x:Name="BtnZoomIn" Style="{StaticResource BtnLink}" FontFamily="{StaticResource IconFont}" Content="&#xE8A3;"
-                                    ToolTip="Zoom in  ·  =   (or Ctrl + wheel over the timeline)¦Приблизить  ·  =   (или Ctrl + колесо над шкалой)"/>
+                                    ToolTip="Zoom in  ·  =   (or Ctrl + wheel over the timeline)¦Приблизить  ·  =   (или Ctrl + колесо над шкалой)" AutomationProperties.Name="Zoom in¦Приблизить"/>
                             <Button x:Name="BtnZoomFit" Style="{StaticResource BtnLink}" FontFamily="{StaticResource IconFont}" Content="&#xE740;"
-                                    ToolTip="Whole timeline  ·  \¦Вся шкала  ·  \"/>
+                                    ToolTip="Whole timeline  ·  \¦Вся шкала  ·  \" AutomationProperties.Name="Whole timeline¦Вся шкала"/>
                         </StackPanel>
                     </Grid>
                 </StackPanel>

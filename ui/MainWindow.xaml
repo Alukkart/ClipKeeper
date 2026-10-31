@@ -108,7 +108,7 @@
                         </StackPanel>
                         <!-- a star stays on a favorite; the rest get theirs with the mouse -->
                         <Button x:Name="star" Style="{StaticResource BtnBare}" Tag="fav" Margin="6" HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                                Opacity="{Binding StarOpacity}" ToolTip="{Binding StarTip}">
+                                Opacity="{Binding StarOpacity}" ToolTip="{Binding StarTip}" AutomationProperties.Name="{Binding StarTip}">
                             <Border CornerRadius="5" Background="{StaticResource Plate}" Width="24" Height="22">
                                 <TextBlock Style="{StaticResource Icon}" Text="{Binding StarGlyph}" Foreground="{Binding StarBrush}" FontSize="12"
                                            HorizontalAlignment="Center"/>
@@ -363,7 +363,7 @@
                             <TextBlock Text="{Binding CountText}" FontSize="11.5" FontWeight="SemiBold" Foreground="#E6E7EA"/>
                         </Border>
                         <Button x:Name="coverBtn" Style="{StaticResource BtnBare}" Tag="cover" Margin="7" Opacity="0"
-                                HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="{Binding CoverBtnVis}" ToolTip="Set your own cover¦Поставить свою обложку">
+                                HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="{Binding CoverBtnVis}" ToolTip="Set your own cover¦Поставить свою обложку" AutomationProperties.Name="Set your own cover¦Поставить свою обложку">
                             <Border Style="{StaticResource FrameBtn}">
                                 <TextBlock Style="{StaticResource Icon}" Text="&#xE8B9;" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
@@ -576,9 +576,9 @@
             </Grid.RowDefinitions>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Panel.ZIndex="10"
                         shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                <Button x:Name="BtnMin" Style="{StaticResource ChromeBtn}" Content="&#xE921;"/>
-                <Button x:Name="BtnMax" Style="{StaticResource ChromeBtn}" Content="&#xE922;"/>
-                <Button x:Name="BtnClose" Style="{StaticResource ChromeClose}" Content="&#xE8BB;"/>
+                <Button x:Name="BtnMin" Style="{StaticResource ChromeBtn}" Content="&#xE921;" AutomationProperties.Name="Minimize¦Свернуть"/>
+                <Button x:Name="BtnMax" Style="{StaticResource ChromeBtn}" Content="&#xE922;" AutomationProperties.Name="Maximize¦Развернуть"/>
+                <Button x:Name="BtnClose" Style="{StaticResource ChromeClose}" Content="&#xE8BB;" AutomationProperties.Name="Close¦Закрыть"/>
             </StackPanel>
 
             <Grid Grid.Row="1">
@@ -665,7 +665,7 @@
                         <!-- sources: folded while everything is fine, opens by itself on a device problem -->
                         <Grid x:Name="SourcesHeader" Margin="0,28,0,4">
                             <Button x:Name="BtnSourcesFold" Style="{StaticResource BtnBare}" HorizontalAlignment="Left" VerticalAlignment="Center"
-                                    ToolTip="Show or hide the devices and tracks¦Показать или скрыть устройства и дорожки">
+                                    ToolTip="Show or hide the devices and tracks¦Показать или скрыть устройства и дорожки" AutomationProperties.Name="Show or hide the devices and tracks¦Показать или скрыть устройства и дорожки">
                                 <StackPanel Orientation="Horizontal" Background="Transparent">
                                     <TextBlock x:Name="SourcesChevron" Style="{StaticResource Icon}" Text="&#xE76C;" FontSize="11" Width="20"
                                                Foreground="{StaticResource Muted}"/>
